@@ -4,7 +4,7 @@ import "Extensions/singlefold.hh"
 import "Extensions/mfesubopt.hh"
 import "Extensions/rnaoptions_defaults.hh"
 import "Extensions/rnaoptions.hh"
-import "Extensions/motif.hh"
+import "Extensions/RNAMotifs/motif.hh"
 input rna
 type shape_t = shape
 type base_t = extern
@@ -18,12 +18,9 @@ include "Signatures/sig_foldrna.gap"
 
 
 //Algebras
-algebra count auto count;
-algebra enum auto enum;
 include "Algebras/MFE/alg_mfe_macrostate.gap" //Also contains alg_mfe_subopt
 include "Algebras/DotBracket/alg_dotBracket.gap" //Pretty without the motifs in the dotBracket string, Pretty Version is in algebra dotBracket_Pretty!
 include "Algebras/Pfunc/alg_pfunc_macrostate.gap"
-
 
 algebra motif implements sig_foldrna(alphabet = char, answer = string){
 
@@ -59,6 +56,7 @@ algebra motif implements sig_foldrna(alphabet = char, answer = string){
   string bl(Subsequence f1, Subsequence x, string e, Subsequence f2) {
     string r;
     char mot = identify_motif_b(x);
+    append(r,e);
     if (mot != '.') {
         append(r,mot);
     }
@@ -68,6 +66,7 @@ algebra motif implements sig_foldrna(alphabet = char, answer = string){
   string br(Subsequence f1, string e, Subsequence x, Subsequence f2) {
     string r;
     char mot = identify_motif_b(x);
+    append(r,e);
     if (mot != '.') {
         append(r,mot);
     }
@@ -111,7 +110,9 @@ algebra motif implements sig_foldrna(alphabet = char, answer = string){
     string r;
     return r;
   }
+
   //None of the following functions are used, so they're all left empty
+
   string edl(Subsequence a, string x, Subsequence c){
     return x;
   }
@@ -494,10 +495,8 @@ algebra dotBracket_Pretty implements sig_foldrna(alphabet = char, answer = strin
 }
 
 
-
 //Grammars
 include "Grammars/gra_macrostate.gap"
-
 
 
 //Instances
