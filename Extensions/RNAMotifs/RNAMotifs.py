@@ -72,7 +72,7 @@ def API_prep(idm_d,cl_d): #Preps the API calls by creating a dictionary with a M
             for motif_instance in idm_d[id]:
                 api_request="http://rna.bgsu.edu/correspondence/pairwise_interactions_single?selection_type=loop_id&selection="+motif_instance
                 api_list.append(api_request)
-        if len(api_list) != 0:
+        if len(api_list) != 0: #Just in case filter that prevents an empty api_list from being handed off to the rest of the program which would just lead to an error.
             id_api_dict[id]=api_list
     return id_api_dict
 

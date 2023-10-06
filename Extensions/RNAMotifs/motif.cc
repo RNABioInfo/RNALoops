@@ -31,7 +31,7 @@ std::vector<std::string> split(const std::string &s, char delim){
 }
 HashMap globalMap_Hairpins(HashMap x) {
     std::string Line;
-    std::ifstream infile("Extensions/RNAMotifs/Loops//HairpinMotifs.csv");
+    std::ifstream infile("Extensions/RNAMotifs/Loops/HairpinMotifs.csv");
     while (getline (infile, Line)) {
         std::vector<std::string> v = split(Line,'+');
         std::string key = v[0];

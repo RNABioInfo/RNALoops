@@ -22,3 +22,12 @@ Misc/Analyses/Outside/bin/*
 Misc/Analyses/Testinputs/Outside/Runtime/*
 Misc/Analyses/Testinputs/Outside/Correctness/*
 Misc/Analyses/Pareto/stefansRMDBextract.fasta_CLUSTER/*
+
+out
+out_main.*
+out.*
+Extensions/RNAMotifs/Data/hl_*
+Extensions/RNAMotifs/Data/il_*
+Extensions/RNAMotifs/Loops/*
+Extensions/RNAMotifs/motif.d
+Extensions/RNAMotifs/motif.o
