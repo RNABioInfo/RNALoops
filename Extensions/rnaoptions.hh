@@ -133,6 +133,7 @@ class Opts {
     float probing_intercept;
     const char* probing_modifier;
     const char* probing_normalization;
+    int motifs;
 #ifdef CHECKPOINTING_INTEGRATED
     size_t checkpoint_interval;  // default interval: 3600s (1h)
     boost::filesystem::path  checkpoint_out_path;  // default path: cwd
@@ -176,6 +177,7 @@ class Opts {
             probing_intercept(-0.6*100),
             probing_modifier("unknown"),
             probing_normalization("centroid"),
+            motifs(1),
     #ifdef CHECKPOINTING_INTEGRATED
             checkpoint_interval(DEFAULT_CHECKPOINT_INTERVAL),
             checkpoint_out_path(boost::filesystem::current_path()),
@@ -313,6 +315,8 @@ class Opts {
         << "for dot plots, aka. outside computation." << std::endl
         << "   0 = consensus, 1 = most informative sequence" << std::endl
         << std::endl
+        << "-Q <1,2,3> Select motif mode: 1 = BGSU, 2 = RFAM, 3 = BOFFA" << std::endl
+        << std::endl
         << "-h, --help Print this help." << std::endl << std::endl
         << " (-[drk] [0-9]+)*" << std::endl << std::endl
   #ifdef CHECKPOINTING_INTEGRATED
@@ -406,7 +410,7 @@ class Opts {
          * (centroid, RNAstructure, logplain, asProbabilities)
          */
         "S:A:B:M:N:"
-        "hd:r:k:p:I:KO:", long_opts, nullptr)) != -1) {
+        "hd:r:k:p:I:KO:Q:", long_opts, nullptr)) != -1) {
       switch (o) {
       case 'f':
         {
@@ -527,6 +531,9 @@ class Opts {
         break;
       case 'R':
         ribosum_scoring = (std::atoi(optarg) >= 1);
+        break;
+      case 'Q':
+        motifs = std::atoi(optarg);
         break;
       case 'a':
         consensusType = std::atoi(optarg);
@@ -652,6 +659,9 @@ class Opts {
     if (consensusType < 0 || consensusType > 1) {
       throw OptException("Consensus type must either be 0 "
                          "(=consensus) or 1 (=mis).");
+    }
+    if (motifs < 1 || motifs > 3) {
+      throw OptException("Choose Motif mode between 1 and 3");
     }
     if (strcmp(dotPlotFilename, "\0") == 0) {
       dotPlotFilename = "./dotPlot.ps";

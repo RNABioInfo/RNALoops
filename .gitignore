@@ -1,10 +1,8 @@
 out
 out_main.*
 out.*
-Extensions/RNAMotifs/Data/hl_*
-Extensions/RNAMotifs/Data/il_*
-Extensions/RNAMotifs/Loops/**
-Extensions/RNAMotifs/motif.d
-Extensions/RNAMotifs/motif.o
+Misc/Applications/RNAMotifs/Data/hl_*
+Misc/Applications/RNAMotifs/Data/il_*
+Misc/Applications/RNAMotifs/Loops/**
 string.o
 string.d

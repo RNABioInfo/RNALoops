@@ -2,7 +2,7 @@
 #
 #This program was written to work in the RNALoops folder downloadable from my GitHub page
 #MSebeke. File paths are made in a way that assumes that the program is located in the
-#RNALoops folder but can be ran from anywhere. The important part here is that it is located
+#RNALoops folder but can be ran from anywhere. The important part is that it is located
 #in a folder with two other folders: A ./Data/ folder that contains three different files:
 #1. hl_x.xx.json 2. il_x.xx.json 3. Loop_List.txt
 #1 and 2 are the downloadable .json files from the BGSU database, specifically this program was written
@@ -31,6 +31,7 @@ import requests
 def get_filepaths(): #Finds the paths to the directory where this python file is stored ("something/something/RNALoops/Extensions/RNAMotifs") and then builds the paths to the necessary downloadable json files from the BGSU 
     filename  = inspect.getframeinfo(inspect.currentframe()).filename
     path      = os.path.dirname(os.path.abspath(filename))
+    print(path)
     data_path = path+"/Data/*"
     file_list=glob.glob(data_path)
     hairpins_re=re.compile(".*hl_")
@@ -89,12 +90,12 @@ def API(ida_d): #Function that actually executes the API calls. Takes the API ca
                     decoded_response=response.content.decode()
                     response_list.append(decoded_response)
                 else:
-                    sleep(2)
+                    sleep(1)
         id_response_dict[id]=response_list
     return id_response_dict
 
 def API_postprocess_part1(idr): #Postprocessing of API responses. Iterates through the returned lists with two effects: Finds all nucleotides  (except the very first one cause it is preceded by a <\br> which isn't caught by the regex)
-    RegEx=re.compile("[\w]+[|]") # And it pops away the very last nucleotide. These removals are both planned as these nucleotides ALWAYS belong to the closing base pair which we do not need for the motif recognition.
+    RegEx=re.compile("[a-zA-Z0-9_]+[|]") # And it pops away the very last nucleotide. These removals are both planned as these nucleotides ALWAYS belong to the closing base pair which we do not need for the motif recognition.
     id_nucleotides_dict={} #After this function the Hairpins are already basically done as the closing basepair is removed here. For Internals we need a second step as this removes only one of their two closing base pairs.
     for id in idr: #The second closing basepair is removed in part2.
         list_of_nucleotide_lists=[]
@@ -159,7 +160,6 @@ def Writing_sequences(hl,il,bl,cl_d): #Takes in the tuple lists for all loops, b
             file.write(entry+"\n")
     return 0
 
-
 ####### Sub-functions #######
 
 def internals_chain_check(listed_instance): #Takes a list of Nucleotides, checks if the two Parts of the Internal Loop are parts of different Chains and if they are finds the break based on the chains.
@@ -175,7 +175,7 @@ def internals_chain_check(listed_instance): #Takes a list of Nucleotides, checks
         return False,Two_Chains_Break #If length of the checklist is 1 that means there is only 1 chain, returning a false value for the Chainsbool prompting the algorithm to look for the break based on nucleotide positions 
     else:                             #Instead of taking the Chain Break based on the chains.
         return True,Two_Chains_Break
-        
+
 def Find_break(listed_instance):
     Pos_list=[]
     for nucleotide in listed_instance:
@@ -197,7 +197,10 @@ def Building_sequences_ib_il(First,Second): #This Function takes a Internal Loop
         Bulge=False
     Alpha=Building_sequences_base(First)
     Beta=Building_sequences_base(Second)
-    sequence=Alpha+"$"+Beta
+    if Bulge == True:
+        sequence=Alpha+Beta
+    else:
+        sequence=Alpha+"$"+Beta
     return sequence,Bulge
 
 def Building_sequences_base(loop): #Base function that takes a nucleotide list and extracts the base sequence and returns it as a string. This is used in its base form for hairpins as these are already useable like that,
@@ -218,8 +221,6 @@ def Output_prep(Sequence_list,id_abbreviation_dict): #Takes in a list of tuples 
         seqs.append(Rev_String)
     seqs_set=set(seqs)
     return seqs_set
-
-
 
 if __name__ == "__main__":
     hairpin_path,internal_path,loops_path=get_filepaths() #finds the filepaths to /Data/hl_ , /Data/il_ , /Data/Loop_List
