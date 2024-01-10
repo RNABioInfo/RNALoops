@@ -7,3 +7,9 @@ Misc/Applications/RNAMotifs/Loops/**
 string.o
 string.d
 Benchmark/*
+.vscode/*
+*.cc
+*.d
+*.o
+*.hh
+*.mf

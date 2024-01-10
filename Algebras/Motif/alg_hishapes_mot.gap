@@ -1,4 +1,4 @@
-//Helix center algebras as defined by Jiabin Huang (Freiburg)
+//Helix center algebras as defined by Jiabin Huang (Freiburg), motified by Marius Sbeke (Stuttgart)
 algebra alg_hishape_h_mot implements sig_foldrna(alphabet = char, answer = Rope) {
   Rope sadd(Subsequence b,Rope e) {
     Rope emptyShape;

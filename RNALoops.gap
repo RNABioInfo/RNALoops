@@ -25,7 +25,7 @@ include "Algebras/DotBracket/alg_dotBracket.gap" //Pretty without the motifs in 
 include "Algebras/Pfunc/alg_pfunc_macrostate.gap"
 include "Algebras/Motif/alg_motif.gap" //Algebra alg_motif working with grammar macrostate
 include "Algebras/Motif/alg_pretty.gap" //Algebra alg_pretty working with grammar macrostate
-include "Algebras/Motif/alg_motshapes.gap" // "Motified" shapes algebra including motifs
+include "Algebras/Motif/alg_shapes_mot.gap" // "Motified" shapes algebra including motifs
 include "Algebras/Motif/alg_hishapes_mot.gap" // "Motified" hishapes algebras
 
 //Grammars
