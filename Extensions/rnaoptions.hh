@@ -306,7 +306,7 @@ class Opts {
         << "   to the minimal and maximal pairwise identities "
         << "of the sequences in the" << std::endl
         << "   alignment. Default is [0]" << std::endl << std::endl
-        << "-q <int-value> Set shape abstraction level [5]" << std::endl
+        << "-q <int-value> Set shape abstraction level [1-5]" << std::endl
         << std::endl
         << "-u <int-value> 1 = allow lonely base pairs, "
         << "0 = don't allow them [0]" << std::endl << std::endl
@@ -315,7 +315,7 @@ class Opts {
         << "for dot plots, aka. outside computation." << std::endl
         << "   0 = consensus, 1 = most informative sequence" << std::endl
         << std::endl
-        << "-Q <1,2,3> Select motif mode: 1 = BGSU, 2 = RFAM, 3 = BOFFA" << std::endl
+        << "-Q <1,2,3> Select motif mode: 1 = BGSU, 2 = RFAM, 3 = Both" << std::endl
         << std::endl
         << "-h, --help Print this help." << std::endl << std::endl
         << " (-[drk] [0-9]+)*" << std::endl << std::endl

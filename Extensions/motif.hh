@@ -24,7 +24,8 @@ static bool initialized3;
 static int Databa;
 static int Databa2;
 static int Databa3;
-inline static int motif() {
+//This reads in the -Q arguemnt, choosing which database to use for motif predictions; 1 = BGSU, 2 = RMFam, 3 = both
+inline static int Database() {
     return gapc::Opts::getOpts()->motifs;
 }
 //Split function that allows me to split my input strings from they xx+yy form into v[0]="xx" and v[1]="yy" splitting the sequences from the 
@@ -48,11 +49,9 @@ inline HashMap globalMap_Hairpins(HashMap x, int DB) {
     while (getline (infile, Line)) {
         std::vector<std::string> v = split(Line,'+');
         std::string key = v[0];
-        std::string prevalue = v[1];
-        char value[prevalue.length()+1];
-        strcpy(value,prevalue.c_str());
-        char value2=value[0];
-        x[key]=value2;
+        char value[v[1].length()+1];
+        strcpy(value,v[1].c_str());
+        x[key]=value[0];
     }
     return x;
 }
@@ -66,11 +65,9 @@ inline HashMap globalMap_Internals(HashMap x, int DB) {
     while (getline (Data2, Line)) {
         std::vector<std::string> v = split(Line,'+');
         std::string key = v[0];
-        std::string prevalue = v[1];
-        char value[prevalue.length()+1];
-        strcpy(value,prevalue.c_str());
-        char value2=value[0];
-        x[key]=value2;
+        char value[v[1].length()+1];
+        strcpy(value,v[1].c_str());
+        x[key]=value[0];
     }
     return x;
 }
@@ -84,11 +81,9 @@ inline HashMap globalMap_Bulges(HashMap x, int DB) {
     while (getline (Data3, Line)) {
         std::vector<std::string> v = split(Line,'+');
         std::string key = v[0];
-        std::string prevalue = v[1];
-        char value[prevalue.length()+1];
-        strcpy(value,prevalue.c_str());
-        char value2=value[0];
-        x[key]=value2;
+        char value[v[1].length()+1];
+        strcpy(value,v[1].c_str());
+        x[key]=value[0];
     }
     return x;
 }
@@ -147,7 +142,7 @@ inline char identify_motif(const Basic_Subsequence<char, unsigned int> &a) {
     char res = '.';
     if (!initialized){
         initialized = true;
-        int Databa = motif();
+        int Databa = Database();
         HairpinHashMap = globalMap_Hairpins(HairpinHashMap,Databa);
     }
     std::string Motif;
@@ -164,7 +159,7 @@ inline char identify_motif(const Basic_Subsequence<char, unsigned int> &a, const
     char res = '.';
     if (!initialized2){
         initialized2 = true;
-        int Databa2 = motif();
+        int Databa2 = Database();
         InternalHashMap = globalMap_Internals(InternalHashMap,Databa2);
     }   
     std::string Motif;
@@ -181,7 +176,111 @@ inline char identify_motif_b(const Basic_Subsequence<char, unsigned int> &a) {
     char res = '.';
     if (!initialized3){
         initialized3 = true;
-        int Databa3 = motif();
+        int Databa3 = Database();
+        BulgeHashMap = globalMap_Bulges(BulgeHashMap,Databa3);
+    }
+    std::string Motif;
+    Motif = InputManagement(a); //Jedes mal wenn die Funktion aufgerufen wird, wird erst res erstellt und dann Input Management gerufen um die Basic_Subsequence zu verarbeiten
+    //std::cout << Motif << std::endl;
+    if(BulgeHashMap.find(Motif) == BulgeHashMap.end()) {
+        return res;
+    }   else {
+            res = BulgeHashMap[Motif];
+            return res;
+    }
+}
+//Overloaded Motif function in shape version, only real difference here being that the base res character is '_' instead of '.' as this is the depiction used by the shape implementation
+//the three _shape versions of the identify_motif functions are only used with shape levels 1 and 2 though, before that the shapes are too abstract to contain the extensions character '_'.
+inline char identify_motif_shape(const Basic_Subsequence<char, unsigned int> &a) {
+    char res = '_';
+    if (!initialized){
+        initialized = true;
+        int Databa = Database();
+        HairpinHashMap = globalMap_Hairpins(HairpinHashMap,Databa);
+    }
+    std::string Motif;
+    Motif = InputManagement(a); 
+    if(HairpinHashMap.find(Motif) == HairpinHashMap.end()) {
+        return res;
+    }   
+    else {
+            res = HairpinHashMap[Motif];
+            return res;
+    }
+}
+inline char identify_motif_shape(const Basic_Subsequence<char, unsigned int> &a, const Basic_Subsequence<char, unsigned int> &b) {
+    char res = '_';
+    if (!initialized2){
+        initialized2 = true;
+        int Databa2 = Database();
+        InternalHashMap = globalMap_Internals(InternalHashMap,Databa2);
+    }   
+    std::string Motif;
+    Motif = InputManagement2(a,b); //Jedes mal wenn die Funktion aufgerufen wird, wird erst res erstellt und dann Input Management gerufen um die Basic_Subsequence zu verarbeiten
+    if(InternalHashMap.find(Motif) == InternalHashMap.end()) {
+        return res;
+    }
+    else {
+        res = InternalHashMap[Motif];
+        return res;
+    }
+}
+inline char identify_motif_b_shape(const Basic_Subsequence<char, unsigned int> &a) {
+    char res = '_';
+    if (!initialized3){
+        initialized3 = true;
+        int Databa3 = Database();
+        BulgeHashMap = globalMap_Bulges(BulgeHashMap,Databa3);
+    }
+    std::string Motif;
+    Motif = InputManagement(a); //Jedes mal wenn die Funktion aufgerufen wird, wird erst res erstellt und dann Input Management gerufen um die Basic_Subsequence zu verarbeiten
+    //std::cout << Motif << std::endl;
+    if(BulgeHashMap.find(Motif) == BulgeHashMap.end()) {
+        return res;
+    }   else {
+            res = BulgeHashMap[Motif];
+            return res;
+    }
+}
+inline char identify_motif_hishape(const Basic_Subsequence<char, unsigned int> &a) {
+    char res = '\0';
+    if (!initialized){
+        initialized = true;
+        int Databa = Database();
+        HairpinHashMap = globalMap_Hairpins(HairpinHashMap,Databa);
+    }
+    std::string Motif;
+    Motif = InputManagement(a); 
+    if(HairpinHashMap.find(Motif) == HairpinHashMap.end()) {
+        return res;
+    }   
+    else {
+            res = HairpinHashMap[Motif];
+            return res;
+    }
+}
+inline char identify_motif_hishape(const Basic_Subsequence<char, unsigned int> &a, const Basic_Subsequence<char, unsigned int> &b) {
+    char res = '\0';
+    if (!initialized2){
+        initialized2 = true;
+        int Databa2 = Database();
+        InternalHashMap = globalMap_Internals(InternalHashMap,Databa2);
+    }   
+    std::string Motif;
+    Motif = InputManagement2(a,b); //Jedes mal wenn die Funktion aufgerufen wird, wird erst res erstellt und dann Input Management gerufen um die Basic_Subsequence zu verarbeiten
+    if(InternalHashMap.find(Motif) == InternalHashMap.end()) {
+        return res;
+    }
+    else {
+        res = InternalHashMap[Motif];
+        return res;
+    }
+}
+inline char identify_motif_b_hishape(const Basic_Subsequence<char, unsigned int> &a) {
+    char res = '\0';
+    if (!initialized3){
+        initialized3 = true;
+        int Databa3 = Database();
         BulgeHashMap = globalMap_Bulges(BulgeHashMap,Databa3);
     }
     std::string Motif;

@@ -1,5 +1,5 @@
 //Helix center algebras as defined by Jiabin Huang (Freiburg)
-algebra alg_hishape_h implements sig_foldrna(alphabet = char, answer = Rope) {
+algebra alg_hishape_h_mot implements sig_foldrna(alphabet = char, answer = Rope) {
   Rope sadd(Subsequence b,Rope e) {
     Rope emptyShape;
     Rope res;
@@ -89,10 +89,13 @@ algebra alg_hishape_h implements sig_foldrna(alphabet = char, answer = Rope) {
   Rope hl(Subsequence lb,Subsequence region,Subsequence rb) {
     Rope res;
     int pos;
+    char mot;
     pos = (lb.i+rb.j+1)/2;
     if ( pos*2 > lb.i+rb.j+1 ) pos = pos - 1;  
     append(res, pos);
     if ( pos*2 != lb.i+rb.j+1 ) append(res, ".5", 2);
+    mot = identify_motif_hishape(region);
+    append(res,mot);
     append(res, ',');
     return res;
   }
@@ -184,7 +187,7 @@ algebra alg_hishape_h implements sig_foldrna(alphabet = char, answer = Rope) {
   }
 }
 
-algebra alg_hishape_m extends alg_hishape_h {
+algebra alg_hishape_m_mot extends alg_hishape_h_mot {
   Rope ml(Subsequence lb,Rope e,Subsequence rb) {
     Rope res;       
     append(res, e);
@@ -316,9 +319,10 @@ algebra alg_hishape_m extends alg_hishape_h {
   }
 }
 
-algebra alg_hishape_b extends alg_hishape_m {
+algebra alg_hishape_b_mot extends alg_hishape_m_mot {
   Rope bl(Subsequence lb,Subsequence lregion,Rope e,Subsequence rb) {
     Rope res;
+    char mot;
     append(res, e);
     int pos;
     pos = (lb.i+rb.j+1)/2;
@@ -326,12 +330,15 @@ algebra alg_hishape_b extends alg_hishape_m {
     append(res, pos);
     if ( pos*2 != lb.i+rb.j+1 ) append(res, ".5", 2);
     append(res, 'b');
+    mot = identify_motif_b_hishape(lregion);
+    append(res,mot);
     append(res, ',');
     return res;    
   }
   
   Rope br(Subsequence lb,Rope e,Subsequence rregion,Subsequence rb) {
     Rope res;
+    char mot;
     append(res, e);
     int pos;
     pos = (lb.i+rb.j+1)/2;
@@ -339,19 +346,24 @@ algebra alg_hishape_b extends alg_hishape_m {
     append(res, pos);
     if ( pos*2 != lb.i+rb.j+1 ) append(res, ".5", 2);
     append(res, 'b');
+    mot = identify_motif_b_hishape(rregion);
+    append(res,mot);
     append(res, ',');
     return res;    
   }
 
   Rope il(Subsequence lb,Subsequence lregion,Rope e,Subsequence rregion,Subsequence rb) {
     Rope res;
+    char mot;
     append(res, e);
     int pos;
     pos = (lb.i+rb.j+1)/2;
     if ( pos*2 > lb.i+rb.j+1 ) pos = pos - 1;  
     append(res, pos);
     if ( pos*2 != lb.i+rb.j+1 ) append(res, ".5", 2);
-    append(res, 'i'); //Change by Marius Sebeke, in the fold-grammars version the algebra appends a 'b' even for internal loops. 
+    append(res, 'i');
+    mot = identify_motif_hishape(lregion,rregion);
+    append(res,mot);
     append(res, ',');
     return res;    
   }

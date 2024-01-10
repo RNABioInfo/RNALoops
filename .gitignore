@@ -6,3 +6,4 @@ Misc/Applications/RNAMotifs/Data/il_*
 Misc/Applications/RNAMotifs/Loops/**
 string.o
 string.d
+Benchmark/*
