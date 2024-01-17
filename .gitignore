@@ -1,9 +1,6 @@
 out
 out_main.*
 out.*
-Misc/Applications/RNAMotifs/Data/hl_*
-Misc/Applications/RNAMotifs/Data/il_*
-Misc/Applications/RNAMotifs/Loops/**
 string.o
 string.d
 Benchmark/*

@@ -48,11 +48,13 @@ instance motshape3 = gra_macrostate((alg_shape3_mot*alg_mfe)*alg_pretty);
 instance motshape4 = gra_macrostate((alg_shape4_mot*alg_mfe)*alg_pretty);
 instance motshape5 = gra_macrostate((alg_shape5_mot*alg_mfe)*alg_pretty);
 instance motshapeX = gra_macrostate((alg_shapeX_mot*alg_mfe)*alg_pretty);
+instance motshapeX_pfc = gra_macrostate(alg_shapeX_mot*alg_pfunc);
 
 //(mot)hishapes
 instance mothishapes_h = gra_macrostate((alg_hishape_h_mot*alg_mfe)*alg_pretty);
 instance mothishapes_m = gra_macrostate((alg_hishape_m_mot*alg_mfe)*alg_pretty);
 instance mothishapes_b = gra_macrostate((alg_hishape_b_mot*alg_mfe)*alg_pretty);
+instance mothishapes_b_pfc = gra_macrostate(alg_hishape_b_mot*alg_pfunc);
 
 instance motpfc = gra_macrostate(alg_motif*alg_pfunc);
 instance motmfepretty = gra_macrostate ((alg_motif * alg_mfe) * alg_pretty);

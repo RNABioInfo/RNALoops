@@ -25,6 +25,7 @@ import json
 from collections import Counter
 import requests
 
+Reverse=False# THIS BOOL IS IMPORTANT IT DECIDES WHETHER TO OUTPUT HAS THE REVERSED VERSIONS OF ALL MOTIFS (3'->5') IN THEM. IF THIS IS SET TO FALSE THEN ONLY THE STANDARD BGSU MOTIF VERSIONS (5'->3') ARE USED.
 
 ##### Functions #####
 
@@ -90,7 +91,7 @@ def API(ida_d): #Function that actually executes the API calls. Takes the API ca
                     decoded_response=response.content.decode()
                     response_list.append(decoded_response)
                 else:
-                    sleep(1)
+                    sleep(5)
         id_response_dict[id]=response_list
     return id_response_dict
 
@@ -135,10 +136,10 @@ def API_postprocess_part2(idn): #This function takes in the already worked on id
                 Hairpin_sequences.append(Result_tuple)
     return Hairpin_sequences,Internal_sequences,Bulge_sequences
 
-def Writing_sequences(hl,il,bl,cl_d): #Takes in the tuple lists for all loops, builds lists of strings in the Final formatting. Before writing checks if the files already exist and deletes them if they do. 
-    hl_seqs=Output_prep(hl,cl_d)      #Finally writes all the sequences into the specified files (this isn't split yet since I haven't found a convenient way to not hardcode the paths and this way they're at least all together)
-    il_seqs=Output_prep(il,cl_d)
-    bl_seqs=Output_prep(bl,cl_d)
+def Writing_sequences(hl,il,bl,cl_d,Rev): #Takes in the tuple lists for all loops, builds lists of strings in the Final formatting. Before writing checks if the files already exist and deletes them if they do. 
+    hl_seqs=Output_prep(hl,cl_d,Rev)      #Finally writes all the sequences into the specified files (this isn't split yet since I haven't found a convenient way to not hardcode the paths and this way they're at least all together)
+    il_seqs=Output_prep(il,cl_d,Rev)
+    bl_seqs=Output_prep(bl,cl_d,Rev)
     filename  = inspect.getframeinfo(inspect.currentframe()).filename
     path      = os.path.dirname(os.path.abspath(filename))
     hl_path=path+"/Loops/HairpinMotifs.csv"
@@ -211,14 +212,15 @@ def Building_sequences_base(loop): #Base function that takes a nucleotide list a
     sequence="".join(sequence)
     return sequence
 
-def Output_prep(Sequence_list,id_abbreviation_dict): #Takes in a list of tuples (sequence,Loop_ID) and makes it into a set of the sequences with their single latter abbreviation with the following format: sequence+Abbreviation (e.g. GUGA+4)
+def Output_prep(Sequence_list,id_abbreviation_dict,Rev_bool): #Takes in a list of tuples (sequence,Loop_ID) and makes it into a set of the sequences with their single latter abbreviation with the following format: sequence+Abbreviation (e.g. GUGA+4)
     seqs=[]
     for tuple in Sequence_list:
         String=tuple[0]+"+"+str(id_abbreviation_dict[tuple[1]])
-        Rev=tuple[0][::-1]
-        Rev_String=Rev+"+"+str(id_abbreviation_dict[tuple[1]])
+        if Rev_bool == True:
+            Rev=tuple[0][::-1]
+            Rev_String=Rev+"+"+str(id_abbreviation_dict[tuple[1]])
+            seqs.append(Rev_String)
         seqs.append(String)
-        seqs.append(Rev_String)
     seqs_set=set(seqs)
     return seqs_set
 
@@ -230,4 +232,4 @@ if __name__ == "__main__":
     idr_dict=API(idapi_dict) #Maps IDs to a List of all their API responses
     idn_dict=API_postprocess_part1(idr_dict) #Half the postprocessing done, hairpin ids now only have the motif nucleotides. Still have to get rid of the second closing basepair for internal loops in part2
     HL,IL,BL=API_postprocess_part2(idn_dict)#Finishes the postprocessing, takes out the second closing base pair for Internals and Bulge loops and sorts all sequences into their respective category (hl,il,bl) returns lists of sequence strings
-    Writing_sequences(HL,IL,BL,curated_loops_dict) #Finalizes the sequences by adding the single letter abbreviations to the strings and writes the sequences to the dedicated files in ./Loops/
+    Writing_sequences(HL,IL,BL,curated_loops_dict,Reverse) #Finalizes the sequences by adding the single letter abbreviations to the strings and writes the sequences to the dedicated files in ./Loops/
