@@ -134,6 +134,7 @@ class Opts {
     const char* probing_modifier;
     const char* probing_normalization;
     int motifs;
+    int reversed;
 #ifdef CHECKPOINTING_INTEGRATED
     size_t checkpoint_interval;  // default interval: 3600s (1h)
     boost::filesystem::path  checkpoint_out_path;  // default path: cwd
@@ -178,6 +179,7 @@ class Opts {
             probing_modifier("unknown"),
             probing_normalization("centroid"),
             motifs(1),
+            reversed(1),
     #ifdef CHECKPOINTING_INTEGRATED
             checkpoint_interval(DEFAULT_CHECKPOINT_INTERVAL),
             checkpoint_out_path(boost::filesystem::current_path()),
@@ -315,7 +317,8 @@ class Opts {
         << "for dot plots, aka. outside computation." << std::endl
         << "   0 = consensus, 1 = most informative sequence" << std::endl
         << std::endl
-        << "-Q <1,2,3> Select motif mode: 1 = BGSU, 2 = RFAM, 3 = Both" << std::endl
+        << "-Q <1,2,3> Select motif source: 1 = BGSU, 2 = RFAM, 3 = Both" << std::endl
+        << "-b <1,2,3> Select if motifs are only forward (1), only reverse (2) or both (3)"
         << std::endl
         << "-h, --help Print this help." << std::endl << std::endl
         << " (-[drk] [0-9]+)*" << std::endl << std::endl
@@ -410,7 +413,7 @@ class Opts {
          * (centroid, RNAstructure, logplain, asProbabilities)
          */
         "S:A:B:M:N:"
-        "hd:r:k:p:I:KO:Q:", long_opts, nullptr)) != -1) {
+        "hd:r:k:p:I:KO:Q:b:", long_opts, nullptr)) != -1) {
       switch (o) {
       case 'f':
         {
@@ -534,6 +537,8 @@ class Opts {
         break;
       case 'Q':
         motifs = std::atoi(optarg);
+      case 'b':
+        reversed = std::atoi(optarg);
         break;
       case 'a':
         consensusType = std::atoi(optarg);
@@ -661,7 +666,10 @@ class Opts {
                          "(=consensus) or 1 (=mis).");
     }
     if (motifs < 1 || motifs > 3) {
-      throw OptException("Choose Motif mode between 1 and 3");
+      throw OptException("Choose motif mode between 1 and 3");
+    }
+    if (reversed < 1 || reversed > 3) {
+      throw OptException("Choose reverse mode between 1 and 3");
     }
     if (strcmp(dotPlotFilename, "\0") == 0) {
       dotPlotFilename = "./dotPlot.ps";

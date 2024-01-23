@@ -24,10 +24,14 @@ static bool initialized3;
 static int Databa;
 static int Databa2;
 static int Databa3;
+static int Rev;
+static int Rev2;
+static int Rev3;
 //This reads in the -Q arguemnt, choosing which database to use for motif predictions; 1 = BGSU, 2 = RMFam, 3 = both
-inline static int Database() {
-    return gapc::Opts::getOpts()->motifs;
-}
+inline static int Database() {return gapc::Opts::getOpts()->motifs;}
+
+inline static int Reverse()  {return gapc::Opts::getOpts()->reversed;}
+
 //Split function that allows me to split my input strings from they xx+yy form into v[0]="xx" and v[1]="yy" splitting the sequences from the 
 inline std::vector<std::string> split (const std::string &s, char delim){
     std::vector<std::string> result;
@@ -38,13 +42,24 @@ inline std::vector<std::string> split (const std::string &s, char delim){
     }
     return result;   
 }
-//HashMap implementation functions for all three loop types in the macrostate grammar.
-inline HashMap globalMap_Hairpins(HashMap x, int DB) {
+
+//HashMap implementation functions for all three loop types in the macrostate grammar.DB =Database, which one gets used 1=BGSU, 2=RMFAM, 3 = bot // R = Reverse, 1= No Reverses, 2 = Only Reverses, 3 = Both Reverse and Forward
+inline HashMap globalMap_Hairpins(HashMap x, int DB, int R) {
     std::string Line;
     const char* dab;
-    if (DB == 1){dab = "Misc/Applications/RNAMotifs/Loops/HairpinMotifs.csv";}
-        else if(DB == 2){dab ="Misc/Applications/RNAMotifs/Loops/HairpinRMFAM.csv";}
-            else{dab ="Misc/Applications/RNAMotifs/Loops/HairpinALL.csv";}
+    if (R == 1){
+        if(DB == 1){dab = "Misc/Applications/RNAMotifs/Loops/Hairpins/BGSU_forward.csv";}
+            else if(DB == 2){dab ="Misc/Applications/RNAMotifs/Loops/Hairpins/RMFAM_forward.csv";}
+                else{dab ="Misc/Applications/RNAMotifs/Loops/Hairpins/ALL_forward.csv";}}
+    else if(R == 2){
+        if (DB == 1){dab = "Misc/Applications/RNAMotifs/Loops/Hairpins/BGSU_reverse.csv";}
+            else if(DB == 2){dab ="Misc/Applications/RNAMotifs/Loops/Hairpins/RMFAM_reverse.csv";}
+                else{dab ="Misc/Applications/RNAMotifs/Loops/Hairpins/ALL_reverse.csv";}}
+    else{
+        if(DB == 1){dab = "Misc/Applications/RNAMotifs/Loops/Hairpins/BGSU_both.csv";}
+            else if(DB == 2){dab ="Misc/Applications/RNAMotifs/Loops/Hairpins/RMFAM_both.csv";}
+                else{dab ="Misc/Applications/RNAMotifs/Loops/Hairpins/ALL_both.csv";}}
+
     std::ifstream infile(dab);
     while (getline (infile, Line)) {
         std::vector<std::string> v = split(Line,'+');
@@ -55,12 +70,22 @@ inline HashMap globalMap_Hairpins(HashMap x, int DB) {
     }
     return x;
 }
-inline HashMap globalMap_Internals(HashMap x, int DB) {
+
+inline HashMap globalMap_Internals(HashMap x, int DB, int R) {
     std::string Line;
     const char* dab2;
-    if (DB == 1){dab2 = "Misc/Applications/RNAMotifs/Loops/InternalMotifs.csv";}
-        else if(DB == 2){dab2 ="Misc/Applications/RNAMotifs/Loops/InternalRMFAM.csv";}
-            else{dab2 ="Misc/Applications/RNAMotifs/Loops/InternalALL.csv";}
+    if(R == 1){
+        if (DB == 1){dab2 = "Misc/Applications/RNAMotifs/Loops/Internals/BGSU_forward.csv";}
+            else if(DB == 2){dab2 ="Misc/Applications/RNAMotifs/Loops/Internals/RMFAM_forward.csv";}
+                else{dab2 ="Misc/Applications/RNAMotifs/Loops/Internals/ALL_forward.csv";}}
+    else if(R == 2){
+        if(DB == 1){dab2 = "Misc/Applications/RNAMotifs/Loops/Internals/BGSU_reverse.csv";}
+            else if(DB == 2){dab2 ="Misc/Applications/RNAMotifs/Loops/Internals/RMFAM_reverse.csv";}
+                else{dab2 ="Misc/Applications/RNAMotifs/Loops/Internals/ALL_reverse.csv";}}
+    else{
+        if (DB == 1){dab2 = "Misc/Applications/RNAMotifs/Loops/Internals/BGSU_both.csv";}
+            else if(DB == 2){dab2 ="Misc/Applications/RNAMotifs/Loops/Internals/RMFAM_both.csv";}
+                else{dab2 ="Misc/Applications/RNAMotifs/Loops/Internals/ALL_both.csv";}}
     std::ifstream Data2(dab2);
     while (getline (Data2, Line)) {
         std::vector<std::string> v = split(Line,'+');
@@ -71,12 +96,22 @@ inline HashMap globalMap_Internals(HashMap x, int DB) {
     }
     return x;
 }
-inline HashMap globalMap_Bulges(HashMap x, int DB) {
+
+inline HashMap globalMap_Bulges(HashMap x, int DB, int R) {
     std::string Line;
     const char* dab3;
-    if (DB == 1){dab3 = "Misc/Applications/RNAMotifs/Loops/BulgeMotifs.csv";}
-        else if(DB == 2){dab3 ="Misc/Applications/RNAMotifs/Loops/BulgeRMFAM.csv";}
-            else{dab3 ="Misc/Applications/RNAMotifs/Loops/BulgeALL.csv";}
+    if(R == 1){
+        if (DB == 1){dab3 = "Misc/Applications/RNAMotifs/Loops/Bulges/BGSU_forward.csv";}
+        else if(DB == 2){dab3 ="Misc/Applications/RNAMotifs/Loops/Bulges/RMFAM_forward.csv";}
+        else{dab3 ="Misc/Applications/RNAMotifs/Loops/Bulges/ALL_forward.csv";}}
+    else if(R == 2){
+        if (DB == 1){dab3 = "Misc/Applications/RNAMotifs/Loops/Bulges/BGSU_reverse.csv";}
+        else if(DB == 2){dab3 ="Misc/Applications/RNAMotifs/Loops/Bulges/RMFAM_reverse.csv";}
+        else{dab3 ="Misc/Applications/RNAMotifs/Loops/Bulges/ALL_reverse.csv";}}
+    else{
+    if (DB == 1){dab3 = "Misc/Applications/RNAMotifs/Loops/Bulges/BGSU_both.csv";}
+        else if(DB == 2){dab3 ="Misc/Applications/RNAMotifs/Loops/Bulges/RMFAM_both.csv";}
+        else{dab3 ="Misc/Applications/RNAMotifs/Loops/Bulges/ALL_both.csv";}}
     std::ifstream Data3(dab3);
     while (getline (Data3, Line)) {
         std::vector<std::string> v = split(Line,'+');
@@ -87,6 +122,7 @@ inline HashMap globalMap_Bulges(HashMap x, int DB) {
     }
     return x;
 }
+
 //Input Manipulation Function, allowing for ONE RNA Basic_Subsequence inputs to be converted to the HashMap Key Formatting
 inline std::string InputManagement(const Basic_Subsequence<char,unsigned int> &a) {
     std::string Motif;//Motif is initialized to later be the carrier of the actual sequence which is returned and later used to find the Motif in the HashMap
@@ -105,6 +141,7 @@ inline std::string InputManagement(const Basic_Subsequence<char,unsigned int> &a
     }
     return Motif; //Return the Motif string, correctly formatted for the HashMap
 }
+
 //Input Manipulation allowing for TWO RNA Basic_Subsequence inputs to be converted to the HashMap Key formatting
 inline std::string InputManagement2(const Basic_Subsequence<char, unsigned int> &a, const Basic_Subsequence<char, unsigned int> &b) {
     std::string Motif1, Motif2, Motif;//Same as the Standard Version, except both sequences are converted to String first to then be connected via "$" sign
@@ -137,13 +174,15 @@ inline std::string InputManagement2(const Basic_Subsequence<char, unsigned int> 
     Motif = Motif1 + "$" + Motif2;
     return Motif; //Return the Motif string, correctly formatted for the HashMap
 }
+
 //Overloaded identify_motif functions, two identify_motif for Hairpins and Internal Loops respectively while identify_motif_b is for bulge loops
 inline char identify_motif(const Basic_Subsequence<char, unsigned int> &a) {
     char res = '.';
     if (!initialized){
         initialized = true;
         int Databa = Database();
-        HairpinHashMap = globalMap_Hairpins(HairpinHashMap,Databa);
+        int Rev    = Reverse();
+        HairpinHashMap = globalMap_Hairpins(HairpinHashMap,Databa,Rev);
     }
     std::string Motif;
     Motif = InputManagement(a); 
@@ -155,12 +194,14 @@ inline char identify_motif(const Basic_Subsequence<char, unsigned int> &a) {
             return res;
     }
 }
+
 inline char identify_motif(const Basic_Subsequence<char, unsigned int> &a, const Basic_Subsequence<char, unsigned int> &b) {
     char res = '.';
     if (!initialized2){
         initialized2 = true;
         int Databa2 = Database();
-        InternalHashMap = globalMap_Internals(InternalHashMap,Databa2);
+        int Rev2    = Reverse();
+        InternalHashMap = globalMap_Internals(InternalHashMap,Databa2,Rev2);
     }   
     std::string Motif;
     Motif = InputManagement2(a,b); //Jedes mal wenn die Funktion aufgerufen wird, wird erst res erstellt und dann Input Management gerufen um die Basic_Subsequence zu verarbeiten
@@ -172,12 +213,14 @@ inline char identify_motif(const Basic_Subsequence<char, unsigned int> &a, const
         return res;
     }
 }
+
 inline char identify_motif_b(const Basic_Subsequence<char, unsigned int> &a) {
     char res = '.';
     if (!initialized3){
         initialized3 = true;
         int Databa3 = Database();
-        BulgeHashMap = globalMap_Bulges(BulgeHashMap,Databa3);
+        int Rev3    = Reverse();
+        BulgeHashMap = globalMap_Bulges(BulgeHashMap,Databa3,Rev3);
     }
     std::string Motif;
     Motif = InputManagement(a); //Jedes mal wenn die Funktion aufgerufen wird, wird erst res erstellt und dann Input Management gerufen um die Basic_Subsequence zu verarbeiten
@@ -189,6 +232,7 @@ inline char identify_motif_b(const Basic_Subsequence<char, unsigned int> &a) {
             return res;
     }
 }
+
 //Overloaded Motif function in shape version, only real difference here being that the base res character is '_' instead of '.' as this is the depiction used by the shape implementation
 //the three _shape versions of the identify_motif functions are only used with shape levels 1 and 2 though, before that the shapes are too abstract to contain the extensions character '_'.
 inline char identify_motif_shape(const Basic_Subsequence<char, unsigned int> &a) {
@@ -196,7 +240,8 @@ inline char identify_motif_shape(const Basic_Subsequence<char, unsigned int> &a)
     if (!initialized){
         initialized = true;
         int Databa = Database();
-        HairpinHashMap = globalMap_Hairpins(HairpinHashMap,Databa);
+        int Rev    = Reverse();
+        HairpinHashMap = globalMap_Hairpins(HairpinHashMap,Databa,Rev);
     }
     std::string Motif;
     Motif = InputManagement(a); 
@@ -208,12 +253,14 @@ inline char identify_motif_shape(const Basic_Subsequence<char, unsigned int> &a)
             return res;
     }
 }
+
 inline char identify_motif_shape(const Basic_Subsequence<char, unsigned int> &a, const Basic_Subsequence<char, unsigned int> &b) {
     char res = '_';
     if (!initialized2){
         initialized2 = true;
         int Databa2 = Database();
-        InternalHashMap = globalMap_Internals(InternalHashMap,Databa2);
+         int Rev2    = Reverse();
+        InternalHashMap = globalMap_Internals(InternalHashMap,Databa2,Rev2);
     }   
     std::string Motif;
     Motif = InputManagement2(a,b); //Jedes mal wenn die Funktion aufgerufen wird, wird erst res erstellt und dann Input Management gerufen um die Basic_Subsequence zu verarbeiten
@@ -225,12 +272,14 @@ inline char identify_motif_shape(const Basic_Subsequence<char, unsigned int> &a,
         return res;
     }
 }
+
 inline char identify_motif_b_shape(const Basic_Subsequence<char, unsigned int> &a) {
     char res = '_';
     if (!initialized3){
         initialized3 = true;
         int Databa3 = Database();
-        BulgeHashMap = globalMap_Bulges(BulgeHashMap,Databa3);
+        int Rev3    = Reverse();
+        BulgeHashMap = globalMap_Bulges(BulgeHashMap,Databa3,Rev3);
     }
     std::string Motif;
     Motif = InputManagement(a); //Jedes mal wenn die Funktion aufgerufen wird, wird erst res erstellt und dann Input Management gerufen um die Basic_Subsequence zu verarbeiten
@@ -242,12 +291,14 @@ inline char identify_motif_b_shape(const Basic_Subsequence<char, unsigned int> &
             return res;
     }
 }
+
 inline char identify_motif_hishape(const Basic_Subsequence<char, unsigned int> &a) {
     char res = '\0';
     if (!initialized){
         initialized = true;
         int Databa = Database();
-        HairpinHashMap = globalMap_Hairpins(HairpinHashMap,Databa);
+        int Rev    = Reverse();
+        HairpinHashMap = globalMap_Hairpins(HairpinHashMap,Databa,Rev);
     }
     std::string Motif;
     Motif = InputManagement(a); 
@@ -259,12 +310,14 @@ inline char identify_motif_hishape(const Basic_Subsequence<char, unsigned int> &
             return res;
     }
 }
+
 inline char identify_motif_hishape(const Basic_Subsequence<char, unsigned int> &a, const Basic_Subsequence<char, unsigned int> &b) {
     char res = '\0';
     if (!initialized2){
         initialized2 = true;
         int Databa2 = Database();
-        InternalHashMap = globalMap_Internals(InternalHashMap,Databa2);
+        int Rev2    = Reverse();
+        InternalHashMap = globalMap_Internals(InternalHashMap,Databa2,Rev2);
     }   
     std::string Motif;
     Motif = InputManagement2(a,b); //Jedes mal wenn die Funktion aufgerufen wird, wird erst res erstellt und dann Input Management gerufen um die Basic_Subsequence zu verarbeiten
@@ -276,12 +329,14 @@ inline char identify_motif_hishape(const Basic_Subsequence<char, unsigned int> &
         return res;
     }
 }
+
 inline char identify_motif_b_hishape(const Basic_Subsequence<char, unsigned int> &a) {
     char res = '\0';
     if (!initialized3){
         initialized3 = true;
         int Databa3 = Database();
-        BulgeHashMap = globalMap_Bulges(BulgeHashMap,Databa3);
+        int Rev3    = Reverse();
+        BulgeHashMap = globalMap_Bulges(BulgeHashMap,Databa3,Rev3);
     }
     std::string Motif;
     Motif = InputManagement(a); //Jedes mal wenn die Funktion aufgerufen wird, wird erst res erstellt und dann Input Management gerufen um die Basic_Subsequence zu verarbeiten

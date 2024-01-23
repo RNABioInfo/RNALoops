@@ -6,10 +6,10 @@
 #in a folder with two other folders: A ./Data/ folder that contains three different files:
 #1. hl_x.xx.json 2. il_x.xx.json 3. Loop_List.txt
 #1 and 2 are the downloadable .json files from the BGSU database, specifically this program was written
-#when the third iteration of the BGSU was around, so later versions might brake this based on different structures
+#when the third iteration of the BGSU was around, so later versions might break this based on different structures
 # in the .json or a changes in the API returns. The third file, Loop_List.txt, specifies the selected loops that 
 #the user wants to have the sequences written in .csv file for usage with our RNALoops.gap.
-#The sequences are written to the second important folder, which fould be ./Loops, this folder is the place the .csv files
+#The sequences are written to the second important folder, which would be ./Loops, this folder is the place the .csv files
 #are written to and for this reason has to exist as I have to still implement a check for whether the folder exists.
 #For additional information on the Loop_List.txt, refer to the relevant_loops(path_to_loops) function or reach out to me.
 #WRITTEN ON 28.09.2023 BY MARIUS SEBEKE AS PART OF THE RNALOOPS PROJECT, FOR QUESTIONS REACH OUT TO:  marius.sebeke@ibmg.uni-stuttgart.de 
@@ -24,15 +24,13 @@ from time import sleep
 import json
 from collections import Counter
 import requests
-
-Reverse=False# THIS BOOL IS IMPORTANT IT DECIDES WHETHER TO OUTPUT HAS THE REVERSED VERSIONS OF ALL MOTIFS (3'->5') IN THEM. IF THIS IS SET TO FALSE THEN ONLY THE STANDARD BGSU MOTIF VERSIONS (5'->3') ARE USED.
+import sys
 
 ##### Functions #####
 
 def get_filepaths(): #Finds the paths to the directory where this python file is stored ("something/something/RNALoops/Extensions/RNAMotifs") and then builds the paths to the necessary downloadable json files from the BGSU 
     filename  = inspect.getframeinfo(inspect.currentframe()).filename
     path      = os.path.dirname(os.path.abspath(filename))
-    print(path)
     data_path = path+"/Data/*"
     file_list=glob.glob(data_path)
     hairpins_re=re.compile(".*hl_")
@@ -137,32 +135,71 @@ def API_postprocess_part2(idn): #This function takes in the already worked on id
     return Hairpin_sequences,Internal_sequences,Bulge_sequences
 
 def Writing_sequences(hl,il,bl,cl_d,Rev): #Takes in the tuple lists for all loops, builds lists of strings in the Final formatting. Before writing checks if the files already exist and deletes them if they do. 
-    hl_seqs=Output_prep(hl,cl_d,Rev)      #Finally writes all the sequences into the specified files (this isn't split yet since I haven't found a convenient way to not hardcode the paths and this way they're at least all together)
-    il_seqs=Output_prep(il,cl_d,Rev)
-    bl_seqs=Output_prep(bl,cl_d,Rev)
+    hl_seqs,hl_revseqs=Output_prep(hl,cl_d) #Finally writes all the sequences into the specified files (this isn't split yet since I haven't found a convenient way to not hardcode the paths and this way they're at least all together)
+    hl_bothseqs=hl_seqs.union(hl_revseqs)
+    il_seqs,il_revseqs=Output_prep(il,cl_d)
+    il_bothseqs=il_seqs.union(il_revseqs)
+    bl_seqs,bl_revseqs=Output_prep(bl,cl_d)
+    bl_bothseqs=bl_seqs.union(bl_revseqs)
     filename  = inspect.getframeinfo(inspect.currentframe()).filename
     path      = os.path.dirname(os.path.abspath(filename))
-    hl_path=path+"/Loops/HairpinMotifs.csv"
-    il_path=path+"/Loops/InternalMotifs.csv"
-    bl_path=path+"/Loops/BulgeMotifs.csv"
-    if os.path.isfile(hl_path) == True:
-        os.remove(hl_path)
-        os.remove(il_path)
-        os.remove(bl_path)
-    else:pass
-    with open(hl_path,"x") as file:
-        for entry in hl_seqs:
-            file.write(entry+"\n")
-    with open(il_path,"x") as file:
-        for entry in il_seqs:
-            file.write(entry+"\n")
-    with open(bl_path,"x") as file:
-        for entry in bl_seqs:
-            file.write(entry+"\n")
+    if Rev == "1":
+        hl_path = path + "/Loops/Hairpins/BGSU_forward.csv"
+        il_path = path + "/Loops/Internals/BGSU_forward.csv"
+        bl_path = path + "/Loops/Bulges/BGSU_forward.csv"
+        remove_previous_files(hl_path,il_path,bl_path)
+        write_new_files(hl_path, il_path, bl_path, hl_seqs, il_seqs, bl_seqs)     
+    if Rev == "2":
+        hl_path = path + "/Loops/Hairpins/BGSU_reverse.csv"
+        il_path = path + "/Loops/Internals/BGSU_reverse.csv"
+        bl_path = path + "/Loops/Bulges/BGSU_reverse.csv"
+        remove_previous_files(hl_path,il_path,bl_path)
+        write_new_files(hl_path, il_path, bl_path, hl_revseqs, il_revseqs, bl_revseqs)       
+    if Rev == "3":
+        hl_path = path + "Loops/Hairpins/BGSU_both.csv"
+        il_path = path + "Loops/Internals/BGSU_both.csv"
+        bl_path = path + "Loops/Bulges/BGSU_both.csv"
+        remove_previous_files(hl_path,il_path,bl_path)
+        write_new_files(hl_path, il_path, bl_path, hl_bothseqs, il_bothseqs, bl_bothseqs)      
+    if Rev == "4":
+        hl_path  = path + "/Loops/Hairpins/BGSU_forward.csv"
+        hl_path2 = path + "/Loops/Hairpins/BGSU_reverse.csv"
+        hl_path3 = path + "/Loops/Hairpins/BGSU_both.csv"      
+        il_path  = path + "/Loops/Internals/BGSU_forward.csv"
+        il_path2 = path + "/Loops/Internals/BGSU_reverse.csv"
+        il_path3 = path + "/Loops/Internals/BGSU_both.csv"
+        bl_path  = path + "/Loops/Bulges/BGSU_forward.csv"
+        bl_path2 = path + "/Loops/Bulges/BGSU_reverse.csv"
+        bl_path3 = path + "/Loops/Bulges/BGSU_both.csv"
+        remove_previous_files(hl_path,il_path,bl_path)
+        remove_previous_files(hl_path2,il_path2,bl_path2)
+        remove_previous_files(hl_path3,il_path3,bl_path3)
+        write_new_files(hl_path ,il_path ,bl_path ,hl_seqs    ,il_seqs    ,bl_seqs)
+        write_new_files(hl_path2,il_path2,bl_path2,hl_revseqs ,il_revseqs ,bl_revseqs)
+        write_new_files(hl_path3,il_path3,bl_path3,hl_bothseqs,il_bothseqs,bl_bothseqs)
+    else: print("Please choose a Reverse Parameter of 1 through 4, see Rev param description for more information")
     return 0
 
 ####### Sub-functions #######
 
+def remove_previous_files(hl_p,il_p,bl_p):
+    if os.path.isfile(hl_p) == True:
+        os.remove(hl_p)
+        os.remove(il_p)
+        os.remove(bl_p)
+    else:pass
+    
+def write_new_files(hl_p,il_p,bl_p,hl_s,il_s,bl_s):
+    with open(hl_p,"x") as file:
+        for entry in hl_s:
+            file.write(entry+"\n")
+    with open(il_p,"x") as file:
+        for entry in il_s:
+            file.write(entry+"\n")
+    with open(bl_p,"x") as file:
+        for entry in bl_s:
+            file.write(entry+"\n")
+             
 def internals_chain_check(listed_instance): #Takes a list of Nucleotides, checks if the two Parts of the Internal Loop are parts of different Chains and if they are finds the break based on the chains.
     checklist=[]
     for nucleotide in listed_instance:
@@ -212,19 +249,21 @@ def Building_sequences_base(loop): #Base function that takes a nucleotide list a
     sequence="".join(sequence)
     return sequence
 
-def Output_prep(Sequence_list,id_abbreviation_dict,Rev_bool): #Takes in a list of tuples (sequence,Loop_ID) and makes it into a set of the sequences with their single latter abbreviation with the following format: sequence+Abbreviation (e.g. GUGA+4)
+def Output_prep(Sequence_list,id_abbreviation_dict): #Takes in a list of tuples (sequence,Loop_ID) and makes it into a set of the sequences with their single latter abbreviation with the following format: sequence+Abbreviation (e.g. GUGA+4)
     seqs=[]
+    revseqs=[]
     for tuple in Sequence_list:
         String=tuple[0]+"+"+str(id_abbreviation_dict[tuple[1]])
-        if Rev_bool == True:
-            Rev=tuple[0][::-1]
-            Rev_String=Rev+"+"+str(id_abbreviation_dict[tuple[1]])
-            seqs.append(Rev_String)
+        Rev=tuple[0][::-1]
+        Rev_String=Rev+"+"+str(id_abbreviation_dict[tuple[1]])
         seqs.append(String)
+        revseqs.append(Rev_String)
     seqs_set=set(seqs)
-    return seqs_set
+    revseqs_set=set(revseqs)
+    return seqs_set,revseqs_set
 
 if __name__ == "__main__":
+    Reverse=sys.argv[1] #decides motif reverse mode, 1 only forward motifs are written, 2 only backwards motifs are written 3, both forward and reverse, 4 = all at once
     hairpin_path,internal_path,loops_path=get_filepaths() #finds the filepaths to /Data/hl_ , /Data/il_ , /Data/Loop_List
     curated_loops_dict=relevant_loops(loops_path) #Dict connecting all relevant IDs to their single letter abbreviations
     idmotif_dict=get_loop_ids(hairpin_path,internal_path) #Dict connceting all IDs to all their its motif instances
