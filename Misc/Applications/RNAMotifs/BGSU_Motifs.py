@@ -1,8 +1,6 @@
 ###################### READ BEFORE STARTING THE PROGRAM##############################
-#
-#This program was written to work in the RNALoops folder downloadable from my GitHub page
-#MSebeke. File paths are made in a way that assumes that the program is located in the
-#RNALoops folder but can be ran from anywhere. The important part is that it is located
+#File paths are made in a way that assumes that the program is located in the
+#RNALoops folder but can be ran from anywhere. It is important this algorithm is located
 #in a folder with two other folders: A ./Data/ folder that contains three different files:
 #1. hl_x.xx.json 2. il_x.xx.json 3. Loop_List.txt
 #1 and 2 are the downloadable .json files from the BGSU database, specifically this program was written
@@ -263,7 +261,7 @@ def Output_prep(Sequence_list,id_abbreviation_dict): #Takes in a list of tuples 
     return seqs_set,revseqs_set
 
 if __name__ == "__main__":
-    Reverse=sys.argv[1] #decides motif reverse mode, 1 only forward motifs are written, 2 only backwards motifs are written 3, both forward and reverse, 4 = all at once
+    Reverse=sys.argv[1] #decides motif reverse mode, 1 only forward motifs are written, 2 only backwards motifs are written 3, both forward and reverse, 4 = all at once, this is kinda useless since I always want all of them dont I? Might aswell update everything at once. So just always add 4 at the end of the call!
     hairpin_path,internal_path,loops_path=get_filepaths() #finds the filepaths to /Data/hl_ , /Data/il_ , /Data/Loop_List
     curated_loops_dict=relevant_loops(loops_path) #Dict connecting all relevant IDs to their single letter abbreviations
     idmotif_dict=get_loop_ids(hairpin_path,internal_path) #Dict connceting all IDs to all their its motif instances

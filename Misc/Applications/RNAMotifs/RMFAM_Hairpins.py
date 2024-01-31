@@ -45,11 +45,18 @@ def load_internals(path_sr1,path_sr2,path_kturn1,path_kturn2,path_cloop): #I sta
     cloop_file=load_stk(path_cloop)
     return sr1_file,sr2_file,kturn1_file,kturn2_file,cloop_file
 
+def get_sequences_sr1(sr1_file):#Yeah i kept trying it with the Internals but this really aint working, might need to do it for paper release anyways but the heterogenous nature of the .stk files makes it really impractical.
+    for entry in sr1_file:
+        motpos=entry._per_col_annotations['secondary_structure'].index("[")
+        motpos2=entry._per_col_annotations['secondary_structure'].index("]")
+        for seq in entry._records:
+            print(seq.seq[motpos:motpos+4]+"$"+seq.seq[motpos2:motpos2+5])
+        print(entry._per_col_annotations['secondary_structure'])
+
 def reverse_internals(path_to_forward_internals,path_to_reverse_internals, path_to_both_internals):
     if os.path.isfile(path_to_reverse_internals) == True:
         os.remove(path_to_reverse_internals)
         os.remove(path_to_both_internals)
-        
     with open(path_to_forward_internals,"r") as input_file:
         for line in input_file:
             split_line=line.split("+")
@@ -60,9 +67,9 @@ def reverse_internals(path_to_forward_internals,path_to_reverse_internals, path_
                     output_file1.write(reverse_seq_abb)
             with open(path_to_both_internals,"a") as output_file2:
                     output_file2.write(line)
-                    output_file2.write(reverse_seq_abb)               
+                    output_file2.write(reverse_seq_abb) 
     return 0
-            
+
 def remove_old_files(hl_f,hl_r,hl_b):
     if os.path.isfile(hl_f) == True:
         os.remove(hl_f)
@@ -70,6 +77,7 @@ def remove_old_files(hl_f,hl_r,hl_b):
         os.remove(hl_b)
 
 if __name__ == "__main__":
+    #sr1,sr2,kturn1,kturn2,cloop=load_internals("Misc/Applications/RNAMotifs/Data/RM00018.stockholm.txt","Misc/Applications/RNAMotifs/Data/RM00019.stockholm.txt","Misc/Applications/RNAMotifs/Data/RM00010.stockholm.txt","Misc/Applications/RNAMotifs/Data/RM00011.stockholm.txt","Misc/Applications/RNAMotifs/Data/RM00003.stockholm.txt")
     reverse_internals("/home/ubuntu/RNALoops/Misc/Applications/RNAMotifs/Loops/Internals/RMFAM_forward.csv","/home/ubuntu/RNALoops/Misc/Applications/RNAMotifs/Loops/Internals/RMFAM_reverse.csv","/home/ubuntu/RNALoops/Misc/Applications/RNAMotifs/Loops/Internals/RMFAM_both.csv")
     tloops_stk,gnra_stk,uncg_stk=load_hairpins("Misc/Applications/RNAMotifs/Data/RM00024.stockholm.txt","Misc/Applications/RNAMotifs/Data/RM00008.stockholm.txt","Misc/Applications/RNAMotifs/Data/RM00029.stockholm.txt")
     tloops=get_sequences_hairpins(tloops_stk,21,30)

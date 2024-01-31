@@ -42,7 +42,6 @@ def combine_to_ALL(source):
     return motif_list
 
 def write_to_csv(source_list,cwd,path):
-    print(path)
     dupe_check(source_list)
     file_path2=cwd+path
     if os.path.isfile(file_path2) == True:
