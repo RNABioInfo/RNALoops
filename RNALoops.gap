@@ -58,5 +58,5 @@ instance mothishapes_b_pfc = gra_macrostate(alg_hishape_b_mot*alg_pfunc);
 
 instance motpfc = gra_macrostate(alg_motif*alg_pfunc);
 instance motmfepretty = gra_macrostate ((alg_motif * alg_mfe) * alg_pretty);
-//instance motmfepretty_subopt = gra_macrostate ((alg_motif * alg_mfe_subopt) * alg_pretty); //Gives a lot more suboptimal results for each class than normal mfe, takes a lot longer to run
+instance motmfepretty_subopt = gra_macrostate ((alg_motif * alg_mfe_subopt) * alg_pretty); //run with -e 1.0 max, otherwise runtime gets very long and structure output very large
 //instance motmfedotBracket = gra_macrostate ((alg_motif * alg_mfe) * alg_dotBracket);

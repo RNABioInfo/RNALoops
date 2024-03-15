@@ -81,11 +81,15 @@
 	if (shapelevel() <= 3) {
 		shape_t res;
 		append(res, shape_t(openParen));
+		char mot;
 		if (shapelevel() <= 2) { 
-			char mot;
 			mot = identify_motif_b_shape(lregion);
 			append(res, mot); 
 			}
+		else{
+			mot = identify_motif_b_hishape(lregion);
+			append(res,mot);
+		}
 		append(res, x);
 		append(res, shape_t(closeParen));
 		return res;
@@ -99,11 +103,15 @@
 		shape_t res;
 		append(res, shape_t(openParen));
 		append(res, x);
+		char mot;
 		if (shapelevel() <= 2) { 
-			char mot;
 			mot = identify_motif_b_shape(rregion);
 			append(res, mot);
 			}
+		else{
+			mot = identify_motif_b_hishape(rregion);
+			append(res,mot);
+		}
 		append(res, shape_t(closeParen));
 		return res;
 	} else {
@@ -120,11 +128,19 @@
 			mot = identify_motif_shape(lregion, rregion);
 			append(res, mot); 
 			}
+		else {
+			mot = identify_motif_hishape(lregion,rregion);
+			append(res,mot);
+		}
 		append(res, x);
 		if (shapelevel() <= 2) { 
 			mot = identify_motif_shape(lregion,rregion);
 			append(res, mot);
 			}
+		else {
+			mot = identify_motif_hishape(lregion,rregion);
+			append(res,mot);
+		}
 		append(res, shape_t(closeParen));
 		return res;
 	} else {

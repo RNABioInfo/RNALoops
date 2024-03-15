@@ -22,8 +22,8 @@ from time import sleep
 import json
 from collections import Counter
 import requests
+import operator
 import sys
-
 ##### Functions #####
 
 def get_filepaths(): #Finds the paths to the directory where this python file is stored ("something/something/RNALoops/Extensions/RNAMotifs") and then builds the paths to the necessary downloadable json files from the BGSU 
@@ -178,6 +178,123 @@ def Writing_sequences(hl,il,bl,cl_d,Rev): #Takes in the tuple lists for all loop
     else: print("Please choose a Reverse Parameter of 1 through 4, see Rev param description for more information")
     return 0
 
+#For adding non bulged sequences, BGSU has both versions available, one in their downloadable json files as well as the full sequences from the API. From 05-02-2024 on im trying with adding but versions of each sequence? Maybe I get better results then.
+
+class Motif:
+    def __init__(self,num_instances,num_nucleotides,alignment,motif_id,chainbreak,bp_signature):
+        self.num_instances=num_instances
+        self.num_nucleotides=num_nucleotides
+        self.alignment=alignment
+        self.motif_id=motif_id
+        self.chainbreak=int(chainbreak)
+        self.bp_signature=bp_signature
+        
+    def add_nucleotides(self):
+        Nucleos={}
+        for key_id in self.alignment:
+            new_nucleotides=[]
+            nucleotide=self.alignment[key_id]
+            for nuc in nucleotide:
+                split_nuc=nuc.split("|")
+                Nuced=Nucleotide(split_nuc[0],split_nuc[1],split_nuc[2],split_nuc[3],split_nuc[4])
+                new_nucleotides.append(Nuced)
+            Nucleos[key_id]=new_nucleotides
+        self.alignment_classd = Nucleos
+
+    def pop_cww(self):
+        for instance in self.alignment_classd:
+            self.alignment_classd[instance].pop(0) #pop opening cWW nucleotide
+            self.alignment_classd[instance].pop(-1) #pop closing cWW nucleotide
+            
+    def get_sequence_il(self):
+        allseqs=[]
+        orderings=[]
+        res=operator.attrgetter("residue")
+        pos=operator.attrgetter("position") #For some reason the sequences in the downloadable json file are not all in the right nucleotide position order??? So i have to order them by hand, since otherwise the chainbreak wont fit
+        for instance in self.alignment_classd:
+            if pos(self.alignment_classd[instance][0]) > pos(self.alignment_classd[instance][-1]):
+                orderings.append(2)
+            else:orderings.append(1)
+            seq=[]
+            for nucleotide in self.alignment_classd[instance]:
+                seq.append(res(nucleotide))
+                joined_seq="".join(seq)
+            allseqs.append(joined_seq)
+        return allseqs,orderings
+
+    def get_sequence(self):
+        allseqs=[]
+        res=operator.attrgetter("residue")
+        for instance in self.alignment_classd:
+            seq=[]
+            for nucleotide in self.alignment_classd[instance]:
+                seq.append(res(nucleotide))
+                joined_seq="".join(seq)
+            allseqs.append(joined_seq)
+        return allseqs
+
+    def unbulged_sequences(self,seq_list):
+        self.no_bulges=seq_list
+
+    def unbulged_sequences_reverse(self,seq_list):
+        self.no_bulges_reverse=seq_list
+
+class Nucleotide:
+    def __init__(self,pdb_id,model_number,chain_id,residue,position):
+        self.pdb_id=pdb_id
+        self.model_number=model_number
+        self.chain_id=chain_id
+        self.residue=residue
+        self.position=int(position)
+
+def json_2_motif(json_list):
+    motified_list=[]
+    for entry in json_list:
+        motified=Motif(entry["num_instances"],entry["num_nucleotides"],entry["alignment"],entry["motif_id"],entry["chainbreak"],entry["bp_signature"])
+        Motif.add_nucleotides(motified)
+        motified_list.append(motified)
+    return motified_list
+
+def load_json(hairpin_path,loops): #I noticed that for a lot of the motifs I am missing the "basic" Literature sequences that are associated with them, this comes from using only the API sequences which contain bulged nucleotides I think.
+    with open(hairpin_path,"r") as file:
+        read_file=file.read()
+    json_list=json.loads(read_file)
+    jsons=[x for x in json_list if x["motif_id"][:-2] in loops.keys()]
+    return jsons
+
+def hairpin_json_sequences(mot_hairpins):
+    for entry in mot_hairpins:
+        reverse_seqs=[]
+        Motif.pop_cww(entry)
+        seqs=Motif.get_sequence(entry) #Gives list versions of non bulged sequences from the .json file for hairpins, need to join and write to output csv files
+        Motif.unbulged_sequences(entry,set(seqs))
+        for seq in seqs:
+            revseq=seq[::-1]
+            reverse_seqs.append(revseq)
+        Motif.unbulged_sequences_reverse(entry,set(reverse_seqs))
+        
+def internal_json_sequences(mot_internals):
+    for entry in mot_internals:
+        sequence_list=[]
+        rev_sequence_list=[]
+        seqs,order=Motif.get_sequence_il(entry)
+        for i in range(len(seqs)):
+            chain1=seqs[i][1:entry.chainbreak-1] #literally just pop first and last nucleotide on both chains and you have the non bulged sequences, easy
+            chain2=seqs[i][entry.chainbreak+1:-1]
+            if len(chain1) == 0 or len(chain2) == 0:
+                seq="".join(chain1)+"".join(chain2)
+                sequence_list.append(seq)
+            else:
+                if order[i] == 1:
+                    seq="".join(chain1)+"$"+"".join(chain2)
+                    print(seq)
+                else:
+                    seq="".join(chain2)+"$"+"".join(chain1)
+                    print(seq)
+                sequence_list.append(seq)
+            rev_sequence_list.append(seq[::-1])
+        Motif.unbulged_sequences(entry,set(sequence_list))
+        Motif.unbulged_sequences_reverse(entry,set(rev_sequence_list))
 ####### Sub-functions #######
 
 def remove_previous_files(hl_p,il_p,bl_p):
@@ -260,13 +377,82 @@ def Output_prep(Sequence_list,id_abbreviation_dict): #Takes in a list of tuples 
     revseqs_set=set(revseqs)
     return seqs_set,revseqs_set
 
+def Add_non_bulged_sequences(hairpins,internals,loops):
+    hairpin_jsons=load_json(hairpins,loops)
+    internal_jsons=load_json(internals,loops)
+    motified_hairpins=json_2_motif(hairpin_jsons)
+    motified_internals=json_2_motif(internal_jsons)
+    hairpin_json_sequences(motified_hairpins)
+    internal_json_sequences(motified_internals)
+    return motified_hairpins,motified_internals
+
+def Writing_sequences_nobulges(Hairpins,Internals,transdict,Rev):
+    filename  = inspect.getframeinfo(inspect.currentframe()).filename
+    path      = os.path.dirname(os.path.abspath(filename))
+    if Rev == "4":
+        hl_path  = path + "/Loops/Hairpins/BGSU_forward.csv"
+        hl_path2 = path + "/Loops/Hairpins/BGSU_reverse.csv"
+        hl_path3 = path + "/Loops/Hairpins/BGSU_both.csv"      
+        il_path  = path + "/Loops/Internals/BGSU_forward.csv"
+        il_path2 = path + "/Loops/Internals/BGSU_reverse.csv"
+        il_path3 = path + "/Loops/Internals/BGSU_both.csv"
+        bl_path  = path + "/Loops/Bulges/BGSU_forward.csv"
+        bl_path2 = path + "/Loops/Bulges/BGSU_reverse.csv"
+        bl_path3 = path + "/Loops/Bulges/BGSU_both.csv"
+    with open(hl_path,"a") as file:
+        for entry in Hairpins:
+            if transdict[entry.motif_id[:-2]] != "U":
+                for sequence in entry.no_bulges:
+                    file.write(sequence+"+{mot}\n".format(mot=transdict[entry.motif_id[:-2]]))
+    with open(hl_path2,"a") as file:
+        for entry in Hairpins:
+            if transdict[entry.motif_id[:-2]] != "U":
+                for sequence in entry.no_bulges_reverse:
+                    file.write(sequence+"+{mot}\n".format(mot=transdict[entry.motif_id[:-2]]))
+    with open(hl_path3,"a") as file:
+        for entry in Hairpins:
+            if transdict[entry.motif_id[:-2]] != "U":
+                for sequence in entry.no_bulges:
+                    file.write(sequence+"+{mot}\n".format(mot=transdict[entry.motif_id[:-2]]))
+    with open(hl_path3,"a") as file:
+        for entry in Hairpins:
+            if transdict[entry.motif_id[:-2]] != "U":
+                for sequence in entry.no_bulges_reverse:
+                    file.write(sequence+"+{mot}\n".format(mot=transdict[entry.motif_id[:-2]]))
+    for entry in Internals:
+        for sequence in entry.no_bulges:
+            if "$" not in sequence:
+                with open(bl_path,"a") as file:
+                    file.write(sequence+"+{mot}\n".format(mot=transdict[entry.motif_id[:-2]]))
+                with open(bl_path3,"a") as file:
+                    file.write(sequence+"+{mot}\n".format(mot=transdict[entry.motif_id[:-2]]))
+            else:
+                with open(il_path,"a") as file:
+                    file.write(sequence+"+{mot}\n".format(mot=transdict[entry.motif_id[:-2]]))
+                with open(il_path3,"a") as file:
+                    file.write(sequence+"+{mot}\n".format(mot=transdict[entry.motif_id[:-2]]))
+        for sequence in entry.no_bulges_reverse:
+            if "$" not in sequence:
+                with open(bl_path2,"a") as file:
+                    file.write(sequence+"+{mot}\n".format(mot=transdict[entry.motif_id[:-2]]))
+                with open(bl_path3,"a") as file:
+                    file.write(sequence+"+{mot}\n".format(mot=transdict[entry.motif_id[:-2]]))
+            else:
+                with open(il_path2,"a") as file:
+                    file.write(sequence+"+{mot}\n".format(mot=transdict[entry.motif_id[:-2]]))
+                with open(il_path3,"a") as file:
+                    file.write(sequence+"+{mot}\n".format(mot=transdict[entry.motif_id[:-2]]))
+
 if __name__ == "__main__":
     Reverse=sys.argv[1] #decides motif reverse mode, 1 only forward motifs are written, 2 only backwards motifs are written 3, both forward and reverse, 4 = all at once, this is kinda useless since I always want all of them dont I? Might aswell update everything at once. So just always add 4 at the end of the call!
     hairpin_path,internal_path,loops_path=get_filepaths() #finds the filepaths to /Data/hl_ , /Data/il_ , /Data/Loop_List
     curated_loops_dict=relevant_loops(loops_path) #Dict connecting all relevant IDs to their single letter abbreviations
-    idmotif_dict=get_loop_ids(hairpin_path,internal_path) #Dict connceting all IDs to all their its motif instances
-    idapi_dict=API_prep(idmotif_dict,curated_loops_dict) #Dict connecting all relevant IDs to their api calls
-    idr_dict=API(idapi_dict) #Maps IDs to a List of all their API responses
-    idn_dict=API_postprocess_part1(idr_dict) #Half the postprocessing done, hairpin ids now only have the motif nucleotides. Still have to get rid of the second closing basepair for internal loops in part2
-    HL,IL,BL=API_postprocess_part2(idn_dict)#Finishes the postprocessing, takes out the second closing base pair for Internals and Bulge loops and sorts all sequences into their respective category (hl,il,bl) returns lists of sequence strings
-    Writing_sequences(HL,IL,BL,curated_loops_dict,Reverse) #Finalizes the sequences by adding the single letter abbreviations to the strings and writes the sequences to the dedicated files in ./Loops/
+    motH,motI=Add_non_bulged_sequences(hairpin_path,internal_path,curated_loops_dict)
+    print(motI)
+    #idmotif_dict=get_loop_ids(hairpin_path,internal_path) #Dict connceting all IDs to all their its motif instances
+    #idapi_dict=API_prep(idmotif_dict,curated_loops_dict) #Dict connecting all relevant IDs to their api calls
+    #idr_dict=API(idapi_dict) #Maps IDs to a List of all their API responses
+    #idn_dict=API_postprocess_part1(idr_dict) #Half the postprocessing done, hairpin ids now only have the motif nucleotides. Still have to get rid of the second closing basepair for internal loops in part2
+    #HL,IL,BL=API_postprocess_part2(idn_dict)#Finishes the postprocessing, takes out the second closing base pair for Internals and Bulge loops and sorts all sequences into their respective category (hl,il,bl) returns lists of sequence strings
+    #Writing_sequences(HL,IL,BL,curated_loops_dict,Reverse) #Finalizes the sequences by adding the single letter abbreviations to the strings and writes the sequences to the dedicated files in ./Loops/
+    #Writing_sequences_nobulges(motH,motI,curated_loops_dict,Reverse) #This is a lot of not very well written code, but it does what it's supposed to: Add non bulged sequences of all the motifs that have them (U is left out since its inconsistent with the rest of the database and they leave out the N in UNCG for some reason?)
