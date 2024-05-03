@@ -4,7 +4,6 @@ out.*
 string.o
 string.d
 Benchmark/
-Misc/Applications/RNAMotifs/Loops_orig/
 .vscode/*
 *.cc
 *.d

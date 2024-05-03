@@ -90,12 +90,15 @@ algebra alg_hishape_h_mot implements sig_foldrna(alphabet = char, answer = Rope)
     Rope res;
     int pos;
     char mot;
+    char sub = '_';
     pos = (lb.i+rb.j+1)/2;
     if ( pos*2 > lb.i+rb.j+1 ) pos = pos - 1;  
     append(res, pos);
     if ( pos*2 != lb.i+rb.j+1 ) append(res, ".5", 2);
-    mot = identify_motif_hishape(region);
-    append(res,mot);
+    mot = identify_motif(region, sub);
+    if (mot != '_'){
+      append(res,mot);
+    }
     append(res, ',');
     return res;
   }
@@ -323,6 +326,7 @@ algebra alg_hishape_b_mot extends alg_hishape_m_mot {
   Rope bl(Subsequence lb,Subsequence lregion,Rope e,Subsequence rb) {
     Rope res;
     char mot;
+    char sub = '_';
     append(res, e);
     int pos;
     pos = (lb.i+rb.j+1)/2;
@@ -330,8 +334,10 @@ algebra alg_hishape_b_mot extends alg_hishape_m_mot {
     append(res, pos);
     if ( pos*2 != lb.i+rb.j+1 ) append(res, ".5", 2);
     append(res, 'b');
-    mot = identify_motif_b_hishape(lregion);
-    append(res,mot);
+    mot = identify_motif_b(lregion, sub);
+    if (mot != '_'){
+      append(res,mot);
+    }
     append(res, ',');
     return res;    
   }
@@ -339,6 +345,7 @@ algebra alg_hishape_b_mot extends alg_hishape_m_mot {
   Rope br(Subsequence lb,Rope e,Subsequence rregion,Subsequence rb) {
     Rope res;
     char mot;
+    char sub = '_';
     append(res, e);
     int pos;
     pos = (lb.i+rb.j+1)/2;
@@ -346,8 +353,10 @@ algebra alg_hishape_b_mot extends alg_hishape_m_mot {
     append(res, pos);
     if ( pos*2 != lb.i+rb.j+1 ) append(res, ".5", 2);
     append(res, 'b');
-    mot = identify_motif_b_hishape(rregion);
-    append(res,mot);
+    mot = identify_motif_b(rregion, sub);
+        if (mot != '_'){
+      append(res,mot);
+    }
     append(res, ',');
     return res;    
   }
@@ -355,6 +364,7 @@ algebra alg_hishape_b_mot extends alg_hishape_m_mot {
   Rope il(Subsequence lb,Subsequence lregion,Rope e,Subsequence rregion,Subsequence rb) {
     Rope res;
     char mot;
+    char sub;
     append(res, e);
     int pos;
     pos = (lb.i+rb.j+1)/2;
@@ -362,8 +372,10 @@ algebra alg_hishape_b_mot extends alg_hishape_m_mot {
     append(res, pos);
     if ( pos*2 != lb.i+rb.j+1 ) append(res, ".5", 2);
     append(res, 'i');
-    mot = identify_motif_hishape(lregion,rregion);
-    append(res,mot);
+    mot = identify_motif(lregion, rregion, sub);
+        if (mot != '_'){
+      append(res,mot);
+    }
     append(res, ',');
     return res;    
   }

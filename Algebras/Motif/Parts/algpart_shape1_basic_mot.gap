@@ -29,19 +29,22 @@
 
   shape_t bl(Subsequence lb,Subsequence lregion,shape_t e,Subsequence rb) {
     char mot;
-    mot = identify_motif_b_shape(lregion);
+    char sub = '_';
+    mot = identify_motif_b(lregion, sub);
     return shape_t(openParen) + shape_t(mot) + e + shape_t(closeParen);
   }
 
   shape_t br(Subsequence lb,shape_t e,Subsequence rregion,Subsequence rb) {
     char mot;
-    mot = identify_motif_b_shape(rregion);
+    char sub = '_';
+    mot = identify_motif_b(rregion, sub);
     return shape_t(openParen) + e + shape_t(mot) + shape_t(closeParen);
   }
 
   shape_t il(Subsequence lb,Subsequence lregion,shape_t e,Subsequence rregion,Subsequence rb) {
     char mot;
-    mot = identify_motif_shape(lregion,rregion);
+    char sub = '_';
+    mot = identify_motif(lregion, rregion, sub);
     return shape_t(openParen) + shape_t(mot) + e + shape_t(mot) + shape_t(closeParen);
   }
 

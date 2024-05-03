@@ -21,7 +21,8 @@ string sr(Subsequence lb, string e, Subsequence rb) {
 
 string hl(Subsequence f1, Subsequence x, Subsequence f2) {
   string r;
-  char mot = identify_motif(x);
+  char sub = '.';
+  char mot = identify_motif(x, sub);
   if (mot != '.') {
       append(r,mot);
   }
@@ -30,7 +31,8 @@ string hl(Subsequence f1, Subsequence x, Subsequence f2) {
 
 string bl(Subsequence f1, Subsequence x, string e, Subsequence f2) {
   string r;
-  char mot = identify_motif_b(x);
+  char sub = '.';
+  char mot = identify_motif_b(x, sub);
   append(r,e);
   if (mot != '.') {
       append(r,mot);
@@ -40,7 +42,8 @@ string bl(Subsequence f1, Subsequence x, string e, Subsequence f2) {
 
 string br(Subsequence f1, string e, Subsequence x, Subsequence f2) {
   string r;
-  char mot = identify_motif_b(x);
+  char sub = '.';
+  char mot = identify_motif_b(x, sub);
   append(r,e);
   if (mot != '.') {
       append(r,mot);
@@ -50,7 +53,8 @@ string br(Subsequence f1, string e, Subsequence x, Subsequence f2) {
 
 string il(Subsequence f2, Subsequence r1, string x, Subsequence r2, Subsequence f3) {
   string r;
-  char mot = identify_motif(r1,r2);
+  char sub = '.';
+  char mot = identify_motif(r1, r2, sub);
   append(r,x);    
   if (mot != '.') {
       append(r,mot);

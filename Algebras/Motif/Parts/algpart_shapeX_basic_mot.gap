@@ -72,23 +72,31 @@
 
   shape_t hl(Subsequence lb,Subsequence region,Subsequence rb) {
 	char mot;
-	mot = identify_motif(region);
-    return shape_t(openParen) + shape_t(mot) + shape_t(closeParen);
+	char sub = '_';
+	mot = identify_motif(region, sub);
+	if (mot != '_'){
+		return shape_t(openParen) + shape_t(mot) + shape_t(closeParen);
+	}
+	else{
+    return shape_t(openParen) + shape_t(closeParen);
+	}
   }
-
 
   shape_t bl(Subsequence lb,Subsequence lregion,shape_t x,Subsequence rb) {
 	if (shapelevel() <= 3) {
 		shape_t res;
 		append(res, shape_t(openParen));
 		char mot;
+		char sub = '_';		
 		if (shapelevel() <= 2) { 
-			mot = identify_motif_b_shape(lregion);
+			mot = identify_motif_b(lregion, sub);
 			append(res, mot); 
 			}
 		else{
-			mot = identify_motif_b_hishape(lregion);
-			append(res,mot);
+			mot = identify_motif_b(lregion, sub);
+			if (mot != '_'){
+				append(res,mot);
+			}
 		}
 		append(res, x);
 		append(res, shape_t(closeParen));
@@ -104,13 +112,16 @@
 		append(res, shape_t(openParen));
 		append(res, x);
 		char mot;
+		char sub = '_';
 		if (shapelevel() <= 2) { 
-			mot = identify_motif_b_shape(rregion);
+			mot = identify_motif_b(rregion, sub);
 			append(res, mot);
 			}
 		else{
-			mot = identify_motif_b_hishape(rregion);
-			append(res,mot);
+			mot = identify_motif_b(rregion, sub);
+			if (mot != '_'){
+				append(res,mot);
+			}
 		}
 		append(res, shape_t(closeParen));
 		return res;
@@ -124,22 +135,25 @@
 		shape_t res;
 		append(res, shape_t(openParen));
 		char mot;
+		char sub = '_';
 		if (shapelevel() <= 2) {
-			mot = identify_motif_shape(lregion, rregion);
+			mot = identify_motif(lregion, rregion, sub);
 			append(res, mot); 
 			}
 		else {
-			mot = identify_motif_hishape(lregion,rregion);
-			append(res,mot);
+			mot = identify_motif(lregion, rregion, sub);
+			if (mot != '_'){
+				append(res,mot);
+			}
 		}
 		append(res, x);
-		if (shapelevel() <= 2) { 
-			mot = identify_motif_shape(lregion,rregion);
+		if (shapelevel() <= 2) {
 			append(res, mot);
 			}
 		else {
-			mot = identify_motif_hishape(lregion,rregion);
-			append(res,mot);
+			if (mot != '_'){
+				append(res,mot);
+			}
 		}
 		append(res, shape_t(closeParen));
 		return res;

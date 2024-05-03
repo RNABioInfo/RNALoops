@@ -48,8 +48,14 @@
 
   shape_t hl(Subsequence lb,Subsequence region,Subsequence rb) {
     char mot;
-    mot = identify_motif(region);
-    return shape_t(openParen) + shape_t(mot) + shape_t(closeParen);
+    char sub = '_';
+    mot = identify_motif(region, sub);
+    if (mot != '_'){
+      return shape_t(openParen) + shape_t(mot) + shape_t(closeParen);
+    }
+    else {
+      return shape_t(openParen) +  shape_t(closeParen);
+    }
   }
 
 

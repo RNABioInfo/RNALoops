@@ -1,5 +1,4 @@
-//copy of algpart_shape1_macrostate.gap, since I have not yet made changes to any of theses functions anyways. Just duplicated for cleanliness.
-//Might end up changing things around in here though
+//copy of algpart_shape1_macrostate.gap, since I have not yet made changes to any of theses functions yet, might make some down the line.
   
   shape_t cadd_Pr_Pr(shape_t le,shape_t re) {
     return le + tail(re);

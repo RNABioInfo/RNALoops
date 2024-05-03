@@ -59,7 +59,8 @@ string sr(Subsequence lb,string e,Subsequence rb) {
 
 string hl(Subsequence lb,Subsequence region,Subsequence rb) {
   string res;
-  char mot = identify_motif(region);
+  char sub = '.';
+  char mot = identify_motif(region, sub);
   append(res, '(');
   append(res, mot, size(region));
   append(res, ')');
@@ -68,7 +69,8 @@ string hl(Subsequence lb,Subsequence region,Subsequence rb) {
 
 string bl(Subsequence lb,Subsequence lregion,string e,Subsequence rb) {
   string res;
-  char mot = identify_motif_b(lregion);
+  char sub = '.';
+  char mot = identify_motif_b(lregion, sub);
   append(res, '(');
   append(res, mot, size(lregion));
   append(res, e);
@@ -78,7 +80,8 @@ string bl(Subsequence lb,Subsequence lregion,string e,Subsequence rb) {
 
 string br(Subsequence lb,string e,Subsequence rregion,Subsequence rb) {
   string res;
-  char mot = identify_motif_b(rregion);
+  char sub = '.';
+  char mot = identify_motif_b(rregion, sub);
   append(res, '(');
   append(res, e);
   append(res, mot, size(rregion));
@@ -88,8 +91,9 @@ string br(Subsequence lb,string e,Subsequence rregion,Subsequence rb) {
 
 string il(Subsequence lb,Subsequence lregion,string e,Subsequence rregion,Subsequence rb) {
   string res;
+  char sub = '.';
   append(res, '(');
-  char mot = identify_motif(lregion,rregion);
+  char mot = identify_motif(lregion,rregion, sub);
   append(res, mot, size(lregion));
   append(res, e);
   append(res, mot, size(rregion));

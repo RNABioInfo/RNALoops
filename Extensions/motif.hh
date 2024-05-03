@@ -14,24 +14,20 @@
 #include<sstream>
 #include<map>
 #include<mutex>
+#include "motifs/mot_header.h"
 typedef std::unordered_map<std::string, char> HashMap;
 static HashMap HairpinHashMap;
 static HashMap InternalHashMap;
 static HashMap BulgeHashMap;
 static bool initialized;
-static bool initialized2;
-static bool initialized3;
-static int Databa;
-static int Databa2;
-static int Databa3;
-static int Rev;
-static int Rev2;
-static int Rev3;
-//This reads in the -Q arguemnt, choosing which database to use for motif predictions; 1 = BGSU, 2 = RMFam, 3 = both
-inline static int database() {return gapc::Opts::getOpts()->motifs;}
-inline static int reverse()  {return gapc::Opts::getOpts()->reversed;}
+static std::array Hairpins         = {hbgsu_fw, hrfam_fw, hboth_fw, hbgsu_rv, hrfam_rv, hboth_rv, hbgsu_both, hrfam_both, hboth_both};
+static std::array Hairpin_lengths  = {hbgsu_fw_len, hrfam_fw_len, hboth_fw_len, hbgsu_rv_len, hrfam_rv_len, hboth_rv_len, hbgsu_both_len, hrfam_both_len, hboth_both_len};
+static std::array Internals        = {ibgsu_fw, irfam_fw, iboth_fw, ibgsu_rv, irfam_rv, iboth_rv, ibgsu_both, irfam_both, iboth_both};
+static std::array Internal_lengths = {ibgsu_fw_len, irfam_fw_len, iboth_fw_len, ibgsu_rv_len, irfam_rv_len, iboth_rv_len, ibgsu_both_len, irfam_both_len, iboth_both_len};
+static std::array Bulges           = {bbgsu_fw, brfam_fw, bboth_fw, bbgsu_rv, brfam_rv, bboth_rv, bbgsu_both, brfam_both, bboth_both};
+static std::array Bulge_lengths    = {bbgsu_fw_len, brfam_fw_len, bboth_fw_len, bbgsu_rv_len, brfam_rv_len, bboth_rv_len, bbgsu_both_len, brfam_both_len, bboth_both_len};
 
-//Split function that allows me to split my input strings from they xx+yy form into v[0]="xx" and v[1]="yy" splitting the sequences from the 
+//Split function that allows me to split my input strings from they xx,yy form into v[0]="xx" and v[1]="yy" splitting the sequences from their single letter abbreviations
 inline std::vector<std::string> split (const std::string &s, char delim){
     std::vector<std::string> result;
     std::stringstream ss (s);
@@ -43,168 +39,57 @@ inline std::vector<std::string> split (const std::string &s, char delim){
 }
 
 //HashMap implementation functions for all three loop types in the macrostate grammar.DB =database, which one gets used 1=BGSU, 2=RMFAM, 3 = bot // R = reverse, 1= No Reverses, 2 = Only Reverses, 3 = Both reverse and Forward
-inline HashMap globalMap_Hairpins(HashMap x, int DB, int R) {
-    std::string Line;
-    std::string dab;
-    switch(R){
-        case 1:
-            switch(DB){
+inline HashMap Motif_HashMap(HashMap x, std::array<unsigned char* ,9> &arr, std::array<unsigned int,9> len_arr) {
+    std::string str_mot_ar;
+    switch(gapc::Opts::getOpts()->reversed){
+       case 1:     
+           switch(gapc::Opts::getOpts()->motifs){
+               case 1:
+                   str_mot_ar = reinterpret_cast<const char*>(arr[0]), len_arr[0];
+                   break;
+               case 2:
+                   str_mot_ar = reinterpret_cast<const char*>(arr[1]), len_arr[1];
+                   break;
+               case 3:
+                   str_mot_ar = reinterpret_cast<const char*>(arr[2]), len_arr[2];
+                   break;
+                   }
+       break;
+       case 2:
+           switch(gapc::Opts::getOpts()->motifs){
+               case 1:
+                   str_mot_ar = reinterpret_cast<const char*>(arr[3]), len_arr[3];
+                   break;
+               case 2:
+                   str_mot_ar = reinterpret_cast<const char*>(arr[4]), len_arr[4];
+                   break;
+               case 3:
+                   str_mot_ar = reinterpret_cast<const char*>(arr[5]), len_arr[5];
+                   break;
+                   }
+       break;
+       case 3:
+           switch(gapc::Opts::getOpts()->motifs){
                 case 1:
-                    dab = "Misc/Applications/RNAMotifs/Loops/Hairpins/BGSU_forward.csv";
+                    str_mot_ar = reinterpret_cast<const char*>(arr[6]), len_arr[6];
                     break;
                 case 2:
-                    dab ="Misc/Applications/RNAMotifs/Loops/Hairpins/RMFAM_forward.csv";
+                    str_mot_ar = reinterpret_cast<const char*>(arr[7]), len_arr[7];
                     break;
                 case 3:
-                    dab ="Misc/Applications/RNAMotifs/Loops/Hairpins/ALL_forward.csv";
+                    str_mot_ar = reinterpret_cast<const char*>(arr[8]), len_arr[8];
                     break;
-                    }
-        break;
-        case 2:
-            switch(DB){
-                case 1:
-                    dab = "Misc/Applications/RNAMotifs/Loops/Hairpins/BGSU_reverse.csv";
-                    break;
-                case 2:
-                    dab ="Misc/Applications/RNAMotifs/Loops/Hairpins/RMFAM_reverse.csv";
-                    break;
-                case 3:
-                    dab ="Misc/Applications/RNAMotifs/Loops/Hairpins/ALL_reverse.csv";
-                    break;
-                    }
-        break;
-        case 3:
-            switch(DB){
-                    case 1:
-                        dab = "Misc/Applications/RNAMotifs/Loops/Hairpins/BGSU_both.csv";
-                        break;
-                    case 2:
-                        dab ="Misc/Applications/RNAMotifs/Loops/Hairpins/RMFAM_both.csv";
-                        break;
-                    case 3:
-                        dab ="Misc/Applications/RNAMotifs/Loops/Hairpins/ALL_both.csv";
-                        break;
-                    }
-        break;
-    }
-    std::ifstream infile(dab);
-    while (getline (infile, Line)) {
-        std::vector<std::string> v = split(Line,'+');
-        std::string key = v[0];
-        char value[v[1].length()+1];
-        strcpy(value,v[1].c_str());
-        x[key]=value[0];
-    }
-    return x;
-}
-
-inline HashMap globalMap_Internals(HashMap x, int DB, int R) {
-    std::string Line;
-    std::string dab2;
-    switch(R){
-        case 1:
-            switch(DB){
-                case 1:
-                    dab2 = "Misc/Applications/RNAMotifs/Loops/Internals/BGSU_forward.csv";
-                    break;
-                case 2:
-                    dab2 ="Misc/Applications/RNAMotifs/Loops/Internals/RMFAM_forward.csv";
-                    break;
-                case 3:
-                    dab2 ="Misc/Applications/RNAMotifs/Loops/Internals/ALL_forward.csv";
-                    break;
-                    }
-        break;
-        case 2:
-            switch(DB){
-                case 1:
-                    dab2 = "Misc/Applications/RNAMotifs/Loops/Internals/BGSU_reverse.csv";
-                    break;
-                case 2:
-                    dab2 ="Misc/Applications/RNAMotifs/Loops/Internals/RMFAM_reverse.csv";
-                    break;
-                case 3:
-                    dab2 ="Misc/Applications/RNAMotifs/Loops/Internals/ALL_reverse.csv";
-                    break;
-                    }
-        break;
-        case 3:
-            switch(DB){
-                    case 1:
-                        dab2 = "Misc/Applications/RNAMotifs/Loops/Internals/BGSU_both.csv";
-                        break;
-                    case 2:
-                        dab2 ="Misc/Applications/RNAMotifs/Loops/Internals/RMFAM_both.csv";
-                        break;
-                    case 3:
-                        dab2 ="Misc/Applications/RNAMotifs/Loops/Internals/ALL_both.csv";
-                        break;
-                    }
-        break;
-    }
-    std::ifstream Data2(dab2);
-    while (getline (Data2, Line)) {
-        std::vector<std::string> v = split(Line,'+');
-        std::string key = v[0];
-        char value[v[1].length()+1];
-        strcpy(value,v[1].c_str());
-        x[key]=value[0];
-    }
-    return x;
-}
-
-inline HashMap globalMap_Bulges(HashMap x, int DB, int R) {
-    std::string Line;
-    std::string dab3 = "";
-    switch(R){
-        case 1:
-            switch(DB){
-                case 1:
-                    dab3 = "Misc/Applications/RNAMotifs/Loops/Bulges/BGSU_forward.csv";
-                    break;
-                case 2:
-                    dab3 ="Misc/Applications/RNAMotifs/Loops/Bulges/RMFAM_forward.csv";
-                    break;
-                case 3:
-                    dab3 ="Misc/Applications/RNAMotifs/Loops/Bulges/ALL_forward.csv";
-                    break;
-                    }
-        break;
-        case 2:
-            switch(DB){
-                case 1:
-                    dab3 = "Misc/Applications/RNAMotifs/Loops/Bulges/BGSU_reverse.csv";
-                    break;
-                case 2:
-                    dab3 ="Misc/Applications/RNAMotifs/Loops/Bulges/RMFAM_reverse.csv";
-                    break;
-                case 3:
-                    dab3 ="Misc/Applications/RNAMotifs/Loops/Bulges/ALL_reverse.csv";
-                    break;
-                    }
-        break;
-        case 3:
-            switch(DB){
-                    case 1:
-                        dab3 = "Misc/Applications/RNAMotifs/Loops/Bulges/BGSU_both.csv";
-                        break;
-                    case 2:
-                        dab3 ="Misc/Applications/RNAMotifs/Loops/Bulges/RMFAM_both.csv";
-                        break;
-                    case 3:
-                        dab3 ="Misc/Applications/RNAMotifs/Loops/Bulges/ALL_both.csv";
-                        break;
-                    }
-        break;
-    }
-    std::ifstream Data3(dab3);
-    while (getline (Data3, Line)) {
-        std::vector<std::string> v = split(Line,'+');
-        std::string key = v[0];
-        char value[v[1].length()+1];
-        strcpy(value,v[1].c_str());
-        x[key]=value[0];
-    }
+                   }
+       break;
+   }
+   std::string Line;
+   std::istringstream isstream(str_mot_ar);
+   while (std::getline (isstream, Line,'\n')) {
+       std::vector<std::string> v = split(Line,',');
+       char value[v[1].length()];
+       strcpy(value,v[1].c_str());
+       x[v[0]]=value[0];
+   }
     return x;
 }
 
@@ -261,176 +146,54 @@ inline std::string InputManagement2(const Basic_Subsequence<char, unsigned int> 
 }
 
 //Overloaded identify_motif functions, two identify_motif for Hairpins and Internal Loops respectively while identify_motif_b is for bulge loops
-inline char identify_motif(const Basic_Subsequence<char, unsigned int> &a) {
-    char res = '.';
+inline char identify_motif(const Basic_Subsequence<char, unsigned int> &a, char res) {
     if (!initialized){
         initialized = true;
-        int Databa = database();
-        int Rev    = reverse();
-        HairpinHashMap = globalMap_Hairpins(HairpinHashMap,Databa,Rev);
+        HairpinHashMap  = Motif_HashMap(HairpinHashMap, Hairpins, Hairpin_lengths);
+        InternalHashMap = Motif_HashMap(InternalHashMap, Internals, Internal_lengths);
+        BulgeHashMap    = Motif_HashMap(BulgeHashMap, Bulges, Bulge_lengths);
     }
     std::string Motif;
-    Motif = InputManagement(a); 
-    if(HairpinHashMap.find(Motif) == HairpinHashMap.end()) {
-        return res;
-    }   
+    Motif = InputManagement(a);
+    if (auto search = HairpinHashMap.find(Motif); search != HairpinHashMap.end()){
+        return search->second;
+    }
     else {
-            res = HairpinHashMap[Motif];
-            return res;
+        return res;
     }
 }
 
-inline char identify_motif(const Basic_Subsequence<char, unsigned int> &a, const Basic_Subsequence<char, unsigned int> &b) {
-    char res = '.';
-    if (!initialized2){
-        initialized2 = true;
-        int Databa2 = database();
-        int Rev2    = reverse();
-        InternalHashMap = globalMap_Internals(InternalHashMap,Databa2,Rev2);
+inline char identify_motif(const Basic_Subsequence<char, unsigned int> &a, const Basic_Subsequence<char, unsigned int> &b, char res) {
+    if (!initialized){
+        initialized = true;
+        HairpinHashMap  = Motif_HashMap(HairpinHashMap, Hairpins, Hairpin_lengths);
+        InternalHashMap = Motif_HashMap(InternalHashMap, Internals, Internal_lengths);
+        BulgeHashMap    = Motif_HashMap(BulgeHashMap, Bulges, Bulge_lengths);
     }   
     std::string Motif;
     Motif = InputManagement2(a,b); //Jedes mal wenn die Funktion aufgerufen wird, wird erst res erstellt und dann Input Management gerufen um die Basic_Subsequence zu verarbeiten
-    if(InternalHashMap.find(Motif) == InternalHashMap.end()) {
-        return res;
+    if (auto search = InternalHashMap.find(Motif); search != InternalHashMap.end()) {
+        return search->second;
     }
     else {
-        res = InternalHashMap[Motif];
         return res;
     }
 }
 
-inline char identify_motif_b(const Basic_Subsequence<char, unsigned int> &a) {
-    char res = '.';
-    if (!initialized3){
-        initialized3 = true;
-        int Databa3 = database();
-        int Rev3    = reverse();
-        BulgeHashMap = globalMap_Bulges(BulgeHashMap,Databa3,Rev3);
-    }
-    std::string Motif;
-    Motif = InputManagement(a); //Jedes mal wenn die Funktion aufgerufen wird, wird erst res erstellt und dann Input Management gerufen um die Basic_Subsequence zu verarbeiten
-    //std::cout << Motif << std::endl;
-    if(BulgeHashMap.find(Motif) == BulgeHashMap.end()) {
-        return res;
-    }   else {
-            res = BulgeHashMap[Motif];
-            return res;
-    }
-}
-
-//Overloaded Motif function in shape version, only real difference here being that the base res character is '_' instead of '.' as this is the depiction used by the shape implementation
-//the three _shape versions of the identify_motif functions are only used with shape levels 1 and 2 though, before that the shapes are too abstract to contain the extensions character '_'.
-inline char identify_motif_shape(const Basic_Subsequence<char, unsigned int> &a) {
-    char res = '_';
+inline char identify_motif_b(const Basic_Subsequence<char, unsigned int> &a, char res) {
     if (!initialized){
         initialized = true;
-        int Databa = database();
-        int Rev    = reverse();
-        HairpinHashMap = globalMap_Hairpins(HairpinHashMap,Databa,Rev);
-    }
-    std::string Motif;
-    Motif = InputManagement(a); 
-    if(HairpinHashMap.find(Motif) == HairpinHashMap.end()) {
-        return res;
-    }   
-    else {
-            res = HairpinHashMap[Motif];
-            return res;
-    }
-}
-
-inline char identify_motif_shape(const Basic_Subsequence<char, unsigned int> &a, const Basic_Subsequence<char, unsigned int> &b) {
-    char res = '_';
-    if (!initialized2){
-        initialized2 = true;
-        int Databa2 = database();
-         int Rev2    = reverse();
-        InternalHashMap = globalMap_Internals(InternalHashMap,Databa2,Rev2);
-    }   
-    std::string Motif;
-    Motif = InputManagement2(a,b); //Jedes mal wenn die Funktion aufgerufen wird, wird erst res erstellt und dann Input Management gerufen um die Basic_Subsequence zu verarbeiten
-    if(InternalHashMap.find(Motif) == InternalHashMap.end()) {
-        return res;
-    }
-    else {
-        res = InternalHashMap[Motif];
-        return res;
-    }
-}
-
-inline char identify_motif_b_shape(const Basic_Subsequence<char, unsigned int> &a) {
-    char res = '_';
-    if (!initialized3){
-        initialized3 = true;
-        int Databa3 = database();
-        int Rev3    = reverse();
-        BulgeHashMap = globalMap_Bulges(BulgeHashMap,Databa3,Rev3);
+        HairpinHashMap  = Motif_HashMap(HairpinHashMap, Hairpins, Hairpin_lengths);
+        InternalHashMap = Motif_HashMap(InternalHashMap, Internals, Internal_lengths);
+        BulgeHashMap    = Motif_HashMap(BulgeHashMap, Bulges, Bulge_lengths);
     }
     std::string Motif;
     Motif = InputManagement(a); //Jedes mal wenn die Funktion aufgerufen wird, wird erst res erstellt und dann Input Management gerufen um die Basic_Subsequence zu verarbeiten
-    //std::cout << Motif << std::endl;
-    if(BulgeHashMap.find(Motif) == BulgeHashMap.end()) {
-        return res;
-    }   else {
-            res = BulgeHashMap[Motif];
-            return res;
-    }
-}
-
-inline char identify_motif_hishape(const Basic_Subsequence<char, unsigned int> &a) {
-    char res = '\0';
-    if (!initialized){
-        initialized = true;
-        int Databa = database();
-        int Rev    = reverse();
-        HairpinHashMap = globalMap_Hairpins(HairpinHashMap,Databa,Rev);
-    }
-    std::string Motif;
-    Motif = InputManagement(a); 
-    if(HairpinHashMap.find(Motif) == HairpinHashMap.end()) {
-        return res;
-    }   
-    else {
-            res = HairpinHashMap[Motif];
-            return res;
-    }
-}
-
-inline char identify_motif_hishape(const Basic_Subsequence<char, unsigned int> &a, const Basic_Subsequence<char, unsigned int> &b) {
-    char res = '\0';
-    if (!initialized2){
-        initialized2 = true;
-        int Databa2 = database();
-        int Rev2    = reverse();
-        InternalHashMap = globalMap_Internals(InternalHashMap,Databa2,Rev2);
-    }   
-    std::string Motif;
-    Motif = InputManagement2(a,b); //Jedes mal wenn die Funktion aufgerufen wird, wird erst res erstellt und dann Input Management gerufen um die Basic_Subsequence zu verarbeiten
-    if(InternalHashMap.find(Motif) == InternalHashMap.end()) {
-        return res;
+    if (auto search = BulgeHashMap.find(Motif); search != BulgeHashMap.end()) {
+        return search->second;
     }
     else {
-        res = InternalHashMap[Motif];
         return res;
-    }
-}
-
-inline char identify_motif_b_hishape(const Basic_Subsequence<char, unsigned int> &a) {
-    char res = '\0';
-    if (!initialized3){
-        initialized3 = true;
-        int Databa3 = database();
-        int Rev3    = reverse();
-        BulgeHashMap = globalMap_Bulges(BulgeHashMap,Databa3,Rev3);
-    }
-    std::string Motif;
-    Motif = InputManagement(a); //Jedes mal wenn die Funktion aufgerufen wird, wird erst res erstellt und dann Input Management gerufen um die Basic_Subsequence zu verarbeiten
-    //std::cout << Motif << std::endl;
-    if(BulgeHashMap.find(Motif) == BulgeHashMap.end()) {
-        return res;
-    }   else {
-            res = BulgeHashMap[Motif];
-            return res;
     }
 }
 #endif
