@@ -113,14 +113,14 @@ class Process:
                     alg_path=os.path.realpath(root,strict=True)
                     return alg_path#os.path.join(root, name)
                 else:pass
-            raise LookupError("Could not find algorithm.")
+            raise LookupError("Could not find algorithm. Make sure your chosen alrightm is installed within this folder or one of its subfolders.")
         else:
             for root, dirs, files in os.walk(path):
                 if self.algorithm in files:
                     alg_path=os.path.realpath(root,strict=True)
                     return  alg_path#os.path.join(root, self.algorithm)
                 else:pass
-            raise LookupError("Could not find algorithm.")
+            raise LookupError("Could not find algorithm. Make sure your chosen alrightm is installed within this folder or one of its subfolders.")
 
     def call_constructor(self) -> str: #Constructs algorithm calls for goblins to go through with the given sequences
         match self.algorithm: #To be able to leave

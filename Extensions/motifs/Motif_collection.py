@@ -214,6 +214,7 @@ def load_bgsu_json(call:str,alternative:str) ->list: #Tries to download the late
             return json.loads(response.content.decode())
         else:
             i += 1
+    print("Could not establish connection to BGSU servers, resorting to hl_3.81.json and il_3.81.json backup files in /data/ folder.")
     local = load_local_json(alternative)
     return local
 
@@ -292,8 +293,9 @@ def sequences2header(seq_set:list,name:str)->str:
 if __name__ == "__main__":
     motifs=load_jsons()
     for motif in motifs:
-        motif.get_bgsu_sequences()
-        motif.sequence_dict["bgsu_reverse"]=motif.reverse_sequences(motif.sequence_dict["bgsu_sequences"])
+        if len(motif.instances) > 0:
+            motif.get_bgsu_sequences()
+            motif.sequence_dict["bgsu_reverse"]=motif.reverse_sequences(motif.sequence_dict["bgsu_sequences"])
         if len(motif.rfam_ids) > 0: #Just a check for whether the motif is also present in Rfam, indicated by whether there are any rfam ids given in the motif.json file
             motif.get_rfam_sequences()
             motif.sequence_dict["rfam_reverse"]=motif.reverse_sequences(motif.sequence_dict["rfam_sequences"])
