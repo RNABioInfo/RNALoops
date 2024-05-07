@@ -1,4 +1,5 @@
-#A simplified and class based approach to motif collection, hopefully making it less of a mess
+#A simplified and class based approach to motif collection, hopefully making it less of a mess.
+#I recommend setting this up as a cronjob for the the 1 first of each month, as the BGSU is somewhat irregularly updated towards the end of each month.
 from collections import defaultdict
 import json
 import os
@@ -258,7 +259,7 @@ def create_hexdumbs(motif_list:list[Hairpin|Internal]):
             mot.filter_sequences()
             sort_sequences(mot,isequence_dict,"i")
             sort_sequences(mot,bsequence_dict,"b")
-    with open("mot_header.hh","w+") as file:
+    with open(os.path.realpath(__file__)+"/mot_header.hh","w+") as file:
         for key in keys:
             file.write(sequences2header(hsequence_dict[key],"h"+key))
             file.write(sequences2header(isequence_dict[key],"i"+key))

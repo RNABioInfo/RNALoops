@@ -2,7 +2,7 @@ import multiprocessing
 import argparse
 import subprocess
 import os
-from Bio import SeqIO
+from Bio import SeqIO #Bio is the only non standard library that needs to be installed with pip first. All the other imported libraries are based libraries that come with python 3.10 preinstalled.
 import gzip
 import re
 from numpy import mean
@@ -78,7 +78,10 @@ class Process:
             self.log.info('Run: {name}. Input sequence: {seq}'.format(name=self.name,seq=self.input_seq))
 
         #Other Process parameters
-        self.algorithm = commandline_args.algorithm
+        if commandline_args.algorithm == "mothishapes":
+            self.algorithm = commandline_args.algorithm + '_' + commandline_args.p
+        else:
+            self.algorithm = commandline_args.algorithm
 
         self.kvalue = commandline_args.k
 
@@ -94,7 +97,7 @@ class Process:
 
         self.energy = commandline_args.e
 
-        self.algorithm_path = self.find_algorithm_path(os.path.dirname(os.path.realpath(__file__)))
+        self.algorithm_path = self.identify_algorithm(os.path.dirname(os.path.realpath(__file__)))
         
         self.time = commandline_args.time
         
@@ -105,22 +108,36 @@ class Process:
 
         self.log.info('Process created successfully: {Process}'.format(Process=vars(self)))
 
-    def find_algorithm_path(self,path:str) -> str: #Connect find_algorithm_path to call_constructor functions. This way its easier to implement finding the path! FIXME
-        if self.algorithm == 'mothishapes':
-            name = self.algorithm+'_'+self.hishape_mode
-            for root, dirs, files in os.walk(path):
-                if name in files:
-                    alg_path=os.path.realpath(root,strict=True)
-                    return alg_path#os.path.join(root, name)
-                else:pass
-            raise LookupError("Could not find algorithm. Make sure your chosen alrightm is installed within this folder or one of its subfolders.")
-        else:
-            for root, dirs, files in os.walk(path):
+    def identify_algorithm(self,self_path:str) -> str: #Connect find_algorithm_path to call_constructor functions. This way its easier to implement finding the path! FIXME
+        for root, dirs, files in os.walk(self_path):
+            if self.algorithm in files:
+                alg_path=os.path.realpath(root,strict=True)
+                return alg_path#os.path.join(root, self.algorithm)
+            else:pass
+        self.log.error("Algorithm was not found, trying to compile...")
+        Compilation=self.compile_algorithm(self_path)
+        if Compilation:
+            self.log.error("Compilation of {alg} successful.".format(alg=self.algorithm))
+            for root, dirs, files in os.walk(self_path):
                 if self.algorithm in files:
                     alg_path=os.path.realpath(root,strict=True)
-                    return  alg_path#os.path.join(root, self.algorithm)
+                    return alg_path#os.path.join(root, self.algorithm)
                 else:pass
-            raise LookupError("Could not find algorithm. Make sure your chosen alrightm is installed within this folder or one of its subfolders.")
+        else:
+            raise LookupError("Could not find or compile specified algorithm. Please check log with debug level for compilation information. Make sure your chosen alrightm is installed within this folder or one of its subfolders.")
+        
+    def compile_algorithm(self,path:str) ->bool:
+        if self.subopt:
+            compilation_info=subprocess.run("cd {selfpath}; gapc -o {alg}.cc -t --kbacktrace -i {alg} RNALoops.gap; cd Misc/Applications; perl addRNAoptions.pl {selfpath}/{alg}.mf 0; cd ../..; make -f {alg}.mf".format(selfpath=path,alg=self.algorithm),shell=True,stdout=subprocess.PIPE,stderr=subprocess.STDOUT)
+        elif self.algorithm == "motpfc" or self.algorithm == "motshapeX_pfc":
+            compilation_info=subprocess.run("cd {selfpath}; gapc -o {alg}.cc -t --kbest -i {alg} RNALoops.gap; cd Misc/Applications; perl addRNAoptions.pl {selfpath}/{alg}.mf 0; cd ../..; make -f {alg}.mf".format(selfpath=path,alg=self.algorithm),shell=True,stdout=subprocess.PIPE,stderr=subprocess.STDOUT)        
+        else:    
+            compilation_info=subprocess.run("cd {selfpath}; gapc -o {alg}.cc -t --kbacktrace --kbest -i {alg} RNALoops.gap; cd Misc/Applications; perl addRNAoptions.pl {selfpath}/{alg}.mf 0; cd ../..; make -f {alg}.mf".format(selfpath=path,alg=self.algorithm),shell=True,stdout=subprocess.PIPE,stderr=subprocess.STDOUT)
+        self.log.debug(compilation_info.stdout.decode())
+        if compilation_info.returncode: #returncode is 1 when it did not work. This catches unsuccessful attempts
+            return False
+        if not compilation_info.returncode:
+            return True
 
     def call_constructor(self) -> str: #Constructs algorithm calls for goblins to go through with the given sequences
         match self.algorithm: #To be able to leave
