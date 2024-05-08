@@ -364,7 +364,7 @@ algebra alg_hishape_b_mot extends alg_hishape_m_mot {
   Rope il(Subsequence lb,Subsequence lregion,Rope e,Subsequence rregion,Subsequence rb) {
     Rope res;
     char mot;
-    char sub;
+    char sub = '_';
     append(res, e);
     int pos;
     pos = (lb.i+rb.j+1)/2;

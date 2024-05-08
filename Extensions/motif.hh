@@ -113,7 +113,7 @@ inline std::string InputManagement(const Basic_Subsequence<char,unsigned int> &a
 }
 
 //Input Manipulation allowing for TWO RNA Basic_Subsequence inputs to be converted to the HashMap Key formatting
-inline std::string InputManagement2(const Basic_Subsequence<char, unsigned int> &a, const Basic_Subsequence<char, unsigned int> &b) {
+inline std::string InputManagement(const Basic_Subsequence<char, unsigned int> &a, const Basic_Subsequence<char, unsigned int> &b) {
     std::string Motif1, Motif2, Motif;//Same as the Standard Version, except both sequences are converted to String first to then be connected via "$" sign
     for(unsigned int t = 0; t < a.size();t++){
         int sum;
@@ -171,7 +171,7 @@ inline char identify_motif(const Basic_Subsequence<char, unsigned int> &a, const
         BulgeHashMap    = Motif_HashMap(BulgeHashMap, Bulges, Bulge_lengths);
     }   
     std::string Motif;
-    Motif = InputManagement2(a,b); //Jedes mal wenn die Funktion aufgerufen wird, wird erst res erstellt und dann Input Management gerufen um die Basic_Subsequence zu verarbeiten
+    Motif = InputManagement(a,b); //Jedes mal wenn die Funktion aufgerufen wird, wird erst res erstellt und dann Input Management gerufen um die Basic_Subsequence zu verarbeiten
     if (auto search = InternalHashMap.find(Motif); search != InternalHashMap.end()) {
         return search->second;
     }
