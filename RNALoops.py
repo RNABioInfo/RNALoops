@@ -247,9 +247,8 @@ class Process:
     def single_process(self) -> None: #Fix single process to just make it print to stdout instead of this two way kinda bs.
         result = subprocess.run(self.call_construct+self.input_seq, text=True, shell=True, capture_output=True)
         if not result.returncode:
-            result_obj=split_results_find_subclass(self.name, result.stdout, self.algorithm)
+            result_obj=split_results_find_subclass(self.name, result.stdout, self.algorithm, self.pfc)
             subprocess_output=(result_obj, result.stderr)
-            self.log.info(' {name} processing successfull, printing output to stdout...'.format(name=self.name))
         else:
             subprocess_output=(self.name, result.stderr)
         self.write_output(subprocess_output, False) #Tuple contains subprocess return and ini bool false so it print the column names.
@@ -280,22 +279,26 @@ class Process:
         self.log.info(' Calculations for {iFile} completed. Tasks done: {len_w}. Tasks failed: {len_l}'.format(iFile=self.iFile.name, len_w=len(records)-len(L_List), len_l=len(L_List)))
         self.log.info(' Failed calculations: {L}'.format(L=L_List))
 
-    def listener(self, q:multiprocessing.Queue,connection:multiprocessing.connection.Connection): #This function has the sole write access to make writing the log mp save
+    def listener(self, q:multiprocessing.Queue,connection:multiprocessing.connection.Connection): #This function has the sole write access to make writing the logs and results mp save
         output_started=False
         while True:
             result=q.get() #get results from the q to the listener.
             if result == 'kill':
                 connection.close()
                 break
-            else:pass
-            output_started=self.write_output(result, output_started, connection)
+            else:
+                if isinstance(result[0], str):
+                    self.log.error(' {name}:{error}'.format(name=result[0],error=result[1].strip())) 
+                    connection.send(result[0])
+                else:
+                    self.log.info(' Process finished: {res}'.format(res=result[0].id))
+                    output_started=self.write_output(result, output_started)
 
-    def write_output(self,result:tuple['ClassScoreClass|ClassScore|str',str], ini:bool, connection:multiprocessing.connection.Connection)-> bool: #checks the class of tuple [0] (which should be the result object), on first entry writes the corresponding header and after that only writes output in tsv format.
+    def write_output(self,result:tuple['ClassScoreClass|ClassScore|str',str], ini:bool)-> bool: #checks the class of tuple [0] (which should be the result object), on first entry writes the corresponding header and after that only writes output in tsv format.
 
         if isinstance(result[0], ClassScoreClass):
             if not ini:
                 sys.stdout.write('ID\tclass1\tscore\tclass2\n')
-            self.log.info(' Process finished: {res}'.format(res=result[0].id))
             self.write_tsv(result[0])
             if self.time:
                 self.timelogger.info(result[0].id + ':' + result[1].strip())
@@ -307,15 +310,9 @@ class Process:
                     sys.stdout.write('ID\tclass\tscore\tprobability\n')
                 else:
                     sys.stdout.write('ID\tclass\tscore\n')
-            self.log.info(' Process finished: {res}'.format(res=result[0].id))
             self.write_tsv(result[0])
             if self.time:
                 self.timelogger.info(result[0].id + ':' + result[1].strip())
-            return True
-
-        else:
-            self.log.error(' {name}:{error}'.format(name=result[0],error=result[1].strip()))
-            connection.send(result[0])
             return True
            
     def write_tsv(self,result_obj:'ClassScoreClass|ClassScore'):       
