@@ -1,5 +1,16 @@
 [
     {
+        "motif_name":"T-Loop",
+        "abbreviation":"T",
+        "instances":["HL_22280",
+                     "HL_89380",
+                     "HL_71309"],
+        "loop_type":"hairpin",
+        "rfam_id":["RM00024"],
+        "rfam_lower_bound":"21",
+        "rfam_upper_bound":"30"
+    },
+    {
         "motif_name":"GNRA",
         "abbreviation":"G",
         "instances":["HL_42097"],
@@ -18,15 +29,25 @@
         "rfam_upper_bound":"28"
     },
     {
-        "motif_name":"T-Loop",
-        "abbreviation":"T",
-        "instances":["HL_22280",
-                     "HL_89380",
-                     "HL_71309"],
+        "motif_name":"tRNA_anticodon_loop",
+        "abbreviation":"L",
+        "instances":["HL_53597"],
         "loop_type":"hairpin",
-        "rfam_id":["RM00024"],
-        "rfam_lower_bound":"21",
-        "rfam_upper_bound":"30"
+        "rfam_id":[]
+    },
+    {
+        "motif_name":"UAA/GAN",
+        "abbreviation":"A",
+        "instances":["IL_89002"],
+        "loop_type":"internal",
+        "rfam_id":[]
+    },
+    {
+        "motif_name":"Tandem non-canoncial cWW pairs",
+        "abbreviation":"M",
+        "instances":["IL_30621"],
+        "loop_type":"internal",
+        "rfam_id":[]
     },
     {
         "motif_name":"C-Loop",

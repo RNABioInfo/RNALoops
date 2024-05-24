@@ -187,6 +187,7 @@ class Process:
                 call = 'cd {path} && {time} ./{algorithm} -k {k} -Q {database} -b {motif_direction} -q {shapelvl} '.format(time=self.time, path=self.algorithm_path, algorithm=self.algorithm_call, k=self.kvalue, database=self.motif_source,motif_direction=self.direction,shapelvl=self.shape_level)
        
             case _:
+                self.log.critical(' Call constructor was unable to generate secondary structure prediction call. Please check the call_constructor function.')
                 raise NotImplementedError('Algorithm matches no known call construct, please check call_constructor function and add a new call or add a new case to an existing call construct.')
 
         self.log.info(' Algorithm call construct created as: {c}'.format(c=call))
@@ -289,7 +290,7 @@ class Process:
             else:
                 if isinstance(result[0], str):
                     self.log.error(' {name}:{error}'.format(name=result[0],error=result[1].strip())) 
-                    connection.send(result[0])
+                    connection.send(result[0]) #sends errors back to the main process for logging purposes.
                 else:
                     self.log.info(' Process finished: {res}'.format(res=result[0].id))
                     output_started=self.write_output(result, output_started)
@@ -350,7 +351,7 @@ class ClassScore():
 #Non Process class function that need to be unbound to be pickle'able. See: https://stackoverflow.com/questions/1816958/cant-pickle-type-instancemethod-when-using-multiprocessing-pool-map, guess it kinda is possible it
 #really isnt all that necessary though.
 
-def worker(tpl:tuple, q:multiprocessing.Queue,alg, pfc_bool:bool): #I have no clue why but if you put this function into the Process class it will always exit with error 'cannot pickle '_io.TextIOWrapper', just leave it here
+def worker(tpl:tuple, q:multiprocessing.Queue,alg, pfc_bool:bool):
     result = subprocess.run(tpl[1],text=True,capture_output=True,shell=True)
     
     if not result.returncode: #double negative, this captures return_code=0, returned if subprocess.run worked
@@ -379,7 +380,7 @@ def split_results_find_subclass(name:str,result:str,alg:str, pfc:bool) -> 'Class
     else:
         raise ValueError(' Could not identify algorithm output classification as ClassScore or ClassScoreClass.')
 
-if __name__=='__main__':
+if __name__ == '__main__':
     args=get_cmdarguments()
     proc=Process(args)
     Process.Process(proc)
