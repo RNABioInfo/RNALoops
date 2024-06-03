@@ -9,6 +9,7 @@ import requests
 from time import sleep
 from Bio import AlignIO
 from io import StringIO
+import sys
 
 class Motif:
     def __init__(self,motif_json:dict):
@@ -18,7 +19,7 @@ class Motif:
         self.loop_type=motif_json["loop_type"]
         self.rfam_ids=motif_json["rfam_id"]
         self.sequence_dict= defaultdict(list,{ key:[] for key in ["bgsu_sequences","bgsu_reverse","rfam_sequences","rfam_reverse"]})
-  
+
     def reverse_sequences(self,seqlist:list[str]) -> list[str]:
         rev=[]
         for sequence in seqlist:
@@ -31,16 +32,10 @@ class Motif:
         for instance in self.instances:
             self.sequence_dict["bgsu_sequences"].extend(instance.get_sequences())
         
-    def remove_sequence(self,sequence,name):
+    def remove_sequence(self, sequence:str, name:str): #removes forward and reverse versions of a sequence from all dictionaries, made to be used in a for loop iterating through the objects
         if self.name == name:
-            try:self.sequence_dict["bgsu_sequences"].remove(sequence)
-            except:pass
-            try:self.sequence_dict["bgsu_reverse"].remove(sequence[::-1])
-            except:pass
-            try:self.sequence_dict["rfam_sequences"].remove(sequence)
-            except:pass
-            try:self.sequence_dict["rfam_reverse"].remove(sequence[::-1])
-            except:pass   
+            for key in self.sequence_dict.keys():
+                self.sequence_dict[key] = [ i for i in self.sequence_dict[key] if i != sequence and i != sequence[::-1]]
           
     def add_abbreviations(self, seq_abb_dict:dict[str,str]):
         for key in self.sequence_dict.keys():
@@ -98,7 +93,7 @@ class Hairpin(Motif):
                 sequences.append(''.join(seq))
             else:pass
         return list(set(sequences))
-       
+
 class Internal(Motif):
 
     def __init__(self, motif_json:list,bgsu_json:list):
@@ -191,7 +186,7 @@ class Instance:
         positions=[ self.get_nucleotide_element(x,4) for x in nucleotides ]
         for i in range(len(positions)-1):
             Diff = int(positions[i+1]) - int(positions[i])
-            if abs(Diff) >= 3: #This is where bulge size is theoretically limited, if there are two internal loop parts that are closer together than 3, the sequence break will be detected as faulty (min hairpin size is 3).
+            if abs(Diff) > 3: #This is where bulge size is theoretically limited, if there are two internal loop parts that are closer together than 3, the sequence break will be detected as faulty (min hairpin size is 3).
                 return i
             else:pass
         print("Sequence break for {nuc} [{inst}] was less than 3 or not found. Sequence has been removed, will not be considered further.".format(nuc=self.get_nucleotide_element(nucleotides[0],0)[5:],inst=self.id))
@@ -240,18 +235,18 @@ def load_jsons() -> list[Hairpin | Internal]: #The load_bgsu function has a back
         else:pass
     return motifs
 
-def dupe_check(motif_list:list[Hairpin|Internal])-> dict[str:str]: #quick function that prints out doubled sequences (appearing for two different motifs).
+def dupe_check(motif_list:list[Hairpin|Internal])-> dict[str:str]: #reworked dupe check that not only checks for duplicate sequences but also creates a dictionary with sequence:abbreviations pairs (for managing duplicates).
     seen={} #type:dict[str,str]
-    for motif in motif_list:  #As of 25.04.24 BGSU Version 3.81 there are two: UUCAA (GNRA/T-Loop) and GUGA (GNRA/UNCG)
+    for motif in motif_list:  
         for sequence in list(set(flatten([list(set(motif.sequence_dict["bgsu_sequences"])), list(set(motif.sequence_dict["rfam_sequences"]))]))):
             if sequence not in seen.keys():
-                seen[sequence]=motif.abbreviation
-                seen[sequence[::-1]]=motif.abbreviation
+                seen[sequence] = motif.abbreviation
+                seen[sequence[::-1]] = motif.abbreviation
             else:
                 if seen[sequence] != motif.abbreviation:
                     print("Ambiguous sequence found: {seq}, present in {a} and {b}, converting first instance to lower case and keeping {c}...".format(seq=sequence, a = seen[sequence], b = motif.abbreviation, c= seen[sequence].lower()))
                     seen[sequence] = seen[sequence].lower()
-                    seen[sequence[::-1]]=seen[sequence[::-1]].lower()
+                    seen[sequence[::-1]] = seen[sequence[::-1]].lower()
     return seen
            
 def create_hexdumbs(motif_list: list[Hairpin|Internal], abbreviations: dict):
@@ -303,11 +298,17 @@ def sequences2header(seq_set:list,name:str)->str:
 if __name__ == "__main__":
     motifs=load_jsons()
     for motif in motifs:
-        if len(motif.instances) > 0:
+        if len(motif.instances):
             motif.get_bgsu_sequences()
             motif.sequence_dict["bgsu_reverse"]=motif.reverse_sequences(motif.sequence_dict["bgsu_sequences"])
-        if len(motif.rfam_ids) > 0: #Just a check for whether the motif is also present in Rfam, indicated by whether there are any rfam ids given in the motif.json file
+            print(motif.name)
+        if len(motif.rfam_ids):
             motif.get_rfam_sequences()
             motif.sequence_dict["rfam_reverse"]=motif.reverse_sequences(motif.sequence_dict["rfam_sequences"])
+            print(motif.name)
+        if sys.argv[1] == "-r":
+            motif.remove_sequence("UUCAA","GNRA")
+            motif.remove_sequence("UACG","GNRA")
+            motif.remove_sequence("GUGA","UNCG")
     seq_abbreviation_dict=dupe_check(motifs)
     create_hexdumbs(motifs,seq_abbreviation_dict)

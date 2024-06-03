@@ -36,7 +36,9 @@ def get_cmdarguments() -> argparse.Namespace:
     parser.add_argument( '-e',    '-energy', help = 'Specify energy range if mfe_subopt is used [float]', default = 1.0, type = float)
     parser.add_argument( '-l',       '-log', help = 'Set log level, if log level is set to INFO or DEBUG all predictions log their time parameter', default='Info', dest = 'loglevel', type =str)
     parser.add_argument( '-t',      '-time', help = 'Activate time logging, activating this will run all command with unix "time" utility', dest = 'time', action='store_const', const ='time', default = '')
-    parser.add_argument( '-w', '-wprocesses', help = 'Specify how many predictions should be done in parallel. Default is os.cpu_count()-1.', default=os.cpu_count()-1, type=int, dest = 'workers')
+    parser.add_argument( '-w','-wprocesses', help = 'Specify how many predictions should be done in parallel. Default is os.cpu_count()-1.', default=os.cpu_count()-1, type=int, dest = 'workers')
+    parser.add_argument( '-c',       '-csv', help = 'Specify separation character for output, default is tab', default = '\t', type = str, dest='separator')
+    
 
     args=parser.parse_args()
     return args
@@ -77,24 +79,26 @@ class Process:
         if commandline_args.iFile_path:
             self.iFile = commandline_args.iFile_path #type:argparse.FileType
             self.log.info(' Input file path: {iFile}'.format(iFile=self.iFile.name))
+            self.mode = 'multi' #type:str
         else:
             self.input_seq = commandline_args.input_seq
             self.log.info(' Running: {name}. Input sequence: {seq}'.format(name=self.name,seq=self.input_seq))
+            self.mode = 'single' #type:str
 
-        self.algorithm = commandline_args.algorithm
+        self.algorithm = commandline_args.algorithm #type:str
         
         if self.algorithm == 'mothishape':
-            self.algorithm_call = self.algorithm + '_' + commandline_args.p
+            self.algorithm_call = self.algorithm + '_' + commandline_args.p #type:str
         else:
-            self.algorithm_call=self.algorithm
+            self.algorithm_call=self.algorithm #type:str
         
         if self.subopt:
-            self.algorithm_call=self.algorithm_call+'_subopt'
+            self.algorithm_call=self.algorithm_call+'_subopt' #type:str
 
         if self.algorithm[-3:] == 'pfc':
-            self.pfc=True
+            self.pfc=True #type:bool
         else:
-            self.pfc=False
+            self.pfc=False #type:bool
         #Other Process parameters
 
         self.kvalue = commandline_args.k #type:int
@@ -122,6 +126,8 @@ class Process:
 
         self.workers = commandline_args.workers #type:int
 
+        self.separator = commandline_args.separator #type:str
+
         self.log.info(' Process initiated successfully. Loglevel: {log}, Algorithm: {alg}, k: {k}, subopt: {sub}, motif_source: {mot}, motif_direction: {motd}, hishape_mode: {hi}, shape_level: {s}, time: {time}, algorithm_path: {algp}/{alg}. Worker Processes: {work}'.format(log=self.loglevel, alg=self.algorithm, k=self.kvalue, sub=self.subopt, mot=self.motif_source, motd=self.direction, hi=self.hishape_mode, s=self.shape_level, time=self.time, algp=self.algorithm_path, work=self.workers))
 
     def identify_algorithm(self) -> str: #searches for algorithm, if it doesn't find it tries to compile it and then searches again. Could be optimized.
@@ -143,10 +149,10 @@ class Process:
             raise LookupError(' Could not find or compile specified algorithm. Please check log with debug level for compilation information. Make sure your chosen alrightm is installed within this folder or one of its subfolders.')
         
     def compile_algorithm(self) ->bool:
-        if self.subopt:
-            compilation_info=subprocess.run('cd {selfpath}; gapc -o {alg}.cc -t --kbacktrace -i {alg} RNALoops.gap; cd Misc/Applications; perl addRNAoptions.pl {selfpath}/{alg}.mf 0; cd ../..; make -f {alg}.mf'.format(selfpath=self.location,alg=self.algorithm_call),shell=True,stdout=subprocess.PIPE,stderr=subprocess.STDOUT)
-        elif self.pfc == True:
-            compilation_info=subprocess.run('cd {selfpath}; gapc -o {alg}.cc -t --kbest -i {alg} RNALoops.gap; cd Misc/Applications; perl addRNAoptions.pl {selfpath}/{alg}.mf 0; cd ../..; make -f {alg}.mf'.format(selfpath=self.location,alg=self.algorithm_call),shell=True,stdout=subprocess.PIPE,stderr=subprocess.STDOUT)        
+        if self.pfc:
+            compilation_info=subprocess.run('cd {selfpath}; gapc -o {alg}.cc -t --kbest -i {alg} RNALoops.gap; cd Misc/Applications; perl addRNAoptions.pl {selfpath}/{alg}.mf 0; cd ../..; make -f {alg}.mf'.format(selfpath=self.location,alg=self.algorithm_call),shell=True,stdout=subprocess.PIPE,stderr=subprocess.STDOUT)
+        elif self.subopt == True:
+            compilation_info=subprocess.run('cd {selfpath}; gapc -o {alg}.cc -t --kbacktrace -i {alg} RNALoops.gap; cd Misc/Applications; perl addRNAoptions.pl {selfpath}/{alg}.mf 0; cd ../..; make -f {alg}.mf'.format(selfpath=self.location,alg=self.algorithm_call),shell=True,stdout=subprocess.PIPE,stderr=subprocess.STDOUT)        
         else:    
             compilation_info=subprocess.run('cd {selfpath}; gapc -o {alg}.cc -t --kbacktrace --kbest -i {alg} RNALoops.gap; cd Misc/Applications; perl addRNAoptions.pl {selfpath}/{alg}.mf 0; cd ../..; make -f {alg}.mf'.format(selfpath=self.location,alg=self.algorithm_call),shell=True,stdout=subprocess.PIPE,stderr=subprocess.STDOUT)
         self.log.debug(compilation_info.stdout.decode())
@@ -160,7 +166,7 @@ class Process:
     def call_constructor(self) -> str: #Call construction function, if you add a new algorithm you will need to add a call construction string here for the python script to call on each sequence in your input. Remember to keep the cd {path} && {time} with path = self.algorithm_path and time = self.time
         match self.algorithm:
             
-            case 'motmfepretty': #the calls need to first go to the directory, otherwise no motifs cause the c++ path code is still fucky, change beginning to: {time} {path}/{algorithm} if you ever fix that.
+            case 'motmfepretty': #the calls need to first go to the directory, otherwise no motifs cause the c++ path code is still funky, change beginning to: {time} {path}/{algorithm} if you ever fix that.
                 if self.subopt:
                     call = 'cd {path} && {time} ./{algorithm} -e {energy_value} -Q {database} -b {motif_direction} '.format(time=self.time, path=self.algorithm_path, algorithm=self.algorithm_call, energy_value=self.energy, database=self.motif_source, motif_direction=self.direction)
                 else:
@@ -193,6 +199,78 @@ class Process:
         self.log.info(' Algorithm call construct created as: {c}'.format(c=call))
         return call
 
+    def write_output(self,result:tuple['ClassScoreClass|ClassScore|str',str], ini:bool)-> bool: #checks the class of tuple [0] (which should be the result object), on first entry writes the corresponding header and after that only writes output in tsv format.
+
+        if isinstance(result[0], ClassScoreClass):
+            if not ini:
+                sys.stdout.write('ID{sep}class1{sep}score{sep}class2\n'.format(sep=self.separator))
+            self.write_tsv(result[0])
+            if self.time:
+                self.timelogger.info(result[0].id + ':' + result[1].strip())
+            return True
+            
+        elif isinstance(result[0], ClassScore):
+            if not ini:
+                if self.pfc:
+                    sys.stdout.write('ID{sep}class{sep}score{sep}probability\n'.format(sep=self.separator))
+                else:
+                    sys.stdout.write('ID{sep}class{sep}score\n'.format(sep=self.separator))
+            self.write_tsv(result[0])
+            if self.time:
+                self.timelogger.info(result[0].id + ':' + result[1].strip())
+            return True
+           
+    def write_tsv(self,result_obj:'ClassScoreClass|ClassScore') -> None:       
+        for prediction in result_obj.results: #Writes the output in tsv style.
+            sys.stdout.write(result_obj.id + '{sep}'.format(sep=self.separator))
+            for i in range(len(prediction)-1):
+                sys.stdout.write(prediction[i] + '{sep}'.format(sep=self.separator))
+            sys.stdout.write(prediction[i+1] + '\n')
+
+class SingleProcess(Process):
+    def __init__(self, commandline_args: argparse.Namespace) -> None:
+        super().__init__(commandline_args)
+        
+    def run_process(self) -> None:
+        result = subprocess.run(self.call_construct+self.input_seq, text=True, shell=True, capture_output=True)
+        if not result.returncode:
+            result_obj=split_results_find_subclass(self.name, result.stdout, self.algorithm, self.pfc)
+            subprocess_output=(result_obj, result.stderr)
+        else:
+            subprocess_output=(self.name, result.stderr)
+        self.write_output(subprocess_output, False) #Tuple contains subprocess return and ini bool false so it print the column names.
+
+class MultiProcess(Process):
+    def __init__(self, commandline_args: argparse.Namespace) -> None:
+        super().__init__(commandline_args)
+
+    def run_process(self) -> None:
+        main_conn, listener_conn = multiprocessing.Pipe(duplex=False)
+        records = self.read_input_file()
+        Manager = multiprocessing.Manager()
+        q       = Manager.Queue()
+        Pool    = multiprocessing.Pool(processes=self.workers)
+        listening= multiprocessing.Process(target=self.listener, args=(q,listener_conn)) #run the listener as a separate process that writes the logs and output
+        listening.start() #start the listener, patiently waiting for processes to finish
+        jobs = []
+        for record in records:
+            job = Pool.apply_async(worker, (record, q, self.algorithm, self.pfc))
+            jobs.append(job) #append workers into the workerlist
+        for job in jobs:
+            job.get() #Get results from the workers to the q
+        Pool.close()
+        q.put('kill')
+        Pool.join()
+        listening.join()
+        L_List=[] #type:list[str]
+        while main_conn.poll():
+            L=main_conn.recv()
+            L_List.append(L)
+        main_conn.close()
+        self.log.info(' Calculations for {iFile} completed. Tasks done: {len_w}. Tasks failed: {len_l}'.format(iFile=self.iFile.name, len_w=len(records)-len(L_List), len_l=len(L_List)))
+        if len(L_List) > 0:
+            self.log.info(' Failed calculations: {L}'.format(L=L_List))
+
     def read_input_file(self) -> list:
         id_seq_tuples = []
         lens = []
@@ -211,7 +289,7 @@ class Process:
         self.iFile.close()
         self.log.info(' Reading successful. Input sequences: {len_idseq_tpls}. Average sequence length: {len} bp. Longest sequence: {long} bp.'.format(len_idseq_tpls=len(id_seq_tuples), len=round(mean(lens)), long=max(lens)))
         return id_seq_tuples
- 
+
     def find_filetype(self) -> tuple[str, bool]: #Finds File type based on file ending
         if self.iFile.name.split('.')[-1] == 'gz' or self.iFile.name.split('.')[-1] == 'zip':
             file_extension = (self.iFile.name.split('.')[-2])
@@ -239,90 +317,21 @@ class Process:
                 sys.stdout.write(' Couldnt recognize file type or zip of input file: {input}\n'.format(input=self.iFile.name))
                 raise TypeError(' Filetype was not recognized as fasta, fastq or stockholm format. Or file could not be unpacked, please ensure it is zipped with either .gz or .zip or unzipped')
 
-    def Process(self):
-        if hasattr(self,'input_seq'):
-            self.single_process()
-        else:
-            self.multi_process()
-
-    def single_process(self) -> None: #Fix single process to just make it print to stdout instead of this two way kinda bs.
-        result = subprocess.run(self.call_construct+self.input_seq, text=True, shell=True, capture_output=True)
-        if not result.returncode:
-            result_obj=split_results_find_subclass(self.name, result.stdout, self.algorithm, self.pfc)
-            subprocess_output=(result_obj, result.stderr)
-        else:
-            subprocess_output=(self.name, result.stderr)
-        self.write_output(subprocess_output, False) #Tuple contains subprocess return and ini bool false so it print the column names.
-
-    def multi_process(self) -> None:
-        main_conn, listener_conn = multiprocessing.Pipe(duplex=False)
-        records = self.read_input_file()
-        Manager = multiprocessing.Manager()
-        q       = Manager.Queue()
-        Pool    = multiprocessing.Pool(processes=self.workers)
-        listening= multiprocessing.Process(target=self.listener, args=(q,listener_conn)) #run the listener as a separate process that writes the logs and output
-        listening.start() #start the listener, patiently waiting for processes to finish
-        jobs = []
-        for record in records:
-            job = Pool.apply_async(worker, (record, q, self.algorithm, self.pfc))
-            jobs.append(job) #append workers into the workerlist
-        for job in jobs:
-            job.get() #Get results from the workers to the q
-        Pool.close()
-        q.put('kill')
-        Pool.join()
-        listening.join()
-        L_List=[] #type:list[str]
-        while main_conn.poll():
-            L=main_conn.recv()
-            L_List.append(L)
-        main_conn.close()
-        self.log.info(' Calculations for {iFile} completed. Tasks done: {len_w}. Tasks failed: {len_l}'.format(iFile=self.iFile.name, len_w=len(records)-len(L_List), len_l=len(L_List)))
-        self.log.info(' Failed calculations: {L}'.format(L=L_List))
-
-    def listener(self, q:multiprocessing.Queue,connection:multiprocessing.connection.Connection): #This function has the sole write access to make writing the logs and results mp save
+    def listener(self, q:multiprocessing.Queue, connection:multiprocessing.connection.Connection): #This function has the sole write access to make writing the logs and results mp save
         output_started=False
         while True:
             result=q.get() #get results from the q to the listener.
             if result == 'kill':
-                connection.close()
+                connection.close() #main process connection, allowing for communcation with the main process. Is used to inform the main process that a sequence was not correctly processed.
                 break
             else:
                 if isinstance(result[0], str):
-                    self.log.error(' {name}:{error}'.format(name=result[0],error=result[1].strip())) 
+                    self.log.error(' {name}:{error}'.format(name=result[0], error=result[1].strip())) 
                     connection.send(result[0]) #sends errors back to the main process for logging purposes.
                 else:
                     self.log.info(' Process finished: {res}'.format(res=result[0].id))
                     output_started=self.write_output(result, output_started)
-
-    def write_output(self,result:tuple['ClassScoreClass|ClassScore|str',str], ini:bool)-> bool: #checks the class of tuple [0] (which should be the result object), on first entry writes the corresponding header and after that only writes output in tsv format.
-
-        if isinstance(result[0], ClassScoreClass):
-            if not ini:
-                sys.stdout.write('ID\tclass1\tscore\tclass2\n')
-            self.write_tsv(result[0])
-            if self.time:
-                self.timelogger.info(result[0].id + ':' + result[1].strip())
-            return True
-            
-        elif isinstance(result[0], ClassScore):
-            if not ini:
-                if self.pfc:
-                    sys.stdout.write('ID\tclass\tscore\tprobability\n')
-                else:
-                    sys.stdout.write('ID\tclass\tscore\n')
-            self.write_tsv(result[0])
-            if self.time:
-                self.timelogger.info(result[0].id + ':' + result[1].strip())
-            return True
-           
-    def write_tsv(self,result_obj:'ClassScoreClass|ClassScore'):       
-        for prediction in result_obj.results: #Writes the output in tsv style.
-            sys.stdout.write(result_obj.id + '\t')
-            for i in range(len(prediction)-1):
-                sys.stdout.write(prediction[i] + '\t')
-            sys.stdout.write(prediction[i+1] + '\n')
-
+              
 class ClassScoreClass(): #Sublcasses for different algorithm types, as generalized as possible.
     def __init__(self, name:str, result_list:list[list], algorithm:str):
         self.id = name
@@ -351,10 +360,10 @@ class ClassScore():
 #Non Process class function that need to be unbound to be pickle'able. See: https://stackoverflow.com/questions/1816958/cant-pickle-type-instancemethod-when-using-multiprocessing-pool-map, guess it kinda is possible it
 #really isnt all that necessary though.
 
-def worker(tpl:tuple, q:multiprocessing.Queue,alg, pfc_bool:bool):
+def worker(tpl:tuple, q:multiprocessing.Queue,alg, pfc_bool:bool) -> None:
     result = subprocess.run(tpl[1],text=True,capture_output=True,shell=True)
     
-    if not result.returncode: #double negative, this captures return_code=0, returned if subprocess.run worked
+    if not result.returncode: #double negative, this captures return_code = 0, returned if subprocess.run worked
         out     = result.stdout
         err     = result.stderr
         output_obj = split_results_find_subclass(tpl[0], out, alg, pfc_bool) 
@@ -370,17 +379,20 @@ def split_results_find_subclass(name:str,result:str,alg:str, pfc:bool) -> 'Class
     split=result.strip().split('\n')                                                          #check for it somewhere outside of the worker function.
     return_list=[]
     for result in split:
-        split_results=result.split('|')
-        split_stripped_results= [x.strip() for x in split_results] #removes all whitespaces from results, makes it look nice
+        split_result=result.split('|')
+        split_stripped_results= [x.strip() for x in split_result] #removes all whitespaces from results, makes it look nice
         return_list.append(split_stripped_results)
-    if len(split_results) == 2:
+    if len(split_result) == 2:
         return ClassScore(name, return_list, alg, pfc)
-    elif len(split_results) == 3:
+    elif len(split_result) == 3:
         return ClassScoreClass(name ,return_list, alg)
     else:
         raise ValueError(' Could not identify algorithm output classification as ClassScore or ClassScoreClass.')
 
 if __name__ == '__main__':
     args=get_cmdarguments()
-    proc=Process(args)
-    Process.Process(proc)
+    if args.iFile_path:
+        proc=MultiProcess(args)
+    else:
+        proc=SingleProcess(args)
+    proc.run_process()

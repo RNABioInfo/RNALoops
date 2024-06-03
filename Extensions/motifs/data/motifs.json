@@ -29,7 +29,7 @@
         "rfam_upper_bound":"28"
     },
     {
-        "motif_name":"tRNA_anticodon_loop",
+        "motif_name":"tRNA anticodon loop",
         "abbreviation":"L",
         "instances":["HL_53597"],
         "loop_type":"hairpin",
