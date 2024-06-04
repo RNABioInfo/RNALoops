@@ -267,9 +267,11 @@ class MultiProcess(Process):
             L=main_conn.recv()
             L_List.append(L)
         main_conn.close()
-        self.log.info(' Calculations for {iFile} completed. Tasks done: {len_w}. Tasks failed: {len_l}'.format(iFile=self.iFile.name, len_w=len(records)-len(L_List), len_l=len(L_List)))
         if len(L_List) > 0:
+            self.log.info(' Calculations for {iFile} completed. Tasks done: {len_w}. Tasks failed: {len_l}'.format(iFile=self.iFile.name, len_w=len(records)-len(L_List), len_l=len(L_List)))
             self.log.info(' Failed calculations: {L}'.format(L=L_List))
+        else:
+            self.log.info(' Calculations for {iFile} completed. All tasks completed successfully'.format(iFile=self.iFile.name))
 
     def read_input_file(self) -> list:
         id_seq_tuples = []

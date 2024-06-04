@@ -263,7 +263,7 @@ def create_hexdumbs(motif_list: list[Hairpin|Internal], abbreviations: dict):
             mot.sort_sequences()
             sort_seq_dictionaries(mot, isequence_dict,"i")
             sort_seq_dictionaries(mot, bsequence_dict,"b")   
-    with open(os.path.dirname(os.path.realpath(__file__))+"/mot_header2.hh","x") as file:
+    with open(os.path.dirname(os.path.realpath(__file__))+"/mot_header.hh","x") as file:
         for key in keys:
             file.write(sequences2header(hsequence_dict[key],"h"+key))
             file.write(sequences2header(isequence_dict[key],"i"+key))
@@ -301,14 +301,14 @@ if __name__ == "__main__":
         if len(motif.instances):
             motif.get_bgsu_sequences()
             motif.sequence_dict["bgsu_reverse"]=motif.reverse_sequences(motif.sequence_dict["bgsu_sequences"])
-            print(motif.name)
         if len(motif.rfam_ids):
             motif.get_rfam_sequences()
             motif.sequence_dict["rfam_reverse"]=motif.reverse_sequences(motif.sequence_dict["rfam_sequences"])
-            print(motif.name)
-        if sys.argv[1] == "-r":
-            motif.remove_sequence("UUCAA","GNRA")
-            motif.remove_sequence("UACG","GNRA")
-            motif.remove_sequence("GUGA","UNCG")
+        if sys.argv[1]:
+            if sys.argv[1] == "-r":
+                motif.remove_sequence("UUCAA","GNRA")
+                motif.remove_sequence("UACG","GNRA")
+                motif.remove_sequence("GUGA","UNCG")
+            else:pass
     seq_abbreviation_dict=dupe_check(motifs)
     create_hexdumbs(motifs,seq_abbreviation_dict)
