@@ -2,6 +2,7 @@ import multiprocessing
 import argparse
 import multiprocessing.connection
 import subprocess
+import configparser
 import os
 from Bio import SeqIO #Bio is the only non standard library that needs to be installed with pip first. All the other imported libraries are based libraries that come with python 3.10 preinstalled.
 import gzip
@@ -9,6 +10,7 @@ import re
 from numpy import mean
 import sys
 import logging
+import src.Motif_collection as mc
 
 def get_cmdarguments() -> argparse.Namespace:
     
@@ -18,7 +20,7 @@ def get_cmdarguments() -> argparse.Namespace:
                           epilog = 'GONDOR CALLS FOR AID! AND ROHAN WILL ANSWER!')
 
     #First positional argument, decide the algorithm that should be run on the input data. First argument with no flag. If you add your own partition function algorithm and want the output to have probabilities be sure to add pfc at the end of the name! This tag is used to recognize partition function algorithms by the script.
-    parser.add_argument(help = 'Specify which algorithm should be used, prebuild choices are: motmfepretty, motpfc, motshapeX, motshapeX_pfc, mothishape, mothishape_h_pfc, mothishape_b_pfc, mothishape_m_pfc.\n If you want to run a mothishape with mfe and pretty you need to specify the mode with -p, if you run mothishape with pfc enter the full name. \n Paritition function instances should be marked with pfc at the end, this tag instructs the script to calculate probabilities from the partition functionv values.', dest = 'algorithm',type=str)
+    parser.add_argument(help = 'Specify which algorithm should be used, prebuild choices are: motmfepretty, motpfc, motshapeX, motshapeX_pfc, mothishape, mothishape_h_pfc, mothishape_b_pfc, mothishape_m_pfc. If you want to run a mothishape with mfe and pretty you need to specify the mode with -p, if you run mothishape with pfc enter the full name. Paritition function instances should be marked with pfc at the end, this tag instructs the script to calculate probabilities from the partition function values.', dest = 'algorithm',type=str)
 
     #Input has to be either a single sequence with specifier -I or a sequence file with -i [PATH_TO_FILE] (FASTA,  STOCKHOLM,  FASTQ).
     input = parser.add_mutually_exclusive_group(required = True)
@@ -27,18 +29,23 @@ def get_cmdarguments() -> argparse.Namespace:
     parser.add_argument( '-n',   '-sequenceTag', help = 'If single sequence input is used you can specifiy a name for the input which will be used to mark it in output',type = str, dest='name', default='single_sequence', nargs ='?')
 
     #Command line arguments that control which algorithm is called with which options.
-    parser.add_argument( '-s',    '-subopt', help = 'Specify if mfe_subopt should be used,  usable exclusively with motmfepretty currently', action = 'store_true', default= False)
-    parser.add_argument( '-Q',  '-database', help = 'Specify from which database motifs should be used', choices = ['1', '2', '3'],  default = '3')
-    parser.add_argument( '-b', '-direction', help = 'Specify if 5->3,  3->5 or both motif versions should be used', choices = ['1', '2', '3'], default = '3')
-    parser.add_argument( '-k',    '-kvalue', help = 'k-value for k-best [int]', default = 10, type = int)
-    parser.add_argument( '-p',   '-hishape', help = 'Set hishape mode', choices = ['h', 'm', 'b'], default = 'h', type=str)
-    parser.add_argument( '-q',     '-shape', help = 'Set shape level', choices = [1, 2, 3, 4, 5], default = 2, type = int)
-    parser.add_argument( '-e',    '-energy', help = 'Specify energy range if mfe_subopt is used [float]', default = 1.0, type = float)
-    parser.add_argument( '-l',       '-log', help = 'Set log level, if log level is set to INFO or DEBUG all predictions log their time parameter', default='Info', dest = 'loglevel', type =str)
-    parser.add_argument( '-t',      '-time', help = 'Activate time logging, activating this will run all command with unix "time" utility', dest = 'time', action='store_const', const ='time', default = '')
-    parser.add_argument( '-w','-wprocesses', help = 'Specify how many predictions should be done in parallel. Default is os.cpu_count()-1.', default=os.cpu_count()-1, type=int, dest = 'workers')
-    parser.add_argument( '-c',       '-csv', help = 'Specify separation character for output, default is tab', default = '\t', type = str, dest='separator')
+    parser.add_argument( '-s',      '-subopt', help = 'Specify if mfe_subopt should be used,  usable exclusively with motmfepretty currently', action = 'store_true', default= False)
+    parser.add_argument( '-Q',    '-database', help = 'Specify from which database motifs should be used', choices = ['1', '2', '3'],  default = '3')
+    parser.add_argument( '-b',   '-direction', help = 'Specify if 5->3,  3->5 or both motif versions should be used', choices = ['1', '2', '3'], default = '3')
+    parser.add_argument( '-k',      '-kvalue', help = 'k-value for k-best [int]', default = 10, type = int)
+    parser.add_argument( '-p',     '-hishape', help = 'Set hishape mode', choices = ['h', 'm', 'b'], default = 'h', type=str)
+    parser.add_argument( '-q',       '-shape', help = 'Set shape level', choices = [1, 2, 3, 4, 5], default = 2, type = int)
+    parser.add_argument( '-e',      '-energy', help = 'Specify energy range if mfe_subopt is used [float]', default = 1.0, type = float)
+    parser.add_argument( '-l',         '-log', help = 'Set log level, if log level is set to INFO or DEBUG all predictions log their time parameter', default='Info', dest = 'loglevel', type =str)
+    parser.add_argument( '-t',        '-time', help = 'Activate time logging, activating this will run all command with unix time utility', dest = 'time', action='store_const', const ='time', default = '')
+    parser.add_argument( '-w',  '-wprocesses', help = 'Specify how many predictions should be done in parallel. Default is os.cpu_count()-1.', default=os.cpu_count()-1, type = int, dest = 'workers')
+    parser.add_argument( '-c',         '-csv', help = 'Specify separation character for output, default is tab', default = '\t', type = str, dest='separator')
     
+    update = parser.add_mutually_exclusive_group(required=False)
+    update.add_argument('-fu', '-forceupdate', help = 'Force update of sequence catalogue', default =  False, action= 'store_true', dest = 'update')
+    update.add_argument('-nu',    '-noupdate', help = 'Block sequence updating', default = False, action = 'store_true', dest = 'no_update')
+    parser.add_argument( '-r',  '-remove_seq', help = 'When specified you can remove specific sequences from motifs if you do not want them to be recognized. These need to be specified in Motif_collection.py update function in the for-loop. THIS IS PERMANENT UNTIL YOU UPDATE THE SEQUENCES AGAIN (with -fu or naturally through a bgsu update).',
+                        default = False, action = 'store_true', dest = 'remove')
 
     args=parser.parse_args()
     return args
@@ -67,7 +74,7 @@ class Process:
             raise ValueError('Invalid log level: {lvl}'.format(lvl=self.loglevel))
         
         self.log=make_new_logger(self.loglevel, __name__)
-        self.log.debug(" Thank you for using\n ____  _   _    _      _     ___   ___  ____  ____  \n|  _ \| \ | |  / \    | |   / _ \ / _ \|  _ \/ ___|\n| |_) |  \| | / _ \   | |  | | | | | | | |_) \___ \ \n|  _ <| |\  |/ ___ \  | |__| |_| | |_| |  __/ ___) |\n|_| \_\_| \_/_/   \_\ |_____\___/ \___/|_|   |____/ \n")
+        self.log.debug(' Thank you for using\n ____  _   _    _      _     ___   ___  ____  ____  \n|  _ \| \ | |  / \    | |   / _ \ / _ \|  _ \/ ___|\n| |_) |  \| | / _ \   | |  | | | | | | | |_) \___ \ \n|  _ <| |\  |/ ___ \  | |__| |_| | |_| |  __/ ___) |\n|_| \_\_| \_/_/   \_\ |_____\___/ \___/|_|   |____/ \n')
         self.subopt = commandline_args.s #type:bool
 
         #Input parameters
@@ -122,19 +129,47 @@ class Process:
         self.call_construct = self.call_constructor() #type:str
         
         if self.time:
-            self.timelogger=make_new_logger('info', 'time', '%(asctime)s:%(name)s:%(message)s') #time logger hard coded to info level, only gets initialized when time command is given.
+            self.timelogger=make_new_logger('info', 'time', '%(asctime)s:%(name)s:%(message)s') #type:logging.Logger #time logger hard coded to info level, only gets initialized when time command is given.
 
         self.workers = commandline_args.workers #type:int
 
         self.separator = commandline_args.separator #type:str
 
+        if not commandline_args.no_update:
+            try:
+                self.version_check_and_update(commandline_args.update, commandline_args.remove)
+            except ConnectionError as error:
+                self.log.error(error)
+                self.log.error('Unable to update motif sequences, continuing with old sequence catalogue')
+        else:
+            self.log.debug('Motif sequence updating disabled, will not update even if a new sequence catalogue is available.')
+        
         self.log.info(' Process initiated successfully. Loglevel: {log}, Algorithm: {alg}, k: {k}, subopt: {sub}, motif_source: {mot}, motif_direction: {motd}, hishape_mode: {hi}, shape_level: {s}, time: {time}, algorithm_path: {algp}/{alg}. Worker Processes: {work}'.format(log=self.loglevel, alg=self.algorithm, k=self.kvalue, sub=self.subopt, mot=self.motif_source, motd=self.direction, hi=self.hishape_mode, s=self.shape_level, time=self.time, algp=self.algorithm_path, work=self.workers))
 
+    def version_check_and_update(self, update_bool, sequence_remove_bool) -> bool:
+        conf_path=os.path.join(self.location,'src','data','config.ini') #move config parsing to class level to make it useable outside of simple data versioning?
+        config=configparser.ConfigParser()
+        config.read(conf_path)
+        current=mc.get_api_response('http://rna.bgsu.edu/rna3dhub/motifs/release/hl/current/json').headers['Content-disposition'].split('=')[1]
+        self.log.info(' Checking Motif sequence version')
+        if config['VERSIONS']['hairpins'] == current: #updating is bound only to the hairpin version, since hairpins and internals always get updated at the same time
+            self.log.info(' Motif sequences are up to date')
+            if update_bool:
+                self.log.info(' Force update enabled, updating motifs...')
+                mc.update(self.log, sequence_remove_bool, self.location)
+        else:
+            self.log.info(' Motif sequences are outdated with current bgsu release, updating...')
+            mc.update(self.log, sequence_remove_bool, self.location)
+            config.set('VERSIONS','hairpins',current)
+            with open(conf_path,'w') as file:
+                config.write(file)
+            self.log.info(' Motif sequences have been updated and version number has been changed in config file.')
+
     def identify_algorithm(self) -> str: #searches for algorithm, if it doesn't find it tries to compile it and then searches again. Could be optimized.
-        for root, dirs, files in os.walk(self.location):
-            self.log.debug(" Checking {folder} for {alg}...".format(folder=root,alg=self.algorithm))
+        for root, dir, files in os.walk(self.location, topdown = True):
+            self.log.debug(' Checking {folder} for {alg}...'.format(folder=root,alg=self.algorithm))
             if self.algorithm_call in files:
-                self.log.debug(" Found algorithm in {folder}".format(folder=root))
+                self.log.debug(' Found algorithm in {folder}'.format(folder=root))
                 return os.path.realpath(root, strict=True)
             else:pass
         self.log.error(' Algorithm was not found, trying to compile...')

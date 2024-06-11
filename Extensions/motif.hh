@@ -14,7 +14,7 @@
 #include<sstream>
 #include<map>
 #include<mutex>
-#include "motifs/mot_header.hh"
+#include "mot_header.hh"
 typedef std::unordered_map<std::string, char> HashMap;
 static HashMap HairpinHashMap;
 static HashMap InternalHashMap;
