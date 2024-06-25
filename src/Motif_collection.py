@@ -43,7 +43,7 @@ class Motif:
         
     def remove_sequence(self, sequence:str, name:str): #removes forward and reverse versions of a sequence from all dictionaries, made to be used in a for loop iterating through the objects
         if self.name == name:
-            self.log.info(" Removing sequence {seq} from {motname}.".format(seq=sequence, motname=name))
+            self.log.warning(" Removing sequence {seq} from {motname}.".format(seq=sequence, motname=name))
             for key in self.sequence_dict.keys():
                 self.sequence_dict[key] = [ i for i in self.sequence_dict[key] if i != sequence and i != sequence[::-1]]
           
@@ -258,7 +258,7 @@ def dupe_check(motif_list:list[Hairpin|Internal], logger:Logger)-> dict[str:str]
                 seen[sequence[::-1]] = motif.abbreviation
             else:
                 if seen[sequence] != motif.abbreviation:
-                    logger.info('Ambiguous sequence found during update process: {seq}, present in {a} and {b}, converting first instance to lower case and keeping {c}...'.format(seq=sequence, a = seen[sequence], b = motif.abbreviation, c= seen[sequence].lower()))
+                    logger.warning('Ambiguous sequence found during update process: {seq}, present in {a} and {b}, converting first instance to lower case and keeping {c}...'.format(seq=sequence, a = seen[sequence], b = motif.abbreviation, c= seen[sequence].lower()))
                     seen[sequence] = seen[sequence].lower()
                     seen[sequence[::-1]] = seen[sequence[::-1]].lower()
     return seen

@@ -19,33 +19,33 @@ def get_cmdarguments() -> argparse.Namespace:
                           epilog = 'GONDOR CALLS FOR AID! AND ROHAN WILL ANSWER!')
 
     #First positional argument, decide the algorithm that should be run on the input data. First argument with no flag. If you add your own partition function algorithm and want the output to have probabilities be sure to add pfc at the end of the name! This tag is used to recognize partition function algorithms by the script.
-    parser.add_argument( '-a',     '-algorithm', help = 'Specify which algorithm should be used, prebuild choices are: motmfepretty, motpfc, motshapeX, motshapeX_pfc, mothishape, mothishape_h_pfc, mothishape_b_pfc, mothishape_m_pfc. If you want to run a mothishape you need to specify the mode with -p, if you run mothishape with pfc enter the full name. Paritition function instances should be marked with pfc at the end, this tag instructs the script to calculate probabilities from the partition function values.', dest = 'algorithm',type=str, default = 'motmfepretty')
+    parser.add_argument( '-a',     '--algorithm', help = 'Specify which algorithm should be used, prebuild choices are: motmfepretty, motpfc, motshapeX, motshapeX_pfc, mothishape, mothishape_h_pfc, mothishape_b_pfc, mothishape_m_pfc. If you want to run a mothishape you need to specify the mode with -p, if you run mothishape with pfc enter the full name (e.g. mothishape_h_pfc). Paritition function instances should be marked with pfc at the end, this tag instructs the script to calculate probabilities from the partition function values. Default is motmfepretty', dest = 'algorithm',type=str, default = 'motmfepretty')
 
     #Input has to be either a single sequence with specifier -I or a sequence file with -i [PATH_TO_FILE] (FASTA,  STOCKHOLM,  FASTQ).
     input = parser.add_mutually_exclusive_group(required = True)
-    input.add_argument(  '-i',     '-inputFile', help = 'Set input path when using a file as input', type = argparse.FileType('r', encoding = 'UTF-8'), default = False, dest='iFile_path', nargs='?')
-    input.add_argument(  '-I', '-inputSequence', help = 'Input a RNA sequence', type=str, dest='input_seq')
-    parser.add_argument( '-n',          '-name', help = 'If single sequence input is used you can specifiy a name for the input which will be used to mark it in output',type = str, dest='name', default='single_sequence', nargs ='?')
+    input.add_argument(  '-i',     '--inputFile', help = 'Set input path when using a file as input. Accepts file types fasta, fastq and stockholm. Decompression of gzip and zip files is also supported.', type = argparse.FileType('r', encoding = 'UTF-8'), default = False, dest='iFile_path', nargs='?')
+    input.add_argument(  '-I', '--inputSequence', help = 'Input a RNA sequence.', type=str, dest='input_seq')
+    parser.add_argument( '-n',          '--name', help = 'If single sequence input is used you can specifiy a name for the input which will be used to mark it in output. Default is single_sequence.',type = str, dest='name', default='single_sequence', nargs ='?')
 
     #Command line arguments that control which algorithm is called with which options.
-    parser.add_argument( '-s',        '-subopt', help = 'Specify if mfe_subopt should be used,  usable exclusively with motmfepretty currently', action = 'store_true', default = False, dest = 'subopt')
-    parser.add_argument( '-Q',  '-motif_source', help = 'Specify from which database motifs should be used, 1 = BGSU, 2 = Rfam, 3 = Both', choices = ['1', '2', '3'],  default = '3', dest = 'motif_source')
-    parser.add_argument( '-b',     '-direction', help = 'Specify if 5->3,  3->5 or both motif versions should be used', choices = ['1', '2', '3'], default = '3', dest = 'direction')
-    parser.add_argument( '-k',        '-kvalue', help = 'Classify the k-best values, with k-best [int]', default = 10, type = int, dest = "kvalue")
-    parser.add_argument( '-p',       '-hishape', help = 'Set hishape mode', choices = ['h', 'm', 'b'], default = 'h', type=str, dest = 'hishape_mode')
-    parser.add_argument( '-q',   '-shape_level', help = 'Set shape level, Abstraction level is descending.', choices = [1, 2, 3, 4, 5], default = 2, type = int, dest = 'shape_level')
-    parser.add_argument( '-e',        '-energy', help = 'Specify energy range if mfe_subopt is used [float]', default = 1.0, type = float, dest  = 'energy')
-    parser.add_argument( '-l',      '-loglevel', help = 'Set log level, if log level is set to INFO or DEBUG all predictions log their time parameter', default='Info', dest = 'loglevel', type =str)
-    parser.add_argument( '-t',          '-time', help = 'Activate time logging, activating this will run all command with unix time utility', dest = 'time', action='store_const', const ='time', default = '')
-    parser.add_argument( '-w',       '-workers', help = 'Specify how many predictions should be done in parallel. Default is os.cpu_count()-1.', default=os.cpu_count()-1, type = int, dest = 'workers')
-    parser.add_argument( '-c',           '-sep', help = 'Specify separation character for output, default is tab', default = '\t', type = str, dest='separator')
-    parser.add_argument( '-f',          '-conf', help = 'If specified runtime arguments will be loaded from config file in {config_path}.'.format(config_path=os.path.join(os.path.dirname(os.path.realpath(__file__)),'src','data','config.ini')), action = 'store_true', default = False, dest = 'config')
+    parser.add_argument( '-s',        '--subopt', help = 'Specify if subopt folding should be used. Not useable with partition function implementations. Default is off', action = 'store_true', default = False, dest = 'subopt')
+    parser.add_argument( '-Q',  '--motif_source', help = 'Specify from which database motifs should be used, 1 = BGSU, 2 = Rfam, 3 = both. Default is 3.', choices = ['1', '2', '3'],  default = '3', dest = 'motif_source')
+    parser.add_argument( '-b',     '--direction', help = 'Specify motif direction: 1 = 5\'-> 3\',  2 = 3\'-> 5\' or 3 = both. Default is 3', choices = ['1', '2', '3'], default = '3', dest = 'direction')
+    parser.add_argument( '-k',        '--kvalue', help = 'Specify k for k-best classes get classified. Default is k = 5', default = 10, type = int, dest = "kvalue")
+    parser.add_argument( '-p',       '--hishape', help = 'Set hishape mode, default is h.', choices = ['h', 'm', 'b'], default = 'h', type=str, dest = 'hishape_mode')
+    parser.add_argument( '-q',   '--shape_level', help = 'Set shape abstraction level. Default is 3.', choices = [1, 2, 3, 4, 5], default = 3, type = int, dest = 'shape_level')
+    parser.add_argument( '-e',        '--energy', help = 'Specify energy range if subopt is used. Default is 1.0', default = 1.0, type = float, dest  = 'energy')
+    parser.add_argument( '-l',      '--loglevel', help = 'Set log level. Default is Info', default='Info', dest = 'loglevel', type =str)
+    parser.add_argument( '-t',          '--time', help = 'Activate time logging, activating this will run predictions with unix time utility. Default is off', dest = 'time', action='store_true', default = False)
+    parser.add_argument( '-w',       '--workers', help = 'Specify how many predictions should be done in parallel for file input. Default is os.cpu_count()-2.', default=os.cpu_count()-2, type = int, dest = 'workers')
+    parser.add_argument( '-c',           '--sep', help = 'Specify separation character for output. Default is tab', default = '\t', type = str, dest='separator')
+    parser.add_argument( '-f',          '--conf', help = 'If specified runtime arguments will be loaded from config file in {config_path}. Default is off.'.format(config_path=os.path.join(os.path.dirname(os.path.realpath(__file__)),'src','data','config.ini')), action = 'store_true', default = False, dest = 'config')
 
     #Arguments for updating motif catalogue, -r activates removal of sequences from catalogue, which ones have to be specified in Motif_collection.py update function.
     update = parser.add_mutually_exclusive_group(required=False)
-    update.add_argument('-fu', '-forceupdate', help = 'Force update of sequence catalogue', default =  False, action= 'store_true', dest = 'force_update')
-    update.add_argument('-nu',    '-noupdate', help = 'Block sequence updating', default = False, action = 'store_true', dest = 'no_update')
-    parser.add_argument( '-r',  '-remove_seq', help = 'When specified you can remove specific sequences from motifs if you do not want them to be recognized. These need to be specified in Motif_collection.py update function in the for-loop. THIS IS PERMANENT UNTIL YOU UPDATE THE SEQUENCES AGAIN (with -fu or naturally through a bgsu update).',
+    update.add_argument('-fu', '--force_update', help = 'Force update of sequence catalogue', default =  False, action= 'store_true', dest = 'force_update')
+    update.add_argument('-nu',    '--no_update', help = 'Block sequence updating', default = False, action = 'store_true', dest = 'no_update')
+    parser.add_argument( '-r',  '--remove_seq', help = 'When specified you can remove specific sequences from motifs if you do not want them to be recognized. These need to be specified in Motif_collection.py update function in the for-loop. THIS IS PERMANENT UNTIL YOU UPDATE THE SEQUENCES AGAIN (with -fu or naturally through a bgsu update).',
                         default = False, action = 'store_true', dest = 'remove')
     args=parser.parse_args()
     return args
@@ -95,9 +95,6 @@ class Process:
 
         self.time = commandline_args.time #type:str
 
-        if self.time:
-            self.timelogger=make_new_logger('info', 'time', '%(asctime)s:%(name)s:%(message)s') #type:logging.Logger #time logger hard coded to info level, only gets initialized when time command is given.
-
         self.workers = commandline_args.workers #type:int
 
         self.separator = commandline_args.separator #type:str
@@ -110,7 +107,10 @@ class Process:
 
         if commandline_args.config:
             self.conf_update(self.config['PARAMETERS']) #currently all the values get read as strings, workers would be nice as int but I type cast it when used anyways.
-        
+
+        if self.time:
+            self.timelogger=make_new_logger('info', 'time', '%(asctime)s:%(name)s:%(message)s') #type:logging.Logger #time logger hard coded to info level, only gets initialized when time command is given.
+
         if self.algorithm == 'mothishape':
             self.algorithm_call = self.algorithm + '_' + commandline_args.hishape_mode #type:str
         else:
@@ -125,25 +125,30 @@ class Process:
             self.pfc=False #type:bool
 
         self.log=make_new_logger(self.loglevel, __name__)
+        
+        if commandline_args.config:
+            self.log.warning('Running process with config file values...')
 
-        if not commandline_args.no_update:
+        if not self.no_update:
             try:
                 self.version_check_and_update(commandline_args.force_update, commandline_args.remove)
             except ConnectionError as error:
                 self.log.error(error)
                 self.log.error('Unable to update motif sequences, continuing with old sequence catalogue')
         else:
-            self.log.debug('Motif sequence updating disabled, will not update even if a new sequence catalogue is available.')
+            self.log.debug(' Motif sequence updating disabled.')
             
         self.algorithm_path = self.identify_algorithm() #type:str
+        
         self.call_construct = self.call_constructor() #type:str
+        
         self.log.info(' Process initiated successfully. Loglevel: {log}, Algorithm: {alg}, k: {k}, subopt: {sub}, motif_source: {mot}, motif_direction: {motd}, hishape_mode: {hi}, shape_level: {s}, time: {time}, algorithm_path: {algp}/{alg}. Worker Processes: {work}'.format(log=self.loglevel, alg=self.algorithm, k=self.kvalue, sub=self.subopt, mot=self.motif_source, motd=self.direction, hi=self.hishape_mode, s=self.shape_level, time=self.time, algp=self.algorithm_path, work=self.workers))
 
     def conf_update(self,update_dict:dict):
         bools= ['subopt', 'time', 'no_update']
         for key, value in update_dict.items():
             if key in bools:
-                setattr(self, key, self.config.getboolean(value))
+                setattr(self, key, self.config.getboolean('PARAMETERS',key))
             else:
                 setattr(self, key, value)
 
@@ -153,10 +158,10 @@ class Process:
         if self.config['VERSIONS']['hairpins'] == current: #updating is bound only to the hairpin version, since hairpins and internals always get updated at the same time
             self.log.info(' Motif sequences are up to date')
             if update_bool:
-                self.log.info(' Force update enabled, updating motifs...')
+                self.log.warning(' Force update enabled, updating motifs...')
                 mc.update(self.log, sequence_remove_bool, self.location)
         else:
-            self.log.info(' Motif sequences are outdated with current bgsu release, updating...')
+            self.log.warning(' Motif sequences are outdated with current bgsu release, updating but it may take a couple minutes...')
             mc.update(self.log, sequence_remove_bool, self.location)
             self.config.set('VERSIONS','hairpins',current)
             with open(self.conf_path,'w') as file:
@@ -170,10 +175,10 @@ class Process:
                 self.log.debug(' Found algorithm in {folder}'.format(folder=root))
                 return os.path.realpath(root, strict=True)
             else:pass
-        self.log.error(' Algorithm was not found, trying to compile...')
+        self.log.warning(' Algorithm was not found, trying to compile...')
         Compilation=self.compile_algorithm()
         if Compilation:
-            self.log.error(' Compilation of {alg} successful.'.format(alg=self.algorithm))
+            self.log.warning(' Compilation of {alg} successful.'.format(alg=self.algorithm))
             for root, dirs, files in os.walk(self.location):
                 if self.algorithm_call in files:
                     return os.path.realpath(root,strict=True)
@@ -196,34 +201,58 @@ class Process:
             subprocess.run('cd {selfpath}; rm {alg}.o; rm {alg}.mf; rm {alg}.hh; rm {alg}.d; rm {alg}.cc; rm {alg}_main.o; rm {alg}_main.d; rm {alg}_main.cc; rm string.d; rm string.o'.format(selfpath=self.location,alg=self.algorithm_call),shell=True,capture_output=False)
             return True #return compilation was successful.
 
-    def call_constructor(self) -> str: #Call construction function, if you add a new algorithm you will need to add a call construction string here for the python script to call on each sequence in your input. Remember to keep the cd {path} && {time} with path = self.algorithm_path and time = self.time
+    def call_constructor(self) -> str: #Call construction function, if you add a new algorithm you will need to add a call construction string here for the python script to call on each sequence in your input. Remember to keep the cd {path} && {time} with path = self.algorithm_path
         match self.algorithm:
             
-            case 'motmfepretty': #the calls need to first go to the directory, otherwise no motifs cause the c++ path code is still funky, change beginning to: {time} {path}/{algorithm} if you ever fix that.
+            case 'motmfepretty': #the calls need to first go to the directory, otherwise no motifs cause the c++ path code is still funky, change beginning to: {path}/{algorithm} if you ever fix that.
                 if self.subopt:
-                    call = 'cd {path} && {time} ./{algorithm} -e {energy_value} -Q {database} -b {motif_direction} '.format(time=self.time, path=self.algorithm_path, algorithm=self.algorithm_call, energy_value=self.energy, database=self.motif_source, motif_direction=self.direction)
+                    if self.time:
+                        call = 'cd {path} && time ./{algorithm} -e {energy_value} -Q {database} -b {motif_direction} '.format(path=self.algorithm_path, algorithm=self.algorithm_call, energy_value=self.energy, database=self.motif_source, motif_direction=self.direction)
+                    else:
+                        call = 'cd {path} && ./{algorithm} -e {energy_value} -Q {database} -b {motif_direction} '.format(path=self.algorithm_path, algorithm=self.algorithm_call, energy_value=self.energy, database=self.motif_source, motif_direction=self.direction)
                 else:
-                    call = 'cd {path} && {time} ./{algorithm} -k {k} -Q {database} -b {motif_direction} '.format(time=self.time, path=self.algorithm_path, algorithm=self.algorithm_call, k=self.kvalue,database=self.motif_source,motif_direction=self.direction)
+                    if self.time:
+                        call = 'cd {path} && time ./{algorithm} -k {k} -Q {database} -b {motif_direction} '.format(path=self.algorithm_path, algorithm=self.algorithm_call, k=self.kvalue,database=self.motif_source,motif_direction=self.direction)
+                    else:
+                        call = 'cd {path} && ./{algorithm} -k {k} -Q {database} -b {motif_direction} '.format(path=self.algorithm_path, algorithm=self.algorithm_call, k=self.kvalue,database=self.motif_source,motif_direction=self.direction)
                 
             case 'motshapeX':
                 if self.subopt:
-                    call = 'cd {path} && {time} ./{algorithm} -e {energy_value} -Q {database} -b {motif_direction} -q {shapelvl} '.format(time=self.time, path=self.algorithm_path, algorithm=self.algorithm_call, energy_value=self.energy,database=self.motif_source,motif_direction=self.direction,shapelvl=self.shape_level)
+                    if self.time:
+                        call = 'cd {path} && time ./{algorithm} -e {energy_value} -Q {database} -b {motif_direction} -q {shapelvl} '.format( path=self.algorithm_path, algorithm=self.algorithm_call, energy_value=self.energy,database=self.motif_source,motif_direction=self.direction,shapelvl=self.shape_level)
+                    else:
+                        call = 'cd {path} && ./{algorithm} -e {energy_value} -Q {database} -b {motif_direction} -q {shapelvl} '.format(path=self.algorithm_path, algorithm=self.algorithm_call, energy_value=self.energy,database=self.motif_source,motif_direction=self.direction,shapelvl=self.shape_level)
                     self.log.warning(' Running suboptimal folding with motshapeX leads to extremly long runtimes and very large outputs even with low energy threshholds and high shape level!')
                 else:
-                    call = 'cd {path} && {time} ./{algorithm} -k {k} -Q {database} -b {motif_direction} -q {shapelvl} '.format(time=self.time, path=self.algorithm_path, algorithm=self.algorithm_call, k=self.kvalue, database=self.motif_source, motif_direction=self.direction, shapelvl=self.shape_level)
+                    if self.time:
+                        call = 'cd {path} && time ./{algorithm} -k {k} -Q {database} -b {motif_direction} -q {shapelvl} '.format(path=self.algorithm_path, algorithm=self.algorithm_call, k=self.kvalue, database=self.motif_source, motif_direction=self.direction, shapelvl=self.shape_level)
+                    else:
+                        call = 'cd {path} && ./{algorithm} -k {k} -Q {database} -b {motif_direction} -q {shapelvl} '.format(path=self.algorithm_path, algorithm=self.algorithm_call, k=self.kvalue, database=self.motif_source, motif_direction=self.direction, shapelvl=self.shape_level)
             
             case 'mothishape':
                 if self.subopt:
-                    call = 'cd {path} && {time} ./{algorithm} -e {energy_value} -Q {database} -b {motif_direction} '.format(time=self.time, path=self.algorithm_path, algorithm=self.algorithm_call, energy_value=self.energy, database=self.motif_source, motif_direction=self.direction, hishape=self.hishape_mode)
+                    if self.time:
+                        call = 'cd {path} && time ./{algorithm} -e {energy_value} -Q {database} -b {motif_direction} '.format(path=self.algorithm_path, algorithm=self.algorithm_call, energy_value=self.energy, database=self.motif_source, motif_direction=self.direction, hishape=self.hishape_mode)
+                    else:
+                        call = 'cd {path} && ./{algorithm} -e {energy_value} -Q {database} -b {motif_direction} '.format(path=self.algorithm_path, algorithm=self.algorithm_call, energy_value=self.energy, database=self.motif_source, motif_direction=self.direction, hishape=self.hishape_mode)
                     self.log.warning(' Running suboptimal folding with motHishapes leads to extremly long runtimes and very large outputs even with low energy threshholds and hishape mode h!')
                 else:
-                    call = 'cd {path} && {time} ./{algorithm} -k {k} -Q {database} -b {motif_direction} '.format(time=self.time, path=self.algorithm_path, algorithm=self.algorithm_call, k=self.kvalue, database=self.motif_source, motif_direction=self.direction, hishape=self.hishape_mode)
+                    if self.time:
+                        call = 'cd {path} && time ./{algorithm} -k {k} -Q {database} -b {motif_direction} '.format(path=self.algorithm_path, algorithm=self.algorithm_call, k=self.kvalue, database=self.motif_source, motif_direction=self.direction, hishape=self.hishape_mode)
+                    else:
+                        call = 'cd {path} && ./{algorithm} -k {k} -Q {database} -b {motif_direction} '.format(path=self.algorithm_path, algorithm=self.algorithm_call, k=self.kvalue, database=self.motif_source, motif_direction=self.direction, hishape=self.hishape_mode)
 
             case 'motpfc'|'mothishape_h_pfc' | 'mothishape_b_pfc' | 'mothishape_m_pfc':
-                call = 'cd {path} && {time} ./{algorithm} -k {k} -Q {database} -b {motif_direction} '.format(time=self.time, path=self.algorithm_path, algorithm=self.algorithm_call, k=self.kvalue, database=self.motif_source, motif_direction=self.direction)
+                if self.time:
+                    call = 'cd {path} && time ./{algorithm} -k {k} -Q {database} -b {motif_direction} '.format(path=self.algorithm_path, algorithm=self.algorithm_call, k=self.kvalue, database=self.motif_source, motif_direction=self.direction)
+                else:
+                    call = 'cd {path} && ./{algorithm} -k {k} -Q {database} -b {motif_direction} '.format(path=self.algorithm_path, algorithm=self.algorithm_call, k=self.kvalue, database=self.motif_source, motif_direction=self.direction)
 
             case 'motshapeX_pfc':
-                call = 'cd {path} && {time} ./{algorithm} -k {k} -Q {database} -b {motif_direction} -q {shapelvl} '.format(time=self.time, path=self.algorithm_path, algorithm=self.algorithm_call, k=self.kvalue, database=self.motif_source,motif_direction=self.direction,shapelvl=self.shape_level)
+                if self.time:
+                    call = 'cd {path} && time ./{algorithm} -k {k} -Q {database} -b {motif_direction} -q {shapelvl} '.format(path=self.algorithm_path, algorithm=self.algorithm_call, k=self.kvalue, database=self.motif_source,motif_direction=self.direction,shapelvl=self.shape_level)
+                else:
+                    call = 'cd {path} && ./{algorithm} -k {k} -Q {database} -b {motif_direction} -q {shapelvl} '.format(path=self.algorithm_path, algorithm=self.algorithm_call, k=self.kvalue, database=self.motif_source,motif_direction=self.direction,shapelvl=self.shape_level)
        
             case _:
                 self.log.critical(' Call constructor was unable to generate secondary structure prediction call. Please check the call_constructor function.')
@@ -289,7 +318,7 @@ class MultiProcess(Process):
         if self.iFile.name.split('.')[-1] == 'gz' or self.iFile.name.split('.')[-1] == 'zip':
             file_extension = (self.iFile.name.split('.')[-2])
             self.zipped=True
-            self.log.debug(' File is compressed, decompressing with gzip...')
+            self.log.info(' File is compressed, decompressing with gzip...')
         else:
             file_extension = (self.iFile.name.split('.')[-1])
             self.zipped=False
@@ -359,22 +388,27 @@ class MultiProcess(Process):
                     self.log.error(' {name}:{error}'.format(name=result[0], error=result[1].strip())) 
                     connection.send(result[0]) #sends errors back to the main process for logging purposes.
                 else:
-                    self.log.info(' Process finished: {res}. Sequence length: {len}.'.format(res=result[0].id, len = len(result[0].seq)))
+                    if result[0].dna:
+                        self.log.info(' Process finished: {res}. Sequence length: {len}. Input was DNA, for the prediction T was replaced by U.'.format(res=result[0].id, len = len(result[0].seq)))
+                    else:
+                        self.log.info(' Process finished: {res}. Sequence length: {len}'.format(res=result[0].id, len = len(result[0].seq)))
                     output_started=self.write_output(result, output_started)
 
 class ClassScoreClass(): #Sublcasses for different algorithm types, as generalized as possible.
-    def __init__(self, name:str, sequence:SeqIO.SeqRecord.seq, result_list:list[list], algorithm:str):
+    def __init__(self, name:str, sequence:SeqIO.SeqRecord.seq, result_list:list[list], algorithm:str, DNA:bool):
         self.id = name
         self.seq = sequence
         self.results = result_list
         self.algorithm = algorithm #Can use this in the future to build dedicated functions for different algorithms
+        self.dna = DNA
 
 class ClassScore():
-    def __init__(self, name:str, sequence:SeqIO.SeqRecord.seq, result_list:list[list], algorithm:str, pfc:bool=False):
+    def __init__(self, name:str, sequence:SeqIO.SeqRecord.seq, result_list:list[list], algorithm:str, DNA:bool, pfc:bool = False):
         self.id = name
         self.seq = sequence
         self.results = result_list
         self.algorithm = algorithm
+        self.dna = DNA
         if pfc:
             try:self.calculate_pfc_probabilities()
             except:sys.stderr.write(('Unable to calculate probabilities from partition function values for process {proc}'.format(proc=self.id)))
@@ -392,12 +426,17 @@ class ClassScore():
 #Non Process class function that need to be unbound to be pickle'able. See: https://stackoverflow.com/questions/1816958/cant-pickle-type-instancemethod-when-using-multiprocessing-pool-map, guess it kinda is possible it really isnt all that necessary though.
 
 def worker(record:SeqIO.SeqRecord, call:str, q:multiprocessing.Queue, alg:str, pfc_bool:bool) -> None:
-    result = subprocess.run(call+str(record.seq), text=True, capture_output=True, shell=True)
+    if "T" in str(record.seq):
+        result = subprocess.run(call+str(record.seq).replace('T','U'), text=True, capture_output=True, shell=True)
+        dna = True
+    else:
+        result = subprocess.run(call+str(record.seq), text=True, capture_output=True, shell=True)
+        dna = False
     
     if not result.returncode: #double negative, this captures return_code = 0, returned if subprocess.run worked
         out     = result.stdout
         err     = result.stderr
-        output_obj = split_results_find_subclass(record.id, record.seq, out, alg, pfc_bool) 
+        output_obj = split_results_find_subclass(record.id, record.seq, out, alg, dna, pfc_bool) 
         subprocess_output = (output_obj, err)
 
     else: #this captures return_code = 1, returned if subprocess.run did not work
@@ -406,7 +445,7 @@ def worker(record:SeqIO.SeqRecord, call:str, q:multiprocessing.Queue, alg:str, p
 
     q.put(subprocess_output)
 
-def split_results_find_subclass(name:str, sequence:SeqIO.SeqRecord.seq, result:str,alg:str, pfc:bool) -> 'ClassScore|ClassScoreClass': #Would be nice to not have the check for Class decision at the end, but would need to be able to
+def split_results_find_subclass(name:str, sequence:SeqIO.SeqRecord.seq, result:str,alg:str, dna:bool ,pfc:bool) -> 'ClassScore|ClassScoreClass': #Would be nice to not have the check for Class decision at the end, but would need to be able to
     split=result.strip().split('\n')                                                          #check for it somewhere outside of the worker function.
     return_list=[]
     for result in split:
@@ -414,9 +453,9 @@ def split_results_find_subclass(name:str, sequence:SeqIO.SeqRecord.seq, result:s
         split_stripped_results= [x.strip() for x in split_result] #removes all whitespaces from results, makes it look nice
         return_list.append(split_stripped_results)
     if len(split_result) == 2:
-        return ClassScore(name, sequence, return_list, alg, pfc)
+        return ClassScore(name, sequence, return_list, alg, dna, pfc)
     elif len(split_result) == 3:
-        return ClassScoreClass(name, sequence, return_list, alg)
+        return ClassScoreClass(name, sequence, return_list, alg, dna)
     else:
         raise ValueError(' Could not identify algorithm output classification as ClassScore or ClassScoreClass.')
 
