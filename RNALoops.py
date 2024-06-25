@@ -101,6 +101,8 @@ class Process:
 
         self.location = os.path.dirname(os.path.realpath(__file__)) #type:str
 
+        self.no_update = commandline_args.no_update
+        
         self.conf_path = os.path.join(self.location,'src','data','config.ini')
         self.config    = configparser.ConfigParser() 
         self.config.read(self.conf_path) 
@@ -112,7 +114,7 @@ class Process:
             self.timelogger=make_new_logger('info', 'time', '%(asctime)s:%(name)s:%(message)s') #type:logging.Logger #time logger hard coded to info level, only gets initialized when time command is given.
 
         if self.algorithm == 'mothishape':
-            self.algorithm_call = self.algorithm + '_' + commandline_args.hishape_mode #type:str
+            self.algorithm_call = self.algorithm + '_' + self.hishape_mode #type:str
         else:
             self.algorithm_call=self.algorithm #type:str
         
@@ -292,15 +294,21 @@ class Process:
 class SingleProcess(Process):
     def __init__(self, commandline_args: argparse.Namespace) -> None:
         super().__init__(commandline_args)
-        self.input_seq = commandline_args.input_seq
+        self.input_seq = commandline_args.input_seq #type:str
         self.log.info(' Running: {name}. Input sequence: {seq}'.format(name=self.name,seq=self.input_seq))
         if self.name is None:
             self.name = 'single_sequence' #type:str
         
     def run_process(self) -> None:
-        result = subprocess.run(self.call_construct+self.input_seq, text=True, shell=True, capture_output=True)
+        if "T" in self.input_seq:
+            result = subprocess.run(self.call_construct+self.input_seq.replace('T','U'), text=True, capture_output=True, shell=True)
+            self.log.warning(' T detected in input sequence, replacing T with U and running prediction anyways...')
+            dna = True #type:bool
+        else:
+            result = subprocess.run(self.call_construct+self.input_seq, text=True, capture_output=True, shell=True)
+            dna = False #type:bool
         if not result.returncode:
-            result_obj=split_results_find_subclass(self.name, self.input_seq,result.stdout, self.algorithm, self.pfc)
+            result_obj=split_results_find_subclass(self.name, self.input_seq,result.stdout, self.algorithm, dna, self.pfc)
             subprocess_output=(result_obj, result.stderr)
         else:
             subprocess_output=(self.name, result.stderr)
