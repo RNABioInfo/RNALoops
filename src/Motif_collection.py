@@ -1,5 +1,4 @@
 #A simplified and class based approach to motif collection, hopefully making it less of a mess.
-#I recommend setting this up as a cronjob for the the 1 first of each month, as the BGSU is somewhat irregularly updated towards the end of each month.
 #New fix for duplicate sequences: They will be assigned to the motif they were found with first (order in motifs.json) but with a lower case letter to indicate that they might be something else aswell.
 from collections import defaultdict
 import json
@@ -155,7 +154,7 @@ class Instance:
                     split=decoded.split()
                     api_responses.append(split)
                 else:
-                    sleep(1)
+                    sleep(0.5)
         return api_responses
 
     def get_sequences_json(self) -> list: #returns list of sequences of all Loops in this instance, taken from the provided .json
