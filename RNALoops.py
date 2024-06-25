@@ -126,7 +126,6 @@ class Process:
 
         self.log=make_new_logger(self.loglevel, __name__)
 
-        self.algorithm_path = self.identify_algorithm() #type:str
 
         self.call_construct = self.call_constructor() #type:str
 
@@ -138,7 +137,9 @@ class Process:
                 self.log.error('Unable to update motif sequences, continuing with old sequence catalogue')
         else:
             self.log.debug('Motif sequence updating disabled, will not update even if a new sequence catalogue is available.')
-            self.log.info(' Process initiated successfully. Loglevel: {log}, Algorithm: {alg}, k: {k}, subopt: {sub}, motif_source: {mot}, motif_direction: {motd}, hishape_mode: {hi}, shape_level: {s}, time: {time}, algorithm_path: {algp}/{alg}. Worker Processes: {work}'.format(log=self.loglevel, alg=self.algorithm, k=self.kvalue, sub=self.subopt, mot=self.motif_source, motd=self.direction, hi=self.hishape_mode, s=self.shape_level, time=self.time, algp=self.algorithm_path, work=self.workers))
+            
+        self.algorithm_path = self.identify_algorithm() #type:str
+        self.log.info(' Process initiated successfully. Loglevel: {log}, Algorithm: {alg}, k: {k}, subopt: {sub}, motif_source: {mot}, motif_direction: {motd}, hishape_mode: {hi}, shape_level: {s}, time: {time}, algorithm_path: {algp}/{alg}. Worker Processes: {work}'.format(log=self.loglevel, alg=self.algorithm, k=self.kvalue, sub=self.subopt, mot=self.motif_source, motd=self.direction, hi=self.hishape_mode, s=self.shape_level, time=self.time, algp=self.algorithm_path, work=self.workers))
 
     def conf_update(self,update_dict:dict):
         bools= ['subopt', 'time', 'no_update']
