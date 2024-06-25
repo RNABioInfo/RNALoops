@@ -126,9 +126,6 @@ class Process:
 
         self.log=make_new_logger(self.loglevel, __name__)
 
-
-        self.call_construct = self.call_constructor() #type:str
-
         if not commandline_args.no_update:
             try:
                 self.version_check_and_update(commandline_args.force_update, commandline_args.remove)
@@ -139,6 +136,7 @@ class Process:
             self.log.debug('Motif sequence updating disabled, will not update even if a new sequence catalogue is available.')
             
         self.algorithm_path = self.identify_algorithm() #type:str
+        self.call_construct = self.call_constructor() #type:str
         self.log.info(' Process initiated successfully. Loglevel: {log}, Algorithm: {alg}, k: {k}, subopt: {sub}, motif_source: {mot}, motif_direction: {motd}, hishape_mode: {hi}, shape_level: {s}, time: {time}, algorithm_path: {algp}/{alg}. Worker Processes: {work}'.format(log=self.loglevel, alg=self.algorithm, k=self.kvalue, sub=self.subopt, mot=self.motif_source, motd=self.direction, hi=self.hishape_mode, s=self.shape_level, time=self.time, algp=self.algorithm_path, work=self.workers))
 
     def conf_update(self,update_dict:dict):
