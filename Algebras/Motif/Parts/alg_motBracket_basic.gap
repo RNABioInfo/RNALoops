@@ -1,4 +1,4 @@
-//basic version of the alg_pretty compatible with OverDanle, NoDangle and Microstate. Extended version alg_pretty is compatible with gra_macrostate
+//basic version of the alg_motBracket compatible with OverDanle, NoDangle and Microstate. Extended version alg_motBracket is compatible with gra_macrostate
 
 string sadd(Subsequence lb,string e) {
   string res;

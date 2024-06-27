@@ -110,6 +110,11 @@ class Process:
         if commandline_args.config:
             self.conf_update(self.config['PARAMETERS']) #currently all the values get read as strings, workers would be nice as int but I type cast it when used anyways.
 
+        self.log=make_new_logger(self.loglevel, __name__)
+        
+        if commandline_args.config: #log for using config args, is back here because I gotta make the logger with the config parameter loglevel first
+            self.log.warning('Running process with config file values...')
+
         if self.time:
             self.timelogger=make_new_logger('info', 'time', '%(asctime)s:%(name)s:%(message)s') #type:logging.Logger #time logger hard coded to info level, only gets initialized when time command is given.
 
@@ -126,10 +131,8 @@ class Process:
         else:
             self.pfc=False #type:bool
 
-        self.log=make_new_logger(self.loglevel, __name__)
-        
-        if commandline_args.config:
-            self.log.warning('Running process with config file values...')
+        self.current_motifs = mc.get_api_response('http://rna.bgsu.edu/rna3dhub/motifs/release/hl/current/json').headers['Content-disposition'].split('=')[1]
+        self.local_motifs   = self.config['VERSIONS']['hairpins']
 
         if not self.no_update:
             try:
@@ -143,8 +146,8 @@ class Process:
         self.algorithm_path = self.identify_algorithm() #type:str
         
         self.call_construct = self.call_constructor() #type:str
-        
-        self.log.info(' Process initiated successfully. Loglevel: {log}, Algorithm: {alg}, k: {k}, subopt: {sub}, motif_source: {mot}, motif_direction: {motd}, hishape_mode: {hi}, shape_level: {s}, time: {time}, algorithm_path: {algp}/{alg}. Worker Processes: {work}'.format(log=self.loglevel, alg=self.algorithm, k=self.kvalue, sub=self.subopt, mot=self.motif_source, motd=self.direction, hi=self.hishape_mode, s=self.shape_level, time=self.time, algp=self.algorithm_path, work=self.workers))
+
+        self.log.info(' Process initiated successfully. Loglevel: {log}, Algorithm: {alg}, K: {k}, Subopt: {sub}, Motif source: {mot}, Motif direction: {motd}, Hishape mode: {hi}, Shape level: {s}, Time: {time}, Local motif version: {version}, Worker processes: {work}'.format(log=self.loglevel, alg=self.algorithm, k=self.kvalue, sub=self.subopt, mot=self.motif_source, motd=self.direction, hi=self.hishape_mode, s=self.shape_level, time=self.time, algp=self.algorithm_path, work=self.workers, version=self.local_motifs[3:-6]))
 
     def conf_update(self,update_dict:dict):
         bools= ['subopt', 'time', 'no_update']
@@ -155,9 +158,8 @@ class Process:
                 setattr(self, key, value)
 
     def version_check_and_update(self, update_bool, sequence_remove_bool) -> bool:
-        current=mc.get_api_response('http://rna.bgsu.edu/rna3dhub/motifs/release/hl/current/json').headers['Content-disposition'].split('=')[1]
         self.log.info(' Checking Motif sequence version...')
-        if self.config['VERSIONS']['hairpins'] == current: #updating is bound only to the hairpin version, since hairpins and internals always get updated at the same time
+        if self.local_motifs == self.current_motifs: #updating is bound only to the hairpin version, since hairpins and internals always get updated at the same time
             self.log.info(' Motif sequences are up to date')
             if update_bool:
                 self.log.warning(' Force update enabled, updating motifs...')
@@ -165,7 +167,7 @@ class Process:
         else:
             self.log.warning(' Motif sequences are outdated with current bgsu release, updating but it may take a couple minutes...')
             mc.update(self.log, sequence_remove_bool, self.location)
-            self.config.set('VERSIONS','hairpins',current)
+            self.config.set('VERSIONS','hairpins', self.current_motifs)
             with open(self.conf_path,'w') as file:
                 self.config.write(file)
             self.log.info(' Motif sequences have been updated and version number has been changed in config file.')

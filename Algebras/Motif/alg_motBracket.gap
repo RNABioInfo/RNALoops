@@ -1,5 +1,5 @@
-algebra alg_pretty implements sig_foldrna(alphabet = char, answer = string){
-    include "Algebras/Motif/Parts/alg_pretty_basic.gap"
+algebra alg_motBracket implements sig_foldrna(alphabet = char, answer = string){
+    include "Algebras/Motif/Parts/alg_motBracket_basic.gap"
 
     //functions only used with the macrostates grammar.
     string cadd_Pr(string le,string re) {string res; append(res, le); append(res, re); return res;}
