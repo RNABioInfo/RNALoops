@@ -6,7 +6,7 @@ For rudimentary documentation, consult https://bibiserv.cebitec.uni-bielefeld.de
 
 # RNALoops
 
-RNALoops makes "motified" algebras available, allowing for the incorporation of RNA 3D Motifs into RNA secondary structure predictions. There are currently four algebras available: ```alg_motif```, ```alg_pretty```, ```alg_shapes_mot``` and ```alg_hishapes_mot```, findable under ```RNALoops/Algebras/Motif```. ```Motif```, ```shapes``` and ```hishapes``` can be used as classifying algebras in the Bellman's GAP system. ```pretty``` is a adapted DotBracket Algebra that incorporates the found motifs into a DotBracket depiction. The underlying C++ implementation for the motifs can be found in the ```motif.hh``` header file under ```RNALoops/Extensions```.
+RNALoops makes "motified" algebras available, allowing for the incorporation of RNA 3D Motifs into RNA secondary structure predictions. There are currently four algebras available: ```alg_motif```, ```alg_motBracket```, ```alg_shapes_mot``` and ```alg_hishapes_mot```, findable under ```RNALoops/Algebras/Motif```. ```Motif```, ```shapes``` and ```hishapes``` can be used as classifying algebras in the Bellman's GAP system. ```motBracket``` is a adapted DotBracket Algebra that incorporates found motifs into the DotBracket depiction. The underlying C++ implementation for the motifs can be found in the ```motif.hh``` header file under ```RNALoops/Extensions```.
 RNALoops should work on any UNIX systems, provided you can get the GAP compiler the work (everything was written and tested on Ubuntu 22.04.3 LTS and python 3.10.12 64-bit).
 
 Setup:</br>
