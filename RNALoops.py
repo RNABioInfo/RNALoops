@@ -113,7 +113,7 @@ class Process:
         self.log=make_new_logger(self.loglevel, __name__)
         
         if commandline_args.config: #log for using config args, is back here because I gotta make the logger with the config parameter loglevel first
-            self.log.warning('Running process with config file values...')
+            self.log.warning(' Running process with config file values...')
 
         if self.time:
             self.timelogger=make_new_logger('info', 'time', '%(asctime)s:%(name)s:%(message)s') #type:logging.Logger #time logger hard coded to info level, only gets initialized when time command is given.
@@ -147,7 +147,7 @@ class Process:
         
         self.call_construct = self.call_constructor() #type:str
 
-        self.log.info(' Process initiated successfully. Loglevel: {log}, Algorithm: {alg}, K: {k}, Subopt: {sub}, Motif source: {mot}, Motif direction: {motd}, Hishape mode: {hi}, Shape level: {s}, Time: {time}, Local motif version: {version}, Worker processes: {work}'.format(log=self.loglevel, alg=self.algorithm, k=self.kvalue, sub=self.subopt, mot=self.motif_source, motd=self.direction, hi=self.hishape_mode, s=self.shape_level, time=self.time, algp=self.algorithm_path, work=self.workers, version=self.local_motifs[3:-6]))
+        self.log.info(' Process initiated successfully. Loglevel: {log}, Algorithm: {alg}, K: {k}, Subopt: {sub}, Motif source: {mot}, Motif direction: {motd}, Hishape mode: {hi}, Shape level: {s}, Time: {time}, Local motif version: {version}, Worker processes: {work}'.format(log=self.loglevel, alg=self.algorithm, k=self.kvalue, sub=self.subopt, mot=self.motif_source, motd=self.direction, hi=self.hishape_mode, s=self.shape_level, time=self.time, algp=self.algorithm_path, work=self.workers, version=self.local_motifs[3:-5]))
 
     def conf_update(self,update_dict:dict):
         bools= ['subopt', 'time', 'no_update']
@@ -367,6 +367,8 @@ class MultiProcess(Process):
         listening.start() #start the listener, patiently waiting for processes to finish
         jobs = []
         for record in self.seq_iterator:
+            if "T" in str(record.seq):
+                self.log.error(' DNA sequence detected for {rec}. Swapping T for U and running prediction anyways'.format(rec=record.id))
             job = Pool.apply_async(worker, (record, self.call_construct, q, self.algorithm, self.pfc))
             jobs.append(job) #append workers into the workerlist
         for job in jobs:
