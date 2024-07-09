@@ -9,7 +9,7 @@ import gzip
 from typing import Generator
 import sys
 import logging
-import src.Motif_collection as mc
+import Motif_collection as mc
 
 def get_cmdarguments() -> argparse.Namespace:
     
@@ -29,23 +29,23 @@ def get_cmdarguments() -> argparse.Namespace:
 
     #Command line arguments that control which algorithm is called with which options.
     parser.add_argument( '-s',        '--subopt', help = 'Specify if subopt folding should be used. Not useable with partition function implementations. Default is off', action = 'store_true', default = False, dest = 'subopt')
-    parser.add_argument( '-Q',  '--motif_source', help = 'Specify from which database motifs should be used, 1 = BGSU, 2 = Rfam, 3 = both. Default is 3.', choices = ['1', '2', '3'],  default = '3', dest = 'motif_source')
-    parser.add_argument( '-b',     '--direction', help = 'Specify motif direction: 1 = 5\'-> 3\',  2 = 3\'-> 5\' or 3 = both. Default is 3', choices = ['1', '2', '3'], default = '3', dest = 'direction')
+    parser.add_argument( '-Q',  '--motif_source', help = 'Specify from which database motifs should be used, 1 = BGSU, 2 = Rfam, 3 = both. Default is 3', choices = ['1', '2', '3'],  default = '3', dest = 'motif_source')
+    parser.add_argument( '-b',     '--direction', help = 'Specify motif direction: 1 = 5\'-> 3\',  2 = 3\' -> 5\' or 3 = both. Default is 3', choices = ['1', '2', '3'], default = '3', dest = 'direction')
     parser.add_argument( '-k',        '--kvalue', help = 'Specify k for k-best classes get classified. Default is k = 5', default = 10, type = int, dest = "kvalue")
-    parser.add_argument( '-p',       '--hishape', help = 'Set hishape mode, default is h.', choices = ['h', 'm', 'b'], default = 'h', type=str, dest = 'hishape_mode')
-    parser.add_argument( '-q',   '--shape_level', help = 'Set shape abstraction level. Default is 3.', choices = [1, 2, 3, 4, 5], default = 3, type = int, dest = 'shape_level')
+    parser.add_argument( '-p',       '--hishape', help = 'Set hishape mode, default is h', choices = ['h', 'm', 'b'], default = 'h', type=str, dest = 'hishape_mode')
+    parser.add_argument( '-q',   '--shape_level', help = 'Set shape abstraction level. Default is 3', choices = [1, 2, 3, 4, 5], default = 3, type = int, dest = 'shape_level')
     parser.add_argument( '-e',        '--energy', help = 'Specify energy range if subopt is used. Default is 1.0', default = 1.0, type = float, dest  = 'energy')
     parser.add_argument( '-l',      '--loglevel', help = 'Set log level. Default is Info', default='Info', dest = 'loglevel', type =str)
     parser.add_argument( '-t',          '--time', help = 'Activate time logging, activating this will run predictions with unix time utility. Default is off', dest = 'time', action='store_true', default = False)
-    parser.add_argument( '-w',       '--workers', help = 'Specify how many predictions should be done in parallel for file input. Default is os.cpu_count()-2.', default=os.cpu_count()-2, type = int, dest = 'workers')
-    parser.add_argument( '-c',           '--sep', help = 'Specify separation character for output. Default is tab', default = '\t', type = str, dest='separator')
-    parser.add_argument( '-f',          '--conf', help = 'If specified runtime arguments will be loaded from config file in {config_path}. Default is off.'.format(config_path=os.path.join(os.path.dirname(os.path.realpath(__file__)),'src','data','config.ini')), action = 'store_true', default = False, dest = 'config')
+    parser.add_argument( '-w',       '--workers', help = 'Specify how many predictions should be done in parallel for file input. Default is os.cpu_count()-2', default=os.cpu_count()-2, type = int, dest = 'workers')
+    parser.add_argument( '-v',           '--sep', help = 'Specify separation character for output. Default is tab', default = '\t', type = str, dest='separator')
+    parser.add_argument( '-c',          '--conf', help = 'If specified runtime arguments will be loaded from config file in {config_path}. Default is off'.format(config_path=os.path.join(os.path.dirname(os.path.realpath(__file__)),'data','config.ini')), action = 'store_true', default = False, dest = 'config')
 
     #Arguments for updating motif catalogue, -r activates removal of sequences from catalogue, which ones have to be specified in Motif_collection.py update function.
     update = parser.add_mutually_exclusive_group(required=False)
     update.add_argument('-fu', '--force_update', help = 'Force update of sequence catalogue', default =  False, action= 'store_true', dest = 'force_update')
     update.add_argument('-nu',    '--no_update', help = 'Block sequence updating', default = False, action = 'store_true', dest = 'no_update')
-    parser.add_argument( '-r',  '--remove_seq', help = 'When specified you can remove specific sequences from motifs if you do not want them to be recognized. These need to be specified in Motif_collection.py update function in the for-loop. THIS IS PERMANENT UNTIL YOU UPDATE THE SEQUENCES AGAIN (with -fu or naturally through a bgsu update).',
+    parser.add_argument( '-r',  '--remove_seq', help = 'When specified you can remove specific sequences from motifs if you do not want them to be recognized. These need to be specified in Motif_collection.py update function in the for-loop. THIS IS PERMANENT UNTIL YOU UPDATE THE SEQUENCES AGAIN (with -fu or naturally through a bgsu update). By default removes UUCAA and UACG from GNRA, GUGA from UNCG. ',
                         default = False, action = 'store_true', dest = 'remove')
     args=parser.parse_args()
     return args
@@ -57,7 +57,7 @@ def make_new_logger(lvl:str,name:str,form:str='') -> logging.Logger:
     if form:
         formatter = logging.Formatter(fmt=form)
     else:
-        formatter = logging.Formatter(fmt='%(asctime)s:%(levelname)s:%(message)s')
+        formatter = logging.Formatter(fmt='%(asctime)s:%(levelname)s: %(message)s')
     handler.setFormatter(formatter)
     logger.propagate=False #Permanent propagate False since I'm not utilizing any subloggers and sublcasses. THis way I can just treat each loggers as a standalone, makes it easier.
     logger.addHandler(handler)
@@ -66,44 +66,45 @@ def make_new_logger(lvl:str,name:str,form:str='') -> logging.Logger:
 class Process:
     def __init__(self, commandline_args:argparse.Namespace):
 
-        self.loglevel = commandline_args.loglevel.upper() #type:str
+        self.loglevel  = commandline_args.loglevel.upper() #type:str
         
         numeric_level=getattr(logging,self.loglevel, None)
         if not isinstance(numeric_level, int):
             raise ValueError('Invalid log level: {lvl}'.format(lvl=self.loglevel))
 
-        self.subopt = commandline_args.subopt #type:bool
+        self.subopt    = commandline_args.subopt #type:bool
 
         #Input parameters
-        self.name = commandline_args.name #type:str
+        self.name      = commandline_args.name #type:str
 
         self.algorithm = commandline_args.algorithm #type:str
 
         #Other Process parameters
 
-        self.kvalue = commandline_args.kvalue #type:int
+        self.kvalue    = commandline_args.kvalue #type:int
 
-        self.motif_source = commandline_args.motif_source #type:int
+        self.motif_src = commandline_args.motif_source #type:int
 
         self.direction = commandline_args.direction #type:int
 
-        self.hishape_mode = commandline_args.hishape_mode #type:str
+        self.hishape   = commandline_args.hishape_mode #type:str
 
-        self.shape_level = commandline_args.shape_level #type:str
+        self.shape     = commandline_args.shape_level #type:str
 
-        self.energy = commandline_args.energy #type:float
+        self.energy    = commandline_args.energy #type:float
 
-        self.time = commandline_args.time #type:str
+        self.time      = commandline_args.time #type:str
 
-        self.workers = commandline_args.workers #type:int
+        self.workers   = commandline_args.workers #type:int
 
         self.separator = commandline_args.separator #type:str
 
-        self.location = os.path.dirname(os.path.realpath(__file__)) #type:str
+        self.location  = os.path.dirname(os.path.realpath(__file__)) #type:str
+        self.parentdir = os.path.abspath(os.path.join(self.location, os.pardir))
 
         self.no_update = commandline_args.no_update
         
-        self.conf_path = os.path.join(self.location,'src','data','config.ini')
+        self.conf_path = os.path.join(self.location,'data','config.ini')
         self.config    = configparser.ConfigParser() 
         self.config.read(self.conf_path) 
 
@@ -113,18 +114,18 @@ class Process:
         self.log=make_new_logger(self.loglevel, __name__)
         
         if commandline_args.config: #log for using config args, is back here because I gotta make the logger with the config parameter loglevel first
-            self.log.warning(' Running process with config file values...')
+            self.log.info('Running process with config file values...')
 
         if self.time:
             self.timelogger=make_new_logger('info', 'time', '%(asctime)s:%(name)s:%(message)s') #type:logging.Logger #time logger hard coded to info level, only gets initialized when time command is given.
 
         if self.algorithm == 'mothishape':
-            self.algorithm_call = self.algorithm + '_' + self.hishape_mode #type:str
+            self.algorithm_call = self.algorithm + '_' + self.hishape #type:str
         else:
             self.algorithm_call=self.algorithm #type:str
         
         if self.subopt:
-            self.algorithm_call=self.algorithm_call+'_subopt' #type:str
+            self.algorithm_call=self.algorithm_call+'_subopt'#type:str
 
         if self.algorithm[-3:] == 'pfc':
             self.pfc=True #type:bool
@@ -141,13 +142,13 @@ class Process:
                 self.log.error(error)
                 self.log.error('Unable to update motif sequences, continuing with old sequence catalogue')
         else:
-            self.log.debug(' Motif sequence updating disabled.')
+            self.log.debug('Motif sequence updating disabled.')
             
         self.algorithm_path = self.identify_algorithm() #type:str
         
         self.call_construct = self.call_constructor() #type:str
 
-        self.log.info(' Process initiated successfully. Loglevel: {log}, Algorithm: {alg}, K: {k}, Subopt: {sub}, Motif source: {mot}, Motif direction: {motd}, Hishape mode: {hi}, Shape level: {s}, Time: {time}, Local motif version: {version}, Worker processes: {work}'.format(log=self.loglevel, alg=self.algorithm, k=self.kvalue, sub=self.subopt, mot=self.motif_source, motd=self.direction, hi=self.hishape_mode, s=self.shape_level, time=self.time, algp=self.algorithm_path, work=self.workers, version=self.local_motifs[3:-5]))
+        self.log.debug ('Process initiated successfully. Loglevel: {log}, Algorithm: {alg}, K: {k}, Subopt: {sub}, Motif source: {mot}, Motif direction: {motd}, Hishape mode: {hi}, Shape level: {s}, Time: {time}, Local motif version: {version}, Worker processes: {work}'.format(log=self.loglevel, alg=self.algorithm, k=self.kvalue, sub=self.subopt, mot=self.motif_src, motd=self.direction, hi=self.hishape, s=self.shape, time=self.time, algp=self.algorithm_path, work=self.workers, version=self.local_motifs[3:-5]))
 
     def conf_update(self,update_dict:dict):
         bools= ['subopt', 'time', 'no_update']
@@ -157,52 +158,52 @@ class Process:
             else:
                 setattr(self, key, value)
 
-    def version_check_and_update(self, update_bool, sequence_remove_bool) -> bool:
-        self.log.info(' Checking Motif sequence version...')
+    def version_check_and_update(self, update_bool, sequence_remove_bool) -> bool: #checks Motif sequences version and updates them through Motif_collection.py
+        self.log.info('Checking Motif sequence version...')
         if self.local_motifs == self.current_motifs: #updating is bound only to the hairpin version, since hairpins and internals always get updated at the same time
-            self.log.info(' Motif sequences are up to date')
+            self.log.info('Motif sequences are up to date')
             if update_bool:
-                self.log.warning(' Force update enabled, updating motifs...')
+                self.log.warning('Force update enabled, updating motifs...')
                 mc.update(self.log, sequence_remove_bool, self.location)
         else:
-            self.log.warning(' Motif sequences are outdated with current bgsu release, updating but it may take a couple minutes...')
+            self.log.warning('Motif sequences are outdated with current bgsu release, updating but it may take a couple minutes...')
             mc.update(self.log, sequence_remove_bool, self.location)
             self.config.set('VERSIONS','hairpins', self.current_motifs)
             with open(self.conf_path,'w') as file:
                 self.config.write(file)
-            self.log.info(' Motif sequences have been updated and version number has been changed in config file.')
+            self.log.info('Motif sequences have been updated and version number has been changed to {vers} config file.'.format(vers=self.current_motifs))
 
     def identify_algorithm(self) -> str: #searches for algorithm, if it doesn't find it tries to compile it and then searches again. Could be optimized.
-        for root, dir, files in os.walk(self.location, topdown = True):
-            self.log.debug(' Checking {folder} for {alg}...'.format(folder=root, alg=self.algorithm))
+        for root,folder,files in os.walk(self.parentdir, topdown = True):
+            self.log.debug('Checking {folder} for {alg}...'.format(folder=root, alg=self.algorithm))
             if self.algorithm_call in files:
-                self.log.debug(' Found algorithm in {folder}'.format(folder=root))
+                self.log.debug('Found algorithm {alg}'.format(alg=self.algorithm_call))
                 return os.path.realpath(root, strict=True)
             else:pass
-        self.log.warning(' Algorithm was not found, trying to compile...')
+        self.log.warning('Algorithm was not found, trying to compile...')
         Compilation=self.compile_algorithm()
         if Compilation:
-            self.log.warning(' Compilation of {alg} successful.'.format(alg=self.algorithm))
-            for root, dirs, files in os.walk(self.location):
+            self.log.warning('Compilation of {alg} successful.'.format(alg=self.algorithm))
+            for root, dirs, files in os.walk(self.parentdir, topdown = True):
                 if self.algorithm_call in files:
                     return os.path.realpath(root,strict=True)
                 else:pass
         else:
-            raise LookupError(' Could not find or compile specified algorithm. Please check log with debug level for compilation information. Make sure your chosen alrightm is installed within this folder or one of its subfolders.')
+            raise LookupError('Could not find or compile specified algorithm. Please check log with debug level for compilation information. Make sure your chosen alrightm is installed within this folder or one of its subfolders.')
         
     def compile_algorithm(self) ->bool:
         if self.pfc:
-            compilation_info=subprocess.run('cd {selfpath}; gapc -o {alg}.cc -t --kbest -i {alg} RNALoops.gap; cd Misc/Applications; perl addRNAoptions.pl {selfpath}/{alg}.mf 0; cd ../..; make -f {alg}.mf'.format(selfpath=self.location,alg=self.algorithm_call),shell=True,stdout=subprocess.PIPE,stderr=subprocess.STDOUT)
+            compilation_info=subprocess.run('cd {paren}; gapc -o {alg}.cc -t --kbest -i {alg} RNALoops.gap; cd Misc/Applications; perl addRNAoptions.pl {paren}/{alg}.mf 0; cd ../..; make -f {alg}.mf'.format(paren = self.parentdir, alg=self.algorithm_call), shell=True, stdout=subprocess.PIPE, stderr=subprocess.STDOUT)
         elif self.subopt == True:
-            compilation_info=subprocess.run('cd {selfpath}; gapc -o {alg}.cc -t --kbacktrace -i {alg} RNALoops.gap; cd Misc/Applications; perl addRNAoptions.pl {selfpath}/{alg}.mf 0; cd ../..; make -f {alg}.mf'.format(selfpath=self.location,alg=self.algorithm_call),shell=True,stdout=subprocess.PIPE,stderr=subprocess.STDOUT)        
+            compilation_info=subprocess.run('cd {paren}; gapc -o {alg}.cc -t --kbacktrace -i {alg} RNALoops.gap; cd Misc/Applications; perl addRNAoptions.pl {paren}/{alg}.mf 0; cd ../..; make -f {alg}.mf'.format(paren = self.parentdir, alg=self.algorithm_call), shell=True, stdout=subprocess.PIPE, stderr=subprocess.STDOUT)        
         else:    
-            compilation_info=subprocess.run('cd {selfpath}; gapc -o {alg}.cc -t --kbacktrace --kbest -i {alg} RNALoops.gap; cd Misc/Applications; perl addRNAoptions.pl {selfpath}/{alg}.mf 0; cd ../..; make -f {alg}.mf'.format(selfpath=self.location,alg=self.algorithm_call),shell=True,stdout=subprocess.PIPE,stderr=subprocess.STDOUT)
+            compilation_info=subprocess.run('cd {paren}; gapc -o {alg}.cc -t --kbacktrace --kbest -i {alg} RNALoops.gap; perl Misc/Applications/addRNAoptions.pl {paren}/{alg}.mf 0; make -f {alg}.mf'.format(paren=self.parentdir, alg=self.algorithm_call), shell=True, stdout=subprocess.PIPE, stderr=subprocess.STDOUT)
         self.log.debug(compilation_info.stdout.decode())
         if compilation_info.returncode: #returncode is 1 when it did not work. This catches unsuccessful attempts.
             return False #return compilation was unsuccessful, terminating the RNALoops.
         if not compilation_info.returncode: #returncode is 0 if it worked. This catches successful successful compilations.
-            self.log.debug(' Removing temporary files...')
-            subprocess.run('cd {selfpath}; rm {alg}.o; rm {alg}.mf; rm {alg}.hh; rm {alg}.d; rm {alg}.cc; rm {alg}_main.o; rm {alg}_main.d; rm {alg}_main.cc; rm string.d; rm string.o'.format(selfpath=self.location,alg=self.algorithm_call),shell=True,capture_output=False)
+            self.log.debug('Removing temporary files...')
+            subprocess.run('rm {paren}/{alg}.o; rm {paren}/{alg}.mf; rm {paren}/{alg}.hh; rm {paren}/{alg}.d; rm {paren}/{alg}.cc; rm {paren}/{alg}_main.o; rm {paren}/{alg}_main.d; rm {paren}/{alg}_main.cc; rm {paren}/string.d; rm {paren}/string.o'.format(paren=self.parentdir,selfpath=self.location,alg=self.algorithm_call),shell=True,capture_output=False)
             return True #return compilation was successful.
 
     def call_constructor(self) -> str: #Call construction function, if you add a new algorithm you will need to add a call construction string here for the python script to call on each sequence in your input. Remember to keep the cd {path} && {time} with path = self.algorithm_path
@@ -211,58 +212,58 @@ class Process:
             case 'motmfepretty': #the calls need to first go to the directory, otherwise no motifs cause the c++ path code is still funky, change beginning to: {path}/{algorithm} if you ever fix that.
                 if self.subopt:
                     if self.time:
-                        call = 'cd {path} && time ./{algorithm} -e {energy_value} -Q {database} -b {motif_direction} '.format(path=self.algorithm_path, algorithm=self.algorithm_call, energy_value=self.energy, database=self.motif_source, motif_direction=self.direction)
+                        call = 'cd {path} && time ./{algorithm} -e {energy_value} -Q {database} -b {motif_direction} '.format(path=self.algorithm_path, algorithm=self.algorithm_call, energy_value=self.energy, database=self.motif_src, motif_direction=self.direction)
                     else:
-                        call = 'cd {path} && ./{algorithm} -e {energy_value} -Q {database} -b {motif_direction} '.format(path=self.algorithm_path, algorithm=self.algorithm_call, energy_value=self.energy, database=self.motif_source, motif_direction=self.direction)
+                        call = 'cd {path} && ./{algorithm} -e {energy_value} -Q {database} -b {motif_direction} '.format(path=self.algorithm_path, algorithm=self.algorithm_call, energy_value=self.energy, database=self.motif_src, motif_direction=self.direction)
                 else:
                     if self.time:
-                        call = 'cd {path} && time ./{algorithm} -k {k} -Q {database} -b {motif_direction} '.format(path=self.algorithm_path, algorithm=self.algorithm_call, k=self.kvalue,database=self.motif_source,motif_direction=self.direction)
+                        call = 'cd {path} && time ./{algorithm} -k {k} -Q {database} -b {motif_direction} '.format(path=self.algorithm_path, algorithm=self.algorithm_call, k=self.kvalue,database=self.motif_src,motif_direction=self.direction)
                     else:
-                        call = 'cd {path} && ./{algorithm} -k {k} -Q {database} -b {motif_direction} '.format(path=self.algorithm_path, algorithm=self.algorithm_call, k=self.kvalue,database=self.motif_source,motif_direction=self.direction)
+                        call = 'cd {path} && ./{algorithm} -k {k} -Q {database} -b {motif_direction} '.format(path=self.algorithm_path, algorithm=self.algorithm_call, k=self.kvalue,database=self.motif_src,motif_direction=self.direction)
                 
             case 'motshapeX':
                 if self.subopt:
                     if self.time:
-                        call = 'cd {path} && time ./{algorithm} -e {energy_value} -Q {database} -b {motif_direction} -q {shapelvl} '.format( path=self.algorithm_path, algorithm=self.algorithm_call, energy_value=self.energy,database=self.motif_source,motif_direction=self.direction,shapelvl=self.shape_level)
+                        call = 'cd {path} && time ./{algorithm} -e {energy_value} -Q {database} -b {motif_direction} -q {shapelvl} '.format( path=self.algorithm_path, algorithm=self.algorithm_call, energy_value=self.energy,database=self.motif_src,motif_direction=self.direction,shapelvl=self.shape)
                     else:
-                        call = 'cd {path} && ./{algorithm} -e {energy_value} -Q {database} -b {motif_direction} -q {shapelvl} '.format(path=self.algorithm_path, algorithm=self.algorithm_call, energy_value=self.energy,database=self.motif_source,motif_direction=self.direction,shapelvl=self.shape_level)
-                    self.log.warning(' Running suboptimal folding with motshapeX leads to extremly long runtimes and very large outputs even with low energy threshholds and high shape level!')
+                        call = 'cd {path} && ./{algorithm} -e {energy_value} -Q {database} -b {motif_direction} -q {shapelvl} '.format(path=self.algorithm_path, algorithm=self.algorithm_call, energy_value=self.energy,database=self.motif_src,motif_direction=self.direction,shapelvl=self.shape)
+                    self.log.warning('Running suboptimal folding with motshapeX leads to extremly long runtimes and very large outputs even with low energy threshholds and high shape level!')
                 else:
                     if self.time:
-                        call = 'cd {path} && time ./{algorithm} -k {k} -Q {database} -b {motif_direction} -q {shapelvl} '.format(path=self.algorithm_path, algorithm=self.algorithm_call, k=self.kvalue, database=self.motif_source, motif_direction=self.direction, shapelvl=self.shape_level)
+                        call = 'cd {path} && time ./{algorithm} -k {k} -Q {database} -b {motif_direction} -q {shapelvl} '.format(path=self.algorithm_path, algorithm=self.algorithm_call, k=self.kvalue, database=self.motif_src, motif_direction=self.direction, shapelvl=self.shape)
                     else:
-                        call = 'cd {path} && ./{algorithm} -k {k} -Q {database} -b {motif_direction} -q {shapelvl} '.format(path=self.algorithm_path, algorithm=self.algorithm_call, k=self.kvalue, database=self.motif_source, motif_direction=self.direction, shapelvl=self.shape_level)
+                        call = 'cd {path} && ./{algorithm} -k {k} -Q {database} -b {motif_direction} -q {shapelvl} '.format(path=self.algorithm_path, algorithm=self.algorithm_call, k=self.kvalue, database=self.motif_src, motif_direction=self.direction, shapelvl=self.shape)
             
             case 'mothishape':
                 if self.subopt:
                     if self.time:
-                        call = 'cd {path} && time ./{algorithm} -e {energy_value} -Q {database} -b {motif_direction} '.format(path=self.algorithm_path, algorithm=self.algorithm_call, energy_value=self.energy, database=self.motif_source, motif_direction=self.direction, hishape=self.hishape_mode)
+                        call = 'cd {path} && time ./{algorithm} -e {energy_value} -Q {database} -b {motif_direction} '.format(path=self.algorithm_path, algorithm=self.algorithm_call, energy_value=self.energy, database=self.motif_src, motif_direction=self.direction, hishape=self.hishape)
                     else:
-                        call = 'cd {path} && ./{algorithm} -e {energy_value} -Q {database} -b {motif_direction} '.format(path=self.algorithm_path, algorithm=self.algorithm_call, energy_value=self.energy, database=self.motif_source, motif_direction=self.direction, hishape=self.hishape_mode)
-                    self.log.warning(' Running suboptimal folding with motHishapes leads to extremly long runtimes and very large outputs even with low energy threshholds and hishape mode h!')
+                        call = 'cd {path} && ./{algorithm} -e {energy_value} -Q {database} -b {motif_direction} '.format(path=self.algorithm_path, algorithm=self.algorithm_call, energy_value=self.energy, database=self.motif_src, motif_direction=self.direction, hishape=self.hishape)
+                    self.log.warning('Running suboptimal folding with motHishapes leads to extremly long runtimes and very large outputs even with low energy threshholds and hishape mode h!')
                 else:
                     if self.time:
-                        call = 'cd {path} && time ./{algorithm} -k {k} -Q {database} -b {motif_direction} '.format(path=self.algorithm_path, algorithm=self.algorithm_call, k=self.kvalue, database=self.motif_source, motif_direction=self.direction, hishape=self.hishape_mode)
+                        call = 'cd {path} && time ./{algorithm} -k {k} -Q {database} -b {motif_direction} '.format(path=self.algorithm_path, algorithm=self.algorithm_call, k=self.kvalue, database=self.motif_src, motif_direction=self.direction, hishape=self.hishape)
                     else:
-                        call = 'cd {path} && ./{algorithm} -k {k} -Q {database} -b {motif_direction} '.format(path=self.algorithm_path, algorithm=self.algorithm_call, k=self.kvalue, database=self.motif_source, motif_direction=self.direction, hishape=self.hishape_mode)
+                        call = 'cd {path} && ./{algorithm} -k {k} -Q {database} -b {motif_direction} '.format(path=self.algorithm_path, algorithm=self.algorithm_call, k=self.kvalue, database=self.motif_src, motif_direction=self.direction, hishape=self.hishape)
 
             case 'motpfc'|'mothishape_h_pfc' | 'mothishape_b_pfc' | 'mothishape_m_pfc':
                 if self.time:
-                    call = 'cd {path} && time ./{algorithm} -k {k} -Q {database} -b {motif_direction} '.format(path=self.algorithm_path, algorithm=self.algorithm_call, k=self.kvalue, database=self.motif_source, motif_direction=self.direction)
+                    call = 'cd {path} && time ./{algorithm} -k {k} -Q {database} -b {motif_direction} '.format(path=self.algorithm_path, algorithm=self.algorithm_call, k=self.kvalue, database=self.motif_src, motif_direction=self.direction)
                 else:
-                    call = 'cd {path} && ./{algorithm} -k {k} -Q {database} -b {motif_direction} '.format(path=self.algorithm_path, algorithm=self.algorithm_call, k=self.kvalue, database=self.motif_source, motif_direction=self.direction)
+                    call = 'cd {path} && ./{algorithm} -k {k} -Q {database} -b {motif_direction} '.format(path=self.algorithm_path, algorithm=self.algorithm_call, k=self.kvalue, database=self.motif_src, motif_direction=self.direction)
 
             case 'motshapeX_pfc':
                 if self.time:
-                    call = 'cd {path} && time ./{algorithm} -k {k} -Q {database} -b {motif_direction} -q {shapelvl} '.format(path=self.algorithm_path, algorithm=self.algorithm_call, k=self.kvalue, database=self.motif_source,motif_direction=self.direction,shapelvl=self.shape_level)
+                    call = 'cd {path} && time ./{algorithm} -k {k} -Q {database} -b {motif_direction} -q {shapelvl} '.format(path=self.algorithm_path, algorithm=self.algorithm_call, k=self.kvalue, database=self.motif_src,motif_direction=self.direction,shapelvl=self.shape)
                 else:
-                    call = 'cd {path} && ./{algorithm} -k {k} -Q {database} -b {motif_direction} -q {shapelvl} '.format(path=self.algorithm_path, algorithm=self.algorithm_call, k=self.kvalue, database=self.motif_source,motif_direction=self.direction,shapelvl=self.shape_level)
+                    call = 'cd {path} && ./{algorithm} -k {k} -Q {database} -b {motif_direction} -q {shapelvl} '.format(path=self.algorithm_path, algorithm=self.algorithm_call, k=self.kvalue, database=self.motif_src,motif_direction=self.direction,shapelvl=self.shape)
        
             case _:
-                self.log.critical(' Call constructor was unable to generate secondary structure prediction call. Please check the call_constructor function.')
+                self.log.critical('Call constructor was unable to generate secondary structure prediction call. Please check the call_constructor function.')
                 raise NotImplementedError('Algorithm matches no known call construct, please check call_constructor function and add a new call or add a new case to an existing call construct.')
 
-        self.log.info(' Algorithm call construct created as: {c}'.format(c=call))
+        self.log.debug('Algorithm call construct created as: {c}'.format(c=call))
         return call
 
     def write_output(self,result:tuple['ClassScoreClass|ClassScore|str',str], ini:bool)-> bool: #checks the class of tuple [0] (which should be the result object), on first entry writes the corresponding header and after that only writes output in tsv format.
@@ -272,7 +273,7 @@ class Process:
                 sys.stdout.write('ID{sep}class1{sep}score{sep}class2\n'.format(sep=self.separator))
             self.write_tsv(result[0])
             if self.time:
-                self.timelogger.info(result[0].id + ':' + result[1].strip())
+                self.timelogger.info(result[0].id + ':'+ result[1].strip())
             return True
             
         elif isinstance(result[0], ClassScore):
@@ -283,7 +284,7 @@ class Process:
                     sys.stdout.write('ID{sep}class{sep}score\n'.format(sep=self.separator))
             self.write_tsv(result[0])
             if self.time:
-                self.timelogger.info(result[0].id + ':' + result[1].strip())
+                self.timelogger.info(result[0].id + ':'+ result[1].strip())
             return True
            
     def write_tsv(self,result_obj:'ClassScoreClass|ClassScore') -> None:       
@@ -297,14 +298,14 @@ class SingleProcess(Process):
     def __init__(self, commandline_args: argparse.Namespace) -> None:
         super().__init__(commandline_args)
         self.input_seq = commandline_args.input_seq #type:str
-        self.log.info(' Running: {name}. Input sequence: {seq}'.format(name=self.name,seq=self.input_seq))
+        self.log.info('Running: {name}. Input sequence: {seq}'.format(name=self.name,seq=self.input_seq))
         if self.name is None:
-            self.name = 'single_sequence' #type:str
+            self.name = 'single_sequence'#type:str
         
     def run_process(self) -> None:
         if "T" in self.input_seq:
             result = subprocess.run(self.call_construct+self.input_seq.replace('T','U'), text=True, capture_output=True, shell=True)
-            self.log.warning(' T detected in input sequence, replacing T with U and running prediction anyways...')
+            self.log.warning('T detected in input sequence, replacing T with U and running prediction anyways...')
             dna = True #type:bool
         else:
             result = subprocess.run(self.call_construct+self.input_seq, text=True, capture_output=True, shell=True)
@@ -320,36 +321,36 @@ class MultiProcess(Process):
     def __init__(self, commandline_args: argparse.Namespace) -> None:
         super().__init__(commandline_args)
         self.iFile = commandline_args.iFile_path #type:argparse.FileType
-        self.log.info(' Input file path: {iFile}'.format(iFile=self.iFile.name))
+        self.log.info('Input file path: {iFile}'.format(iFile=self.iFile.name))
         self.find_filetype()
         self.seq_iterator=self.read_input_file() #creates iterator for input file
 
     def find_filetype(self) -> tuple[str, bool]: #Finds File type based on file ending
-        if self.iFile.name.split('.')[-1] == 'gz' or self.iFile.name.split('.')[-1] == 'zip':
+        if self.iFile.name.split('.')[-1] == 'gz'or self.iFile.name.split('.')[-1] == 'zip':
             file_extension = (self.iFile.name.split('.')[-2])
             self.zipped=True
-            self.log.info(' File is compressed, decompressing with gzip...')
+            self.log.info('File is compressed, decompressing with gzip...')
         else:
             file_extension = (self.iFile.name.split('.')[-1])
             self.zipped=False
             
         match file_extension:
-            case 'fasta'| 'fas' | 'fa' | 'fna' | 'ffn' | 'faa' | 'mpfa' | 'frn' | 'txt' | 'fsa': #All fasta file extensions accoring to Wikipedia FASTA format article
-                self.log.info(' Filetype identified as fasta, reading ...')
+            case 'fasta'| 'fas'| 'fa'| 'fna'| 'ffn'| 'faa'| 'mpfa'| 'frn'| 'txt'| 'fsa': #All fasta file extensions accoring to Wikipedia FASTA format article
+                self.log.info('Filetype identified as fasta, reading ...')
                 self.filetype = 'fasta'
             
-            case 'fastq' | 'fq' :
-                self.log.info(' Filetype identified as fastq, reading...')
+            case 'fastq'| 'fq':
+                self.log.info('Filetype identified as fastq, reading...')
                 self.filetype = 'fastq'
     
-            case 'stk' | 'stockholm' | 'sto':
-                self.log.info(' Filetype identified as stockholm, reading ...')
+            case 'stk'| 'stockholm'| 'sto':
+                self.log.info('Filetype identified as stockholm, reading ...')
                 self.filetype = 'stockholm'
             
             case _:
-                self.log.error(' Could not identify file type as fasta, fastq or stockholm. If the file is zipped make sure it is .zip or .gz')
-                sys.stdout.write(' Couldnt recognize file type or zip of input file: {input}\n'.format(input=self.iFile.name))
-                raise TypeError(' Filetype was not recognized as fasta, fastq or stockholm format. Or file could not be unpacked, please ensure it is zipped with either .gz or .zip or unzipped')
+                self.log.error('Could not identify file type as fasta, fastq or stockholm. If the file is zipped make sure it is .zip or .gz')
+                sys.stdout.write('Couldnt recognize file type or zip of input file: {input}\n'.format(input=self.iFile.name))
+                raise TypeError('Filetype was not recognized as fasta, fastq or stockholm format. Or file could not be unpacked, please ensure it is zipped with either .gz or .zip or unzipped')
 
     def read_input_file(self) -> SeqIO.FastaIO.FastaIterator | SeqIO.QualityIO.FastqPhredIterator | Generator[SeqIO.SeqRecord, None, None]: #for some reason py
         if not self.zipped:
@@ -368,7 +369,7 @@ class MultiProcess(Process):
         jobs = []
         for record in self.seq_iterator:
             if "T" in str(record.seq):
-                self.log.error(' DNA sequence detected for {rec}. Swapping T for U and running prediction anyways'.format(rec=record.id))
+                self.log.error('DNA sequence detected for {rec}. Swapping T for U and running prediction anyways'.format(rec=record.id))
             job = Pool.apply_async(worker, (record, self.call_construct, q, self.algorithm, self.pfc))
             jobs.append(job) #append workers into the workerlist
         for job in jobs:
@@ -383,10 +384,10 @@ class MultiProcess(Process):
             L_List.append(L)
         main_conn.close()
         if len(L_List) > 0:
-            self.log.info(' Calculations for {iFile} completed. Tasks failed: {len_l}'.format(iFile=self.iFile.name, len_l=len(L_List)))
-            self.log.info(' Failed calculations: {L}'.format(L=L_List))
+            self.log.info('Calculations for {iFile} completed. Tasks failed: {len_l}'.format(iFile=self.iFile.name, len_l=len(L_List)))
+            self.log.info('Failed calculations: {L}'.format(L=L_List))
         else:
-            self.log.info(' Calculations for {iFile} completed. All {len} tasks completed successfully'.format(len = len(jobs), iFile = self.iFile.name))
+            self.log.info('Calculations for {iFile} completed. All {len} tasks completed successfully'.format(len = len(jobs), iFile = self.iFile.name))
 
     def listener(self, q:multiprocessing.Queue, connection:multiprocessing.connection.Connection): #This function has the sole write access to make writing the logs and results mp save
         output_started=False
@@ -397,34 +398,41 @@ class MultiProcess(Process):
                 break
             else:
                 if isinstance(result[0], str):
-                    self.log.error(' {name}:{error}'.format(name=result[0], error=result[1].strip())) 
+                    self.log.error('{name}:{error}'.format(name=result[0], error=result[1].strip())) 
                     connection.send(result[0]) #sends errors back to the main process for logging purposes.
                 else:
                     if result[0].dna:
-                        self.log.info(' Process finished: {res}. Sequence length: {len}. Input was DNA, for the prediction T was replaced by U.'.format(res=result[0].id, len = len(result[0].seq)))
+                        self.log.info('Process finished: {res}. Sequence length: {len}. Input was DNA, for predictions T was replaced with U'.format(res=result[0].id, len = len(result[0].seq)))
                     else:
-                        self.log.info(' Process finished: {res}. Sequence length: {len}'.format(res=result[0].id, len = len(result[0].seq)))
+                        self.log.info('Process finished: {res}. Sequence length: {len}'.format(res=result[0].id, len = len(result[0].seq)))
                     output_started=self.write_output(result, output_started)
 
-class ClassScoreClass(): #Sublcasses for different algorithm types, as generalized as possible.
+class Result:
     def __init__(self, name:str, sequence:SeqIO.SeqRecord.seq, result_list:list[list], algorithm:str, DNA:bool):
         self.id = name
         self.seq = sequence
         self.results = result_list
         self.algorithm = algorithm #Can use this in the future to build dedicated functions for different algorithms
         self.dna = DNA
+        if self.algorithm == 'mothishape':
+            self.rm_trailing_comma_hishape()
 
-class ClassScore():
-    def __init__(self, name:str, sequence:SeqIO.SeqRecord.seq, result_list:list[list], algorithm:str, DNA:bool, pfc:bool = False):
-        self.id = name
-        self.seq = sequence
-        self.results = result_list
-        self.algorithm = algorithm
-        self.dna = DNA
+    def rm_trailing_comma_hishape(self):
+        for result in self.results:
+            result[0]=result[0][:-1]
+
+class ClassScoreClass(Result): #Sublcasses for different algorithm types, might be useful later if I add additional functionalities or sth.
+    def __init__(self, name: str, sequence: SeqIO.SeqRecord.seq, result_list: list[list], algorithm: str, DNA: bool):
+        super().__init__(name, sequence, result_list, algorithm, DNA)
+
+class ClassScore(Result):
+    def __init__(self, name: str, sequence: SeqIO.SeqRecord.seq, result_list: list[list], algorithm: str, DNA: bool, pfc:bool = False):
+        super().__init__(name, sequence, result_list, algorithm, DNA)
         if pfc:
             try:self.calculate_pfc_probabilities()
             except:sys.stderr.write(('Unable to calculate probabilities from partition function values for process {proc}'.format(proc=self.id)))
         else:pass
+
 
     def calculate_pfc_probabilities(self) ->None: #This function can easily be adapted for any of the Result subclasses, only the position of entry[1] has to be changed
         pfc_list=[] #Actually it doesn't really matter what I use to classify since it will always be classifying * partition algebra products. So I think this works always.
@@ -469,7 +477,7 @@ def split_results_find_subclass(name:str, sequence:SeqIO.SeqRecord.seq, result:s
     elif len(split_result) == 3:
         return ClassScoreClass(name, sequence, return_list, alg, dna)
     else:
-        raise ValueError(' Could not identify algorithm output classification as ClassScore or ClassScoreClass.')
+        raise ValueError('Could not identify algorithm output classification as ClassScore or ClassScoreClass.')
 
 if __name__ == '__main__':
     args=get_cmdarguments()
