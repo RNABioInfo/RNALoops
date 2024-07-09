@@ -147,6 +147,9 @@ class Process:
         self.algorithm_path = self.identify_algorithm() #type:str
         
         self.call_construct = self.call_constructor() #type:str
+        
+        if int(self.workers) > os.cpu_count():
+            self.log.warning('You are spawning more processes than you have CPU cores, this might lead to performance issues.')
 
         self.log.debug ('Process initiated successfully. Loglevel: {log}, Algorithm: {alg}, K: {k}, Subopt: {sub}, Motif source: {mot}, Motif direction: {motd}, Hishape mode: {hi}, Shape level: {s}, Time: {time}, Local motif version: {version}, Worker processes: {work}'.format(log=self.loglevel, alg=self.algorithm, k=self.kvalue, sub=self.subopt, mot=self.motif_src, motd=self.direction, hi=self.hishape, s=self.shape, time=self.time, algp=self.algorithm_path, work=self.workers, version=self.local_motifs[3:-5]))
 
