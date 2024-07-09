@@ -3,10 +3,10 @@ out_main.*
 out.*
 string.o
 string.d
-Benchmark/
 .vscode/*
 *.cc
 *.d
 *.o
 *.hh
 *.mf
+!/Extensions/mot_header.hh
