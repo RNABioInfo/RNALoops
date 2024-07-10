@@ -154,10 +154,16 @@ class Process:
         self.log.debug ('Process initiated successfully. Loglevel: {log}, Algorithm: {alg}, K: {k}, Subopt: {sub}, Motif source: {mot}, Motif direction: {motd}, Hishape mode: {hi}, Shape level: {s}, Time: {time}, Local motif version: {version}, Worker processes: {work}'.format(log=self.loglevel, alg=self.algorithm, k=self.kvalue, sub=self.subopt, mot=self.motif_src, motd=self.direction, hi=self.hishape, s=self.shape, time=self.time, algp=self.algorithm_path, work=self.workers, version=self.local_motifs[3:-5]))
 
     def conf_update(self,update_dict:dict):
-        bools= ['subopt', 'time', 'no_update']
+        bools  = ['subopt', 'time', 'no_update']
+        ints   = ['kvalue', 'workers']
+        floats = ['energy']
         for key, value in update_dict.items():
             if key in bools:
                 setattr(self, key, self.config.getboolean('PARAMETERS',key))
+            elif key in ints:
+                setattr(self, key, self.config.getint('PARAMETERS', key))
+            elif key in floats:
+                setattr(self, key, self.config.getfloat('PARAMETERS', key))
             else:
                 setattr(self, key, value)
 
@@ -256,18 +262,29 @@ class Process:
                 else:
                     call = 'cd {path} && ./{algorithm} -k {k} -Q {database} -b {motif_direction} '.format(path=self.algorithm_path, algorithm=self.algorithm_call, k=self.kvalue, database=self.motif_src, motif_direction=self.direction)
 
-            case 'motshapeX_pfc':
-                if self.time:
-                    call = 'cd {path} && time ./{algorithm} -k {k} -Q {database} -b {motif_direction} -q {shapelvl} '.format(path=self.algorithm_path, algorithm=self.algorithm_call, k=self.kvalue, database=self.motif_src,motif_direction=self.direction,shapelvl=self.shape)
-                else:
-                    call = 'cd {path} && ./{algorithm} -k {k} -Q {database} -b {motif_direction} -q {shapelvl} '.format(path=self.algorithm_path, algorithm=self.algorithm_call, k=self.kvalue, database=self.motif_src,motif_direction=self.direction,shapelvl=self.shape)
-       
+            #case 'motshapeX_pfc':
+            #    if self.time:
+            #        call = 'cd {path} && time ./{algorithm} -k {k} -Q {database} -b {motif_direction} -q {shapelvl} '.format(path=self.algorithm_path, algorithm=self.algorithm_call, k=self.kvalue, database=self.motif_src,motif_direction=self.direction,shapelvl=self.shape)
+            #    else:
+            #        call = 'cd {path} && ./{algorithm} -k {k} -Q {database} -b {motif_direction} -q {shapelvl} '.format(path=self.algorithm_path, algorithm=self.algorithm_call, k=self.kvalue, database=self.motif_src,motif_direction=self.direction,shapelvl=self.shape)
+            #To insert your own algorithm call permanently you can just add it here as a case with the algorithm name as the case match condition.
             case _:
-                self.log.critical('Call constructor was unable to generate secondary structure prediction call. Please check the call_constructor function.')
-                raise NotImplementedError('Algorithm matches no known call construct, please check call_constructor function and add a new call or add a new case to an existing call construct.')
+                try:
+                    self.log.critical('Initiating generic call constructor because your algorithm was not recognized')
+                    call = self.custom_call()
+                except Exception as e:
+                    raise SystemError(e)
 
-        self.log.debug('Algorithm call construct created as: {c}'.format(c=call))
+        self.log.debug('Algorithm call construct created as: {c}'.format(c = call))
         return call
+
+    def custom_call(self) -> str:
+        inputs = input('Please enter your desired runtime arguments. This overwrites previously set values and is only reflected in the call construct log entry. The values you set here are not type checked and directly used as the runtime arguments:\n')
+        if self.time:
+            custom_call = 'cd {path} && time ./{algorithm} {custom} '.format(path = self.algorithm_path, algorithm = self.algorithm, custom = inputs)
+        else:
+            custom_call = 'cd {path} && ./{algorithm} {custom} '.format(path = self.algorithm_path, algorithm = self.algorithm, custom = inputs)
+        return custom_call
 
     def write_output(self,result:tuple['ClassScoreClass|ClassScore|str',str], ini:bool)-> bool: #checks the class of tuple [0] (which should be the result object), on first entry writes the corresponding header and after that only writes output in tsv format.
 
@@ -364,23 +381,31 @@ class MultiProcess(Process):
 
     def run_process(self) -> None:
         main_conn, listener_conn = multiprocessing.Pipe(duplex=False)
-        Manager = multiprocessing.Manager()
-        q       = Manager.Queue()
-        Pool    = multiprocessing.Pool(processes=int(self.workers)) #typecast to int to avoid having to specify with config file (confi vars get read as strings)
-        listening= multiprocessing.Process(target=self.listener, args=(q,listener_conn)) #run the listener as a separate process that writes the logs and output
+        Manager   = multiprocessing.Manager()
+        input_q   = Manager.Queue(maxsize = self.workers*2)
+        output_q  = Manager.Queue()
+        Pool      = multiprocessing.Pool(processes = self.workers) #typecast to int to avoid having to specify with config file (confi vars get read as strings)
+        listening = multiprocessing.Process(target = self.listener, args=(output_q,listener_conn)) #run the listener as a separate process that writes the logs and output
         listening.start() #start the listener, patiently waiting for processes to finish
-        jobs = []
+        workers = [] #type:list[multiprocessing.pool.Async_result]
+        for i in range(self.workers):
+            work=Pool.apply_async(worker, (self.call_construct, input_q, output_q, self.algorithm, self.pfc)) #spawn workers
+            workers.append(work) #put workers on the funny list
+        records=0
         for record in self.seq_iterator:
-            if "T" in str(record.seq):
-                self.log.error('DNA sequence detected for {rec}. Swapping T for U and running prediction anyways'.format(rec=record.id))
-            job = Pool.apply_async(worker, (record, self.call_construct, q, self.algorithm, self.pfc))
-            jobs.append(job) #append workers into the workerlist
-        for job in jobs:
-            job.get() #Get results from the workers to the q
+            records +=1
+            input_q.put(record) #fill input queue with new sequences from the iterator whenever there is a free spot, blocks whenever the queue is full
+
+        for i in range(self.workers): #put None when the iterable is done, I can just freely put this here because the queue is blocked until the iterator is done
+            input_q.put(None)
+            
+        for work in workers:
+            work.get() #This is a sentinel that keeps the script from finishing before all the workers are done. Because of the while true the workers only return their results when
+                       #the input_queue is empty and the last worker is done
         Pool.close()
-        q.put('kill')
+        output_q.put('kill')
         Pool.join()
-        listening.join()
+        listening.join() #wait for the listener to be done with the output_q
         L_List=[] #type:list[str]
         while main_conn.poll():
             L=main_conn.recv()
@@ -390,12 +415,12 @@ class MultiProcess(Process):
             self.log.info('Calculations for {iFile} completed. Tasks failed: {len_l}'.format(iFile=self.iFile.name, len_l=len(L_List)))
             self.log.info('Failed calculations: {L}'.format(L=L_List))
         else:
-            self.log.info('Calculations for {iFile} completed. All {len} tasks completed successfully'.format(len = len(jobs), iFile = self.iFile.name))
+            self.log.info('Calculations for {iFile} completed. All {len} tasks completed successfully'.format(len = records, iFile = self.iFile.name))
 
     def listener(self, q:multiprocessing.Queue, connection:multiprocessing.connection.Connection): #This function has the sole write access to make writing the logs and results mp save
         output_started=False
         while True:
-            result=q.get() #get results from the q to the listener.
+            result = q.get() #get results from the q to the listener.
             if result == 'kill':
                 connection.close() #main process connection, allowing for communcation with the main process. Is used to inform the main process that a sequence was not correctly processed.
                 break
@@ -448,25 +473,29 @@ class ClassScore(Result):
 
 #Non Process class function that need to be unbound to be pickle'able. See: https://stackoverflow.com/questions/1816958/cant-pickle-type-instancemethod-when-using-multiprocessing-pool-map, guess it kinda is possible it really isnt all that necessary though.
 
-def worker(record:SeqIO.SeqRecord, call:str, q:multiprocessing.Queue, alg:str, pfc_bool:bool) -> None:
-    if "T" in str(record.seq):
-        result = subprocess.run(call+str(record.seq).replace('T','U'), text=True, capture_output=True, shell=True)
-        dna = True
-    else:
-        result = subprocess.run(call+str(record.seq), text=True, capture_output=True, shell=True)
-        dna = False
+def worker(call:str, iq:multiprocessing.Queue, oq:multiprocessing.Queue, alg:str, pfc_bool:bool) -> None:
+    while True:
+        record = iq.get() #type:SeqIO.SeqRecord
+        if record is None:
+            break
+        else:
+            if "T" in str(record.seq):
+                result = subprocess.run(call+str(record.seq.transcribe()), text=True, capture_output=True, shell=True)
+                dna = True
+            else:
+                result = subprocess.run(call+str(record.seq), text=True, capture_output=True, shell=True)
+                dna = False
     
-    if not result.returncode: #double negative, this captures return_code = 0, returned if subprocess.run worked
-        out     = result.stdout
-        err     = result.stderr
-        output_obj = split_results_find_subclass(record.id, record.seq, out, alg, dna, pfc_bool) 
-        subprocess_output = (output_obj, err)
-
-    else: #this captures return_code = 1, returned if subprocess.run did not work
-        err     = result.stderr
-        subprocess_output = (record.id, err)
-
-    q.put(subprocess_output)
+            if not result.returncode: #double negative, this captures return_code = 0, returned if subprocess.run worked
+                out     = result.stdout
+                err     = result.stderr
+                output_obj = split_results_find_subclass(record.id, record.seq, out, alg, dna, pfc_bool) 
+                subprocess_output = (output_obj, err)
+            else: #this captures return_code = 1, returned if subprocess.run did not work
+                err     = result.stderr
+                subprocess_output = (record.id, err)
+                
+            oq.put(subprocess_output)
 
 def split_results_find_subclass(name:str, sequence:SeqIO.SeqRecord.seq, result:str,alg:str, dna:bool ,pfc:bool) -> 'ClassScore|ClassScoreClass': #Would be nice to not have the check for Class decision at the end, but would need to be able to
     split=result.strip().split('\n')                                                          #check for it somewhere outside of the worker function.
