@@ -2,9 +2,8 @@
     {
         "motif_name":"T-Loop",
         "abbreviation":"T",
-        "instances":["HL_22280",
-                     "HL_89380",
-                     "HL_71309"],
+        "instances":["HL_41998",
+                     "HL_22280"],
         "loop_type":"hairpin",
         "rfam_id":["RM00024"],
         "rfam_lower_bound":"21",
@@ -13,7 +12,7 @@
     {
         "motif_name":"GNRA",
         "abbreviation":"G",
-        "instances":["HL_42097"],
+        "instances":["HL_35490"],
         "loop_type":"hairpin",
         "rfam_id":["RM00008"],
         "rfam_lower_bound":"35",
@@ -54,7 +53,8 @@
         "abbreviation":"C",
         "instances":["IL_63596",
                      "IL_75255",
-                     "IL_02509"],
+                     "IL_02509",
+                    "IL_37712"],
         "loop_type":"internal",
         "rfam_id":["RM00003"]
     },

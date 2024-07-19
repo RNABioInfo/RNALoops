@@ -318,7 +318,8 @@ class Opts {
         << "   0 = consensus, 1 = most informative sequence" << std::endl
         << std::endl
         << "-Q <1,2,3> Select motif source: 1 = BGSU, 2 = RFAM, 3 = Both" << std::endl
-        << "-b <1,2,3> Select if motifs are only forward (1), only reverse (2) or both (3)"
+        << std::endl
+        << "-b <1,2,3> Select motif direction : 1 = 5' -> 3', 2 = 3' -> 5', 3  = Both" << std::endl
         << std::endl
         << "-h, --help Print this help." << std::endl << std::endl
         << " (-[drk] [0-9]+)*" << std::endl << std::endl

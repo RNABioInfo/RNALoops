@@ -263,7 +263,7 @@ def dupe_check(motif_list:list[Hairpin|Internal], logger:Logger)-> dict[str:str]
                     seen[sequence[::-1]] = seen[sequence[::-1]].lower()
     return seen
            
-def create_hexdumbs(motif_list: list[Hairpin|Internal], abbreviations: dict, RNALoops_location:str) -> None:
+def create_hexdumbs(motif_list: list[Hairpin|Internal], abbreviations: dict, RNALoops_folder_path:str) -> None:
     keys=['bgsu_fw','bgsu_rv','bgsu_both','rfam_fw','rfam_rv','rfam_both','both_fw','both_rv','both_both'] #type:list[str]
     hsequence_dict = defaultdict(list, { key:[] for key in keys })
     isequence_dict = defaultdict(list, { key:[] for key in keys })
@@ -277,7 +277,7 @@ def create_hexdumbs(motif_list: list[Hairpin|Internal], abbreviations: dict, RNA
             mot.sort_sequences()
             sort_seq_dictionaries(mot, isequence_dict,'i')
             sort_seq_dictionaries(mot, bsequence_dict,'b')
-    with open(os.path.join(RNALoops_location,'Extensions','mot_header.hh'),'w') as file:
+    with open(os.path.join(RNALoops_folder_path,'Extensions','mot_header.hh'),'w') as file:
         for key in keys:
             file.write(sequences2header(hsequence_dict[key],'h'+key))
             file.write(sequences2header(isequence_dict[key],'i'+key))

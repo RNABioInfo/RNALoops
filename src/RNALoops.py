@@ -42,7 +42,7 @@ def get_cmdarguments() -> argparse.Namespace:
     parser.add_argument( '-c',          '--conf', help = 'If specified runtime arguments will be loaded from config file in {config_path}. Default is off'.format(config_path=os.path.join(os.path.dirname(os.path.realpath(__file__)),'data','config.ini')), action = 'store_true', default = False, dest = 'config')
 
     #Arguments for updating motif catalogue, -r activates removal of sequences from catalogue, which ones have to be specified in Motif_collection.py update function.
-    update = parser.add_mutually_exclusive_group(required=False)
+    update = parser.add_mutually_exclusive_group(required = False)
     update.add_argument('-fu', '--force_update', help = 'Force update of sequence catalogue', default =  False, action= 'store_true', dest = 'force_update')
     update.add_argument('-nu',    '--no_update', help = 'Block sequence updating', default = False, action = 'store_true', dest = 'no_update')
     parser.add_argument( '-r',  '--remove_seq', help = 'When specified you can remove specific sequences from motifs if you do not want them to be recognized. These need to be specified in Motif_collection.py update function in the for-loop. THIS IS PERMANENT UNTIL YOU UPDATE THE SEQUENCES AGAIN (with -fu or naturally through a bgsu update). By default removes UUCAA and UACG from GNRA, GUGA from UNCG. ',
@@ -100,7 +100,7 @@ class Process:
         self.separator = commandline_args.separator #type:str
 
         self.location  = os.path.dirname(os.path.realpath(__file__)) #type:str
-        self.parentdir = os.path.abspath(os.path.join(self.location, os.pardir))
+        self.RNALoops_folder_path = os.path.abspath(os.path.join(self.location, os.pardir))
 
         self.no_update = commandline_args.no_update
         
@@ -109,7 +109,7 @@ class Process:
         self.config.read(self.conf_path) 
 
         if commandline_args.config:
-            self.conf_update(self.config['PARAMETERS']) #currently all the values get read as strings, workers would be nice as int but I type cast it when used anyways.
+            self._conf_update(self.config['PARAMETERS']) #currently all the values get read as strings, workers would be nice as int but I type cast it when used anyways.
 
         self.log=make_new_logger(self.loglevel, __name__)
         
@@ -135,25 +135,26 @@ class Process:
         self.current_motifs = mc.get_api_response('http://rna.bgsu.edu/rna3dhub/motifs/release/hl/current/json').headers['Content-disposition'].split('=')[1]
         self.local_motifs   = self.config['VERSIONS']['hairpins']
 
-        if not self.no_update:
+        if not self.no_update: #Double negative, if no_update is used it is set to positive failing the if not check.
             try:
-                self.version_check_and_update(commandline_args.force_update, commandline_args.remove)
+                self._version_check_and_update(commandline_args.force_update, commandline_args.remove)
             except ConnectionError as error:
                 self.log.error(error)
                 self.log.error('Unable to update motif sequences, continuing with old sequence catalogue')
         else:
             self.log.debug('Motif sequence updating disabled.')
             
-        self.algorithm_path = self.identify_algorithm() #type:str
+        self.algorithm_path = self._identify_algorithm() #type:str
+        print(self.algorithm_path)
         
-        self.call_construct = self.call_constructor() #type:str
+        self.call_construct = self._call_constructor() #type:str
         
         if int(self.workers) > os.cpu_count():
             self.log.warning('You are spawning more processes than you have CPU cores, this might lead to performance issues.')
 
         self.log.debug ('Process initiated successfully. Loglevel: {log}, Algorithm: {alg}, K: {k}, Subopt: {sub}, Motif source: {mot}, Motif direction: {motd}, Hishape mode: {hi}, Shape level: {s}, Time: {time}, Local motif version: {version}, Worker processes: {work}'.format(log=self.loglevel, alg=self.algorithm, k=self.kvalue, sub=self.subopt, mot=self.motif_src, motd=self.direction, hi=self.hishape, s=self.shape, time=self.time, algp=self.algorithm_path, work=self.workers, version=self.local_motifs[3:-5]))
 
-    def conf_update(self,update_dict:dict):
+    def _conf_update(self,update_dict:dict):
         bools  = ['subopt', 'time', 'no_update']
         ints   = ['kvalue', 'workers']
         floats = ['energy']
@@ -167,118 +168,121 @@ class Process:
             else:
                 setattr(self, key, value)
 
-    def version_check_and_update(self, update_bool, sequence_remove_bool) -> bool: #checks Motif sequences version and updates them through Motif_collection.py
+    def _version_check_and_update(self, update_bool, sequence_remove_bool) -> bool: #checks Motif sequences version and updates them through Motif_collection.py
         self.log.info('Checking Motif sequence version...')
         if self.local_motifs == self.current_motifs: #updating is bound only to the hairpin version, since hairpins and internals always get updated at the same time
             self.log.info('Motif sequences are up to date')
             if update_bool:
-                self.log.warning('Force update enabled, updating motifs...')
-                mc.update(self.log, sequence_remove_bool, self.location)
+                self.log.warning('Force update enabled. Updating motifs, this may take a minute...')
+                mc.update(self.log, sequence_remove_bool, self.RNALoops_folder_path)
+                self.log.warning('Updating motif sequences successful, updating algorithm...')
+                self._compile_algorithm()
         else:
             self.log.warning('Motif sequences are outdated with current bgsu release, updating but it may take a couple minutes...')
-            mc.update(self.log, sequence_remove_bool, self.location)
+            mc.update(self.log, sequence_remove_bool, self.RNALoops_folder_path)
             self.config.set('VERSIONS','hairpins', self.current_motifs)
             with open(self.conf_path,'w') as file:
                 self.config.write(file)
-            self.log.info('Motif sequences have been updated and version number has been changed to {vers} config file.'.format(vers=self.current_motifs))
+            self.log.info('Motif sequences have been updated and version number has been changed to {vers} config file. Updating algorithm...'.format(vers=self.current_motifs))
+            self._compile_algorithm()
 
-    def identify_algorithm(self) -> str: #searches for algorithm, if it doesn't find it tries to compile it and then searches again. Could be optimized.
-        for root,folder,files in os.walk(self.parentdir, topdown = True):
+    def _identify_algorithm(self) -> str: #searches for algorithm, if it doesn't find it tries to compile it and then searches again.
+        for root,folder,files in os.walk(self.RNALoops_folder_path, topdown = True):
             self.log.debug('Checking {folder} for {alg}...'.format(folder=root, alg=self.algorithm))
             if self.algorithm_call in files:
                 self.log.debug('Found algorithm {alg}'.format(alg=self.algorithm_call))
                 return os.path.realpath(root, strict=True)
             else:pass
         self.log.warning('Algorithm was not found, trying to compile...')
-        Compilation=self.compile_algorithm()
+        Compilation=self._compile_algorithm()
         if Compilation:
             self.log.warning('Compilation of {alg} successful.'.format(alg=self.algorithm))
-            for root, dirs, files in os.walk(self.parentdir, topdown = True):
+            for root, dirs, files in os.walk(self.RNALoops_folder_path, topdown = True):
                 if self.algorithm_call in files:
                     return os.path.realpath(root,strict=True)
                 else:pass
         else:
             raise LookupError('Could not find or compile specified algorithm. Please check log with debug level for compilation information. Make sure your chosen alrightm is installed within this folder or one of its subfolders.')
         
-    def compile_algorithm(self) ->bool:
+    def _compile_algorithm(self) ->bool:
         if self.pfc:
-            compilation_info=subprocess.run('cd {paren}; gapc -o {alg}.cc -t --kbest -i {alg} RNALoops.gap; cd Misc/Applications; perl addRNAoptions.pl {paren}/{alg}.mf 0; cd ../..; make -f {alg}.mf'.format(paren = self.parentdir, alg=self.algorithm_call), shell=True, stdout=subprocess.PIPE, stderr=subprocess.STDOUT)
+            compilation_info=subprocess.run('cd {paren}; gapc -o {alg}.cc -t --kbest -i {alg} RNALoops.gap; cd Misc/Applications; perl addRNAoptions.pl {paren}/{alg}.mf 0; cd ../..; make -f {alg}.mf'.format(paren = self.RNALoops_folder_path, alg=self.algorithm_call), shell=True, stdout=subprocess.PIPE, stderr=subprocess.STDOUT)
         elif self.subopt == True:
-            compilation_info=subprocess.run('cd {paren}; gapc -o {alg}.cc -t --kbacktrace -i {alg} RNALoops.gap; cd Misc/Applications; perl addRNAoptions.pl {paren}/{alg}.mf 0; cd ../..; make -f {alg}.mf'.format(paren = self.parentdir, alg=self.algorithm_call), shell=True, stdout=subprocess.PIPE, stderr=subprocess.STDOUT)        
+            compilation_info=subprocess.run('cd {paren}; gapc -o {alg}.cc -t --kbacktrace -i {alg} RNALoops.gap; cd Misc/Applications; perl addRNAoptions.pl {paren}/{alg}.mf 0; cd ../..; make -f {alg}.mf'.format(paren = self.RNALoops_folder_path, alg=self.algorithm_call), shell=True, stdout=subprocess.PIPE, stderr=subprocess.STDOUT)        
         else:    
-            compilation_info=subprocess.run('cd {paren}; gapc -o {alg}.cc -t --kbacktrace --kbest -i {alg} RNALoops.gap; perl Misc/Applications/addRNAoptions.pl {paren}/{alg}.mf 0; make -f {alg}.mf'.format(paren=self.parentdir, alg=self.algorithm_call), shell=True, stdout=subprocess.PIPE, stderr=subprocess.STDOUT)
+            compilation_info=subprocess.run('cd {paren}; gapc -o {alg}.cc -t --kbacktrace --kbest -i {alg} RNALoops.gap; perl Misc/Applications/addRNAoptions.pl {paren}/{alg}.mf 0; make -f {alg}.mf'.format(paren=self.RNALoops_folder_path, alg=self.algorithm_call), shell=True, stdout=subprocess.PIPE, stderr=subprocess.STDOUT)
         self.log.debug(compilation_info.stdout.decode())
         if compilation_info.returncode: #returncode is 1 when it did not work. This catches unsuccessful attempts.
             return False #return compilation was unsuccessful, terminating the RNALoops.
         if not compilation_info.returncode: #returncode is 0 if it worked. This catches successful successful compilations.
             self.log.debug('Removing temporary files...')
-            subprocess.run('rm {paren}/{alg}.o; rm {paren}/{alg}.mf; rm {paren}/{alg}.hh; rm {paren}/{alg}.d; rm {paren}/{alg}.cc; rm {paren}/{alg}_main.o; rm {paren}/{alg}_main.d; rm {paren}/{alg}_main.cc; rm {paren}/string.d; rm {paren}/string.o'.format(paren=self.parentdir,selfpath=self.location,alg=self.algorithm_call),shell=True,capture_output=False)
+            subprocess.run('rm {paren}/{alg}.o; rm {paren}/{alg}.mf; rm {paren}/{alg}.hh; rm {paren}/{alg}.d; rm {paren}/{alg}.cc; rm {paren}/{alg}_main.o; rm {paren}/{alg}_main.d; rm {paren}/{alg}_main.cc; rm {paren}/string.d; rm {paren}/string.o'.format(paren=self.RNALoops_folder_path,selfpath=self.location,alg=self.algorithm_call),shell=True,capture_output=False)
             return True #return compilation was successful.
 
-    def call_constructor(self) -> str: #Call construction function, if you add a new algorithm you will need to add a call construction string here for the python script to call on each sequence in your input. Remember to keep the cd {path} && {time} with path = self.algorithm_path
+    def _call_constructor(self) -> str: #Call construction function, if you add a new algorithm you will need to add a call construction string here for the python script to call on each sequence in your input. Remember to keep the cd {path} && {time} with path = self.algorithm_path
         match self.algorithm:
             
-            case 'motmfepretty': #the calls need to first go to the directory, otherwise no motifs cause the c++ path code is still funky, change beginning to: {path}/{algorithm} if you ever fix that.
+            case 'motmfepretty':
                 if self.subopt:
                     if self.time:
-                        call = 'cd {path} && time ./{algorithm} -e {energy_value} -Q {database} -b {motif_direction} '.format(path=self.algorithm_path, algorithm=self.algorithm_call, energy_value=self.energy, database=self.motif_src, motif_direction=self.direction)
+                        call = 'time {path}/{algorithm} -e {energy_value} -Q {database} -b {motif_direction} '.format(path=self.algorithm_path, algorithm=self.algorithm_call, energy_value=self.energy, database=self.motif_src, motif_direction=self.direction)
                     else:
-                        call = 'cd {path} && ./{algorithm} -e {energy_value} -Q {database} -b {motif_direction} '.format(path=self.algorithm_path, algorithm=self.algorithm_call, energy_value=self.energy, database=self.motif_src, motif_direction=self.direction)
+                        call = '{path}/{algorithm} -e {energy_value} -Q {database} -b {motif_direction} '.format(path=self.algorithm_path, algorithm=self.algorithm_call, energy_value=self.energy, database=self.motif_src, motif_direction=self.direction)
                 else:
                     if self.time:
-                        call = 'cd {path} && time ./{algorithm} -k {k} -Q {database} -b {motif_direction} '.format(path=self.algorithm_path, algorithm=self.algorithm_call, k=self.kvalue,database=self.motif_src,motif_direction=self.direction)
+                        call = 'time {path}/{algorithm} -k {k} -Q {database} -b {motif_direction} '.format(path=self.algorithm_path, algorithm=self.algorithm_call, k=self.kvalue,database=self.motif_src,motif_direction=self.direction)
                     else:
-                        call = 'cd {path} && ./{algorithm} -k {k} -Q {database} -b {motif_direction} '.format(path=self.algorithm_path, algorithm=self.algorithm_call, k=self.kvalue,database=self.motif_src,motif_direction=self.direction)
+                        call = '{path}/{algorithm} -k {k} -Q {database} -b {motif_direction} '.format(path=self.algorithm_path, algorithm=self.algorithm_call, k=self.kvalue,database=self.motif_src,motif_direction=self.direction)
                 
             case 'motshapeX':
                 if self.subopt:
                     if self.time:
-                        call = 'cd {path} && time ./{algorithm} -e {energy_value} -Q {database} -b {motif_direction} -q {shapelvl} '.format( path=self.algorithm_path, algorithm=self.algorithm_call, energy_value=self.energy,database=self.motif_src,motif_direction=self.direction,shapelvl=self.shape)
+                        call = 'time {path}/{algorithm} -e {energy_value} -Q {database} -b {motif_direction} -q {shapelvl} '.format( path=self.algorithm_path, algorithm=self.algorithm_call, energy_value=self.energy,database=self.motif_src,motif_direction=self.direction,shapelvl=self.shape)
                     else:
-                        call = 'cd {path} && ./{algorithm} -e {energy_value} -Q {database} -b {motif_direction} -q {shapelvl} '.format(path=self.algorithm_path, algorithm=self.algorithm_call, energy_value=self.energy,database=self.motif_src,motif_direction=self.direction,shapelvl=self.shape)
+                        call = '{path}/{algorithm} -e {energy_value} -Q {database} -b {motif_direction} -q {shapelvl} '.format(path=self.algorithm_path, algorithm=self.algorithm_call, energy_value=self.energy,database=self.motif_src,motif_direction=self.direction,shapelvl=self.shape)
                     self.log.warning('Running suboptimal folding with motshapeX leads to extremly long runtimes and very large outputs even with low energy threshholds and high shape level!')
                 else:
                     if self.time:
-                        call = 'cd {path} && time ./{algorithm} -k {k} -Q {database} -b {motif_direction} -q {shapelvl} '.format(path=self.algorithm_path, algorithm=self.algorithm_call, k=self.kvalue, database=self.motif_src, motif_direction=self.direction, shapelvl=self.shape)
+                        call = 'time {path}/{algorithm} -k {k} -Q {database} -b {motif_direction} -q {shapelvl} '.format(path=self.algorithm_path, algorithm=self.algorithm_call, k=self.kvalue, database=self.motif_src, motif_direction=self.direction, shapelvl=self.shape)
                     else:
-                        call = 'cd {path} && ./{algorithm} -k {k} -Q {database} -b {motif_direction} -q {shapelvl} '.format(path=self.algorithm_path, algorithm=self.algorithm_call, k=self.kvalue, database=self.motif_src, motif_direction=self.direction, shapelvl=self.shape)
+                        call = '{path}/{algorithm} -k {k} -Q {database} -b {motif_direction} -q {shapelvl} '.format(path=self.algorithm_path, algorithm=self.algorithm_call, k=self.kvalue, database=self.motif_src, motif_direction=self.direction, shapelvl=self.shape)
             
             case 'mothishape':
                 if self.subopt:
                     if self.time:
-                        call = 'cd {path} && time ./{algorithm} -e {energy_value} -Q {database} -b {motif_direction} '.format(path=self.algorithm_path, algorithm=self.algorithm_call, energy_value=self.energy, database=self.motif_src, motif_direction=self.direction, hishape=self.hishape)
+                        call = 'time {path}/{algorithm} -e {energy_value} -Q {database} -b {motif_direction} '.format(path=self.algorithm_path, algorithm=self.algorithm_call, energy_value=self.energy, database=self.motif_src, motif_direction=self.direction, hishape=self.hishape)
                     else:
-                        call = 'cd {path} && ./{algorithm} -e {energy_value} -Q {database} -b {motif_direction} '.format(path=self.algorithm_path, algorithm=self.algorithm_call, energy_value=self.energy, database=self.motif_src, motif_direction=self.direction, hishape=self.hishape)
+                        call = '{path}/{algorithm} -e {energy_value} -Q {database} -b {motif_direction} '.format(path=self.algorithm_path, algorithm=self.algorithm_call, energy_value=self.energy, database=self.motif_src, motif_direction=self.direction, hishape=self.hishape)
                     self.log.warning('Running suboptimal folding with motHishapes leads to extremly long runtimes and very large outputs even with low energy threshholds and hishape mode h!')
                 else:
                     if self.time:
-                        call = 'cd {path} && time ./{algorithm} -k {k} -Q {database} -b {motif_direction} '.format(path=self.algorithm_path, algorithm=self.algorithm_call, k=self.kvalue, database=self.motif_src, motif_direction=self.direction, hishape=self.hishape)
+                        call = 'time {path}/{algorithm} -k {k} -Q {database} -b {motif_direction} '.format(path=self.algorithm_path, algorithm=self.algorithm_call, k=self.kvalue, database=self.motif_src, motif_direction=self.direction, hishape=self.hishape)
                     else:
-                        call = 'cd {path} && ./{algorithm} -k {k} -Q {database} -b {motif_direction} '.format(path=self.algorithm_path, algorithm=self.algorithm_call, k=self.kvalue, database=self.motif_src, motif_direction=self.direction, hishape=self.hishape)
+                        call = '{path}/{algorithm} -k {k} -Q {database} -b {motif_direction} '.format(path=self.algorithm_path, algorithm=self.algorithm_call, k=self.kvalue, database=self.motif_src, motif_direction=self.direction, hishape=self.hishape)
 
             case 'motpfc'|'mothishape_h_pfc' | 'mothishape_b_pfc' | 'mothishape_m_pfc':
                 if self.time:
-                    call = 'cd {path} && time ./{algorithm} -k {k} -Q {database} -b {motif_direction} '.format(path=self.algorithm_path, algorithm=self.algorithm_call, k=self.kvalue, database=self.motif_src, motif_direction=self.direction)
+                    call = 'time ./{algorithm} -k {k} -Q {database} -b {motif_direction} '.format(path=self.algorithm_path, algorithm=self.algorithm_call, k=self.kvalue, database=self.motif_src, motif_direction=self.direction)
                 else:
-                    call = 'cd {path} && ./{algorithm} -k {k} -Q {database} -b {motif_direction} '.format(path=self.algorithm_path, algorithm=self.algorithm_call, k=self.kvalue, database=self.motif_src, motif_direction=self.direction)
+                    call = '{path}/{algorithm} -k {k} -Q {database} -b {motif_direction} '.format(path=self.algorithm_path, algorithm=self.algorithm_call, k=self.kvalue, database=self.motif_src, motif_direction=self.direction)
 
-            #case 'motshapeX_pfc':
-            #    if self.time:
-            #        call = 'cd {path} && time ./{algorithm} -k {k} -Q {database} -b {motif_direction} -q {shapelvl} '.format(path=self.algorithm_path, algorithm=self.algorithm_call, k=self.kvalue, database=self.motif_src,motif_direction=self.direction,shapelvl=self.shape)
-            #    else:
-            #        call = 'cd {path} && ./{algorithm} -k {k} -Q {database} -b {motif_direction} -q {shapelvl} '.format(path=self.algorithm_path, algorithm=self.algorithm_call, k=self.kvalue, database=self.motif_src,motif_direction=self.direction,shapelvl=self.shape)
+            case 'motshapeX_pfc':
+                if self.time:
+                    call = 'time {path}/{algorithm} -k {k} -Q {database} -b {motif_direction} -q {shapelvl} '.format(path=self.algorithm_path, algorithm=self.algorithm_call, k=self.kvalue, database=self.motif_src,motif_direction=self.direction,shapelvl=self.shape)
+                else:
+                    call = '{path}/{algorithm} -k {k} -Q {database} -b {motif_direction} -q {shapelvl} '.format(path=self.algorithm_path, algorithm=self.algorithm_call, k=self.kvalue, database=self.motif_src,motif_direction=self.direction,shapelvl=self.shape)
             #To insert your own algorithm call permanently you can just add it here as a case with the algorithm name as the case match condition.
             case _:
                 try:
                     self.log.critical('Initiating generic call constructor because your algorithm was not recognized')
-                    call = self.custom_call()
+                    call = self._custom_call()
                 except Exception as e:
                     raise SystemError(e)
 
         self.log.debug('Algorithm call construct created as: {c}'.format(c = call))
         return call
 
-    def custom_call(self) -> str:
+    def _custom_call(self) -> str:
         inputs = input('Please enter your desired runtime arguments. This overwrites previously set values and is only reflected in the call construct log entry. The values you set here are not type checked and directly used as the runtime arguments:\n')
         if self.time:
             custom_call = 'cd {path} && time ./{algorithm} {custom} '.format(path = self.algorithm_path, algorithm = self.algorithm, custom = inputs)
@@ -286,12 +290,12 @@ class Process:
             custom_call = 'cd {path} && ./{algorithm} {custom} '.format(path = self.algorithm_path, algorithm = self.algorithm, custom = inputs)
         return custom_call
 
-    def write_output(self,result:tuple['ClassScoreClass|ClassScore|str',str], ini:bool)-> bool: #checks the class of tuple [0] (which should be the result object), on first entry writes the corresponding header and after that only writes output in tsv format.
+    def _write_output(self,result:tuple['ClassScoreClass|ClassScore|str',str], ini:bool)-> bool: #checks the class of tuple [0] (which should be the result object), on first entry writes the corresponding header and after that only writes output in tsv format.
 
         if isinstance(result[0], ClassScoreClass):
             if not ini:
                 sys.stdout.write('ID{sep}class1{sep}score{sep}class2\n'.format(sep=self.separator))
-            self.write_tsv(result[0])
+            self._write_tsv(result[0])
             if self.time:
                 self.timelogger.info(result[0].id + ':'+ result[1].strip())
             return True
@@ -302,12 +306,12 @@ class Process:
                     sys.stdout.write('ID{sep}class{sep}score{sep}probability\n'.format(sep=self.separator))
                 else:
                     sys.stdout.write('ID{sep}class{sep}score\n'.format(sep=self.separator))
-            self.write_tsv(result[0])
+            self._write_tsv(result[0])
             if self.time:
                 self.timelogger.info(result[0].id + ':'+ result[1].strip())
             return True
            
-    def write_tsv(self,result_obj:'ClassScoreClass|ClassScore') -> None:       
+    def _write_tsv(self,result_obj:'ClassScoreClass|ClassScore') -> None:       
         for prediction in result_obj.results: #Writes the output in tsv style.
             sys.stdout.write(result_obj.id + '{sep}'.format(sep=self.separator))
             for i in range(len(prediction)-1):
@@ -335,17 +339,17 @@ class SingleProcess(Process):
             subprocess_output=(result_obj, result.stderr)
         else:
             subprocess_output=(self.name, result.stderr)
-        self.write_output(subprocess_output, False) #Tuple contains subprocess return and ini bool false so it print the column names.
+        self._write_output(subprocess_output, False) #Tuple contains subprocess return and ini bool false so it print the column names.
 
 class MultiProcess(Process):
     def __init__(self, commandline_args: argparse.Namespace) -> None:
         super().__init__(commandline_args)
         self.iFile = commandline_args.iFile_path #type:argparse.FileType
         self.log.info('Input file path: {iFile}'.format(iFile=self.iFile.name))
-        self.find_filetype()
-        self.seq_iterator=self.read_input_file() #creates iterator for input file
+        self._find_filetype()
+        self.seq_iterator=self._read_input_file() #creates iterator for input file
 
-    def find_filetype(self) -> tuple[str, bool]: #Finds File type based on file ending
+    def _find_filetype(self) -> tuple[str, bool]: #Finds File type based on file ending
         if self.iFile.name.split('.')[-1] == 'gz'or self.iFile.name.split('.')[-1] == 'zip':
             file_extension = (self.iFile.name.split('.')[-2])
             self.zipped=True
@@ -372,24 +376,24 @@ class MultiProcess(Process):
                 sys.stdout.write('Couldnt recognize file type or zip of input file: {input}\n'.format(input=self.iFile.name))
                 raise TypeError('Filetype was not recognized as fasta, fastq or stockholm format. Or file could not be unpacked, please ensure it is zipped with either .gz or .zip or unzipped')
 
-    def read_input_file(self) -> SeqIO.FastaIO.FastaIterator | SeqIO.QualityIO.FastqPhredIterator | Generator[SeqIO.SeqRecord, None, None]: #for some reason py
+    def _read_input_file(self) -> SeqIO.FastaIO.FastaIterator | SeqIO.QualityIO.FastqPhredIterator | Generator[SeqIO.SeqRecord, None, None]: #for some reason py
         if not self.zipped:
             return SeqIO.parse(self.iFile, self.filetype)
         else:
             with gzip.open(self.iFile.name, 'rt') as handle:
                 return SeqIO.parse(handle, self.filetype)
 
-    def run_process(self) -> None:
+    def run_process(self) -> None: #Main processing function running and managing multiprocessing. 
         main_conn, listener_conn = multiprocessing.Pipe(duplex=False)
         Manager   = multiprocessing.Manager()
-        input_q   = Manager.Queue(maxsize = self.workers*2)
-        output_q  = Manager.Queue()
-        Pool      = multiprocessing.Pool(processes = self.workers) #typecast to int to avoid having to specify with config file (confi vars get read as strings)
-        listening = multiprocessing.Process(target = self.listener, args=(output_q,listener_conn)) #run the listener as a separate process that writes the logs and output
+        input_q   = Manager.Queue(maxsize = self.workers*2) #type:multiprocessing.Queue[SeqIO.SeqRecord | None]
+        output_q  = Manager.Queue() #type:multiprocessing.Queue[tuple]
+        Pool      = multiprocessing.Pool(processes = self.workers)
+        listening = multiprocessing.Process(target = self._listener, args=(output_q,listener_conn)) #run the listener as a separate process that writes the logs and output
         listening.start() #start the listener, patiently waiting for processes to finish
-        workers = [] #type:list[multiprocessing.pool.Async_result]
+        workers   = [] #type:list[multiprocessing.AsyncResult]
         for i in range(self.workers):
-            work=Pool.apply_async(worker, (self.call_construct, input_q, output_q, self.algorithm, self.pfc)) #spawn workers
+            work = Pool.apply_async(worker, (self.call_construct, input_q, output_q, self.algorithm, self.pfc)) #spawn workers
             workers.append(work) #put workers on the funny list
         records=0
         for record in self.seq_iterator:
@@ -403,13 +407,13 @@ class MultiProcess(Process):
             work.get() #This is a sentinel that keeps the script from finishing before all the workers are done. Because of the while true the workers only return their results when
                        #the input_queue is empty and the last worker is done
         Pool.close()
-        output_q.put('kill')
+        output_q.put(None) #put at the very emd pf the output_q, is only put after all the workers are done (because work.get() sentinel)
         Pool.join()
         listening.join() #wait for the listener to be done with the output_q
         L_List=[] #type:list[str]
-        while main_conn.poll():
-            L=main_conn.recv()
-            L_List.append(L)
+        while main_conn.poll(): #sentinel for the Listener to not finish before all outputs are written, as long as the connection is active
+            L=main_conn.recv()  #the script will not pass this point, poll becomes false when connection.close gets called in the listener,
+            L_List.append(L)    #Meaning all the results have been written because he received the None
         main_conn.close()
         if len(L_List) > 0:
             self.log.info('Calculations for {iFile} completed. Tasks failed: {len_l}'.format(iFile=self.iFile.name, len_l=len(L_List)))
@@ -417,11 +421,11 @@ class MultiProcess(Process):
         else:
             self.log.info('Calculations for {iFile} completed. All {len} tasks completed successfully'.format(len = records, iFile = self.iFile.name))
 
-    def listener(self, q:multiprocessing.Queue, connection:multiprocessing.connection.Connection): #This function has the sole write access to make writing the logs and results mp save
+    def _listener(self, q:multiprocessing.Queue, connection:multiprocessing.connection.Connection): #This function has the sole write access to make writing the logs and results mp save
         output_started=False
         while True:
             result = q.get() #get results from the q to the listener.
-            if result == 'kill':
+            if result is None:
                 connection.close() #main process connection, allowing for communcation with the main process. Is used to inform the main process that a sequence was not correctly processed.
                 break
             else:
@@ -430,10 +434,10 @@ class MultiProcess(Process):
                     connection.send(result[0]) #sends errors back to the main process for logging purposes.
                 else:
                     if result[0].dna:
-                        self.log.info('Process finished: {res}. Sequence length: {len}. Input was DNA, for predictions T was replaced with U'.format(res=result[0].id, len = len(result[0].seq)))
+                        self.log.info('Process finished: {res}. Sequence length: {len}. Input was DNA, for predictions T was replaced with U, assuming coding strand was given'.format(res=result[0].id, len = len(result[0].seq)))
                     else:
                         self.log.info('Process finished: {res}. Sequence length: {len}'.format(res=result[0].id, len = len(result[0].seq)))
-                    output_started=self.write_output(result, output_started)
+                    output_started=self._write_output(result, output_started)
 
 class Result:
     def __init__(self, name:str, sequence:SeqIO.SeqRecord.seq, result_list:list[list], algorithm:str, DNA:bool):
@@ -443,9 +447,9 @@ class Result:
         self.algorithm = algorithm #Can use this in the future to build dedicated functions for different algorithms
         self.dna = DNA
         if self.algorithm == 'mothishape':
-            self.rm_trailing_comma_hishape()
+            self._rm_trailing_comma_hishape()
 
-    def rm_trailing_comma_hishape(self):
+    def _rm_trailing_comma_hishape(self):
         for result in self.results:
             result[0]=result[0][:-1]
 
@@ -457,12 +461,11 @@ class ClassScore(Result):
     def __init__(self, name: str, sequence: SeqIO.SeqRecord.seq, result_list: list[list], algorithm: str, DNA: bool, pfc:bool = False):
         super().__init__(name, sequence, result_list, algorithm, DNA)
         if pfc:
-            try:self.calculate_pfc_probabilities()
+            try:self._calculate_pfc_probabilities()
             except:sys.stderr.write(('Unable to calculate probabilities from partition function values for process {proc}'.format(proc=self.id)))
         else:pass
 
-
-    def calculate_pfc_probabilities(self) ->None: #This function can easily be adapted for any of the Result subclasses, only the position of entry[1] has to be changed
+    def _calculate_pfc_probabilities(self) ->None: #This function can easily be adapted for any of the Result subclasses, only the position of entry[1] has to be changed
         pfc_list=[] #Actually it doesn't really matter what I use to classify since it will always be classifying * partition algebra products. So I think this works always.
         for result in self.results: #iteratre through results within the motpfc result
             pfc_val=float(result[1]) #get the pfc float value from the position, results are lists made of [motif, pfc-value] in this case. Adjust entry[x] x as necessary
@@ -475,7 +478,7 @@ class ClassScore(Result):
 
 def worker(call:str, iq:multiprocessing.Queue, oq:multiprocessing.Queue, alg:str, pfc_bool:bool) -> None:
     while True:
-        record = iq.get() #type:SeqIO.SeqRecord
+        record = iq.get() #type:SeqIO.SeqRecord | None
         if record is None:
             break
         else:
