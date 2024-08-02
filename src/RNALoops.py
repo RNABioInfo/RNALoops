@@ -15,104 +15,138 @@ import logging
 import Motif_collection as mc
 import glob
 import args
-import result
+import results
 from pathlib import Path
 
 
-class Process:
+class Constants:
+    @classmethod
+    def get_conf_path(cls):
+        return os.path.join(str(Path(__file__).resolve().parent), "data", "config.ini")
 
-    def __init__(
-        self,
-        commandline_args: argparse.Namespace,
-    ):
+    @classmethod
+    def get_RNALoops_path(cls):
+        return str(Path(__file__).resolve().parents[1])
 
-        # Set process parameters
-
-        self.algorithm = commandline_args.algorithm  # type:str
-
-        self.subopt = commandline_args.subopt  # type:bool
-
-        self.name = commandline_args.name  # type:str
-
-        self.motif_src = commandline_args.motif_source  # type:int
-
-        self.motif_orientation = commandline_args.direction  # type:int
-
-        self.kvalue = commandline_args.kvalue  # type:int
-
-        self.hishape = commandline_args.hishape_mode  # type:str
-
-        self.shape = commandline_args.shape_level  # type:str
-
-        self.energy = commandline_args.energy  # type:float
-
-        self.loglevel = commandline_args.loglevel.upper()  # type:str
-
-        numeric_level = getattr(logging, self.loglevel, None)
-        if not isinstance(numeric_level, int):
-            raise ValueError(f"Invalid log level: {self.loglevel}")
-
-        self.time = commandline_args.time  # type:bool
-
-        self.workers = commandline_args.workers  # type:int
-
-        self.separator = commandline_args.separator  # type:str
-
-        self.no_update = commandline_args.no_update  # type:bool
-
-        # custom algorithm call and custom algorithm compilation can only be set in the config file, will be checked with if clause [empty str or None both return false]
-        self.custom_algorithm_call = None  # type:Optional[str]
-
-        self.custom_algorithm_comp = None  # type:Optional[str]
-
-        # Extrapolated Process parameters
-
-        self.RNALoops_folder_path = str(Path(__file__).resolve().parents[1])
-
-        self.conf_path = os.path.join(
-            str(Path(__file__).resolve().parent),
-            "data",
-            "config.ini",
-        )
-        self.config = configparser.ConfigParser()
-
-        self.config.read(self.conf_path)
-
-        if commandline_args.config:
-            self._conf_update(self.config["PARAMETERS"])
-
-        self.log = make_new_logger(
-            self.loglevel,
-            __name__,
-        )
-
-        # time logger coded to current log level to ensure it always prints no matter the chosen log level
-        if self.time:
-            self.timelogger = make_new_logger(
-                self.loglevel,
-                "time",
-                "%(asctime)s:%(name)s:%(message)s",
-            )  # type:logging.Logger
-
-        if self.algorithm[-3:] == "pfc":
-            self.pfc = True  # type:bool
-        else:
-            self.pfc = False  # type:bool
-
-        self.current_motifs = (
+    @classmethod
+    def get_current_motifs(cls):
+        return (
             mc.get_api_response("http://rna.bgsu.edu/rna3dhub/motifs/release/hl/current/json")
             .headers["Content-disposition"]
             .split("=")[1]
         )
+
+
+class Process:
+
+    @classmethod
+    def from_argparse(cls, cmd_args: argparse.Namespace):
+        return cls(
+            cmd_args.input,
+            cmd_args.algorithm,
+            cmd_args.subopt,
+            cmd_args.name,
+            cmd_args.motif_source,
+            cmd_args.motif_orientation,
+            cmd_args.kvalue,
+            cmd_args.hishape_mode,
+            cmd_args.shape_level,
+            cmd_args.energy,
+            cmd_args.loglevel.upper(),
+            cmd_args.time,
+            cmd_args.workers,
+            cmd_args.separator,
+            cmd_args.no_update,
+            cmd_args.force_update,
+            cmd_args.remove,
+            cmd_args.custom_algorithm_call,
+            cmd_args.custom_algorithm_comp,
+        )
+
+    @classmethod
+    def from_config(cls, config: configparser.ConfigParser):
+        loglevel = config["PARAMETERS"]["loglevel"]
+        if not isinstance(getattr(logging, loglevel.upper(), None), int):
+            raise ValueError(f"Invalid log level: {loglevel}")
+        return cls(
+            config["PARAMETERS"]["input"],
+            config["PARAMETERS"]["algorithm"],
+            config.getboolean("PARAMETERS", "subopt"),
+            config["PARAMETERS"]["name"],
+            config["PARAMETERS"]["motif_src"],
+            config["PARAMETERS"]["motif_orientation"],
+            config.getint("PARAMETERS", "kvalue"),
+            config["PARAMETERS"]["hishape"],
+            config["PARAMETERS"]["shape"],
+            config.getfloat("PARAMETERS", "energy"),
+            config["PARAMETERS"]["loglevel"].upper(),
+            config.getboolean("PARAMETERS", "time"),
+            config.getint("PARAMETERS", "workers"),
+            config["PARAMETERS"]["separator"],
+            config.getboolean("PARAMETERS", "no_update"),
+            config.getboolean("PARAMETERS", "force_update"),
+            config.getboolean("PARAMETERS", "remove_bool"),
+            config["PARAMETERS"]["custom_algorithm_call"],
+            config["PARAMETERS"]["custom_algorithm_comp"],
+        )
+
+    # init with it's own set of default values so Process can be imported and used in another program.
+    def __init__(
+        self,
+        input: str,
+        algorithm: str = "motmfepretty",
+        subopt: bool = False,
+        name: str = "single_sequence",
+        motif_source: str = "3",
+        motif_orientation: str = "3",
+        kvalue: int = 15,
+        hishape_mode: str = "h",
+        shape_level: str = "3",
+        energy: float = 1.0,
+        loglevel: str = "Info",
+        time: bool = False,
+        workers: int = os.cpu_count() - 2,
+        separator: str = "\t",
+        no_update: bool = False,
+        force_update: bool = False,
+        remove: bool = False,
+        custom_algorithm_call: Optional[str] = None,
+        custom_algorithm_comp: Optional[str] = None,
+    ):
+        # Set process parameters
+        self.input = input  # type:str
+        self.algorithm = algorithm  # type:str
+        self.subopt = subopt  # type:bool
+        self.name = name  # type:str
+        self.motif_src = motif_source  # type:str
+        self.motif_orientation = motif_orientation  # type:str
+        self.kvalue = kvalue  # type:int
+        self.hishape = hishape_mode  # type:str
+        self.shape = shape_level  # type:str
+        self.energy = energy  # type:float
+        self.loglevel = loglevel.upper()  # type:str
+        self.time = time  # type:bool
+        self.workers = workers  # type:int
+        self.separator = separator  # type:str
+        self.no_update = no_update  # type:bool
+        self.force_update = force_update  # type:bool
+        self.remove_bool = remove  # type:bool
+        # custom algorithm call and custom algorithm compilation can only be set in the config file, will be checked with if clause [empty str or None both return false]
+        self.custom_algorithm_call = custom_algorithm_call  # type:Optional[str]
+        self.custom_algorithm_comp = custom_algorithm_comp  # type:Optional[str]
+        # Extrapolated Process parameters
+        self.log = make_new_logger(self.loglevel, __name__)
+
+        self.RNALoops_folder_path = Constants.get_RNALoops_path()
+
+        self.config = args.get_config(Constants.get_conf_path())
         self.local_motif_version = self.config["VERSIONS"]["hairpins"]
+        self.current_motifs = Constants.get_current_motifs()
 
         # Double negative, if no_update is used it is set to positive failing the if not check.
         if not self.no_update:
             try:
-                self._version_check_and_update(
-                    commandline_args.force_update,
-                    commandline_args.remove,
-                )
+                self._version_check_and_update(force_update, remove)
             except ConnectionError as error:
                 self.log.error(error)
                 self.log.error(
@@ -121,51 +155,43 @@ class Process:
         else:
             self.log.debug("Motif sequence updating disabled.")
 
+        if self.algorithm[-3:] == "pfc":
+            self.pfc = True
+        else:
+            self.pfc = False
+        results.algorithm_output.set_pfc(self.pfc)
+
+        if self.time:
+            self.time = True
+        else:
+            self.time = False
+        results.algorithm_output.set_time(self.time)
+
         self._set_algorithm()
-
         self.algorithm_path = self._identify_algorithm()  # type:str
-
         self.call_construct = self._call_constructor()  # type:str
+        self.algorithm_input = self._check_input()
 
-        self.log.debug(
-            "Process initiated successfully. Loglevel: {log}, Algorithm: {alg}, K: {k}, Subopt: {sub}, Motif source: {mot}, Motif direction: {motd}, Hishape mode: {hi}, Shape level: {s}, Time: {time}, Local motif version: {version}, Worker processes: {work}".format(
-                log=self.loglevel,
-                alg=self.algorithm,
-                k=self.kvalue,
-                sub=self.subopt,
-                mot=self.motif_src,
-                motd=self.motif_orientation,
-                hi=self.hishape,
-                s=self.shape,
-                time=self.time,
-                algp=self.algorithm_path,
-                work=self.workers,
-                version=self.local_motif_version[3:-5],
-            )
-        )
+    def _check_input(
+        self,
+    ) -> (
+        SeqIO.SeqRecord
+        | SeqIO.FastaIO.FastaIterator
+        | SeqIO.QualityIO.FastqPhredIterator
+        | Generator[SeqIO.SeqRecord, None, None]
+    ):
+        if os.path.isfile(self.input):
+            self.log.info("Input recognized as file.")
+            return self._read_input_file()
+        else:
+            self.log.info("Input recognized as single sequence")
+            return self._create_record()
 
     def _set_algorithm(self):
         if self.algorithm == "mothishape":
             self.algorithm = self.algorithm + "_" + self.hishape  # type:str
         if self.subopt:
             self.algorithm = self.algorithm + "_subopt"  # type:str
-
-    def _conf_update(
-        self,
-        update_dict: dict,
-    ):
-        bools = ["subopt", "time", "no_update"]
-        ints = ["kvalue", "workers"]
-        floats = ["energy"]
-        for key, value in update_dict.items():
-            if key in bools:
-                setattr(self, key, self.config.getboolean("PARAMETERS", key))
-            elif key in ints:
-                setattr(self, key, self.config.getint("PARAMETERS", key))
-            elif key in floats:
-                setattr(self, key, self.config.getfloat("PARAMETERS", key))
-            else:
-                setattr(self, key, value)
 
     # checks Motif sequences version and updates them through Motif_collection.py. Updating is bound only to the hairpin version, since hairpins and internals always get updated at the same time
     def _version_check_and_update(
@@ -175,7 +201,7 @@ class Process:
     ) -> bool:
         self.log.info("Checking Motif sequence version...")
         if self.local_motif_version == self.current_motifs:
-            self.log.info("Motif sequences are up to date")
+            self.log.info(f"Motif sequences are up to date. Version {self.current_motifs}")
             if update_bool:
                 self.log.warning("Force update enabled. Updating motifs, this may take a minute...")
                 mc.update(self.log, sequence_remove_bool, self.RNALoops_folder_path)
@@ -183,14 +209,14 @@ class Process:
                 self._compile_algorithm()
         else:
             self.log.warning(
-                "Motif sequences are outdated with current bgsu release, updating but it may take a couple minutes..."
+                "Motif sequences are outdated with current bgsu release, updating may take a couple minutes..."
             )
             mc.update(self.log, sequence_remove_bool, self.RNALoops_folder_path)
             self.config.set("VERSIONS", "hairpins", self.current_motifs)
             with open(self.conf_path, "w") as file:
                 self.config.write(file)
             self.log.info(
-                f"Motif sequences have been updated and version number has been changed to {self.current_motifs} config file. Updating algorithm..."
+                f"Motif sequences have been updated to {self.current_motifs}. Updating algorithm..."
             )
             self._compile_algorithm()
 
@@ -259,6 +285,7 @@ class Process:
     ) -> str:
         if self.custom_algorithm_call:
             call = f"{self.algorithm_path} {self.custom_algorithm_call} "
+            self.log.debug(f"Using custom algorithm call: {call}")
             return call
         if self.subopt:
             call = f"{self.algorithm_path} -e {self.energy} -Q {self.motif_src} -b {self.motif_orientation} "
@@ -271,119 +298,46 @@ class Process:
         self.log.debug(f"Algorithm call construct created as: {call}")
         return call
 
-    def _write_output(
-        self,
-        output_tuple: tuple[result.ClassScoreClass | result.ClassScore | str, str],
-        writing_started: bool,
-    ):
-        if output_tuple[0].dna:
-            self.log.info(
-                f"Process finished: {output_tuple[0].id}. Sequence length: {len(output_tuple[0].seq)}. Input was DNA, for predictions T was replaced with U, assuming coding strand was given"
+    def run_process(self):
+        if os.path.isfile(self.input):
+            self.log.info("Running predictions in Multiprocessing mode")
+            MultiProcess.run(
+                self.algorithm_input,
+                self.call_construct,
+                self.separator,
+                self.workers,
             )
         else:
-            self.log.info(
-                f"Process finished: {output_tuple[0].id}. Sequence length: {len(output_tuple[0].seq)}"
-            )
-        if self.time:
-            self.timelogger.info(output_tuple[0].id + ":" + output_tuple[1].strip())
-        writing_started = output_tuple[0].write_results(writing_started, self.separator)
-        return writing_started
-
-
-class SingleProcess(Process):
-    def __init__(
-        self,
-        commandline_args: argparse.Namespace,
-    ) -> None:
-        super().__init__(commandline_args)
-        if self.name is None:
-            self.name = "single_sequence"  # type:str
-        self.log.info(f"Running: {self.name}. Input sequence: {commandline_args.input_seq}")
-        self.record = SeqRecord(seq=Seq(commandline_args.input_seq), id=self.name)
-
-    def run_process(
-        self,
-    ) -> None:
-        subclass_decider = None
-        if "T" in self.record.seq:
-            self.record.seq = self.record.seq.transcribe()
-            self.log.warning(
-                "T detected in input sequence, replacing T with U and running prediction anyways..."
-            )
-            dna = True
-        else:
-            dna = False
-        subproc_out = subprocess.run(
-            self.call_construct + str(self.record.seq),
-            text=True,
-            capture_output=True,
-            shell=True,
-        )
-        if not subproc_out.returncode:
-            subclass_decider = find_subclass(subproc_out.stdout)
-
-        subprocess_output = create_output_tpl(
-            self.record, subproc_out, self.algorithm, subclass_decider, dna, self.pfc
-        )
-        if isinstance(subprocess_output[0], result.algorithm_type):
-            self._write_output(subprocess_output, False)
-        else:
-            self.log.error(f"{subprocess_output[0]}:{subprocess_output[1].strip()}")
-
-
-class MultiProcess(Process):
-    def __init__(
-        self,
-        commandline_args: argparse.Namespace,
-    ) -> None:
-        super().__init__(commandline_args)
-        self.iFile = commandline_args.iFile_path  # type:argparse.FileType
-        self.log.info(f"Input file path: {self.iFile.name}")
-        self._find_filetype()
-        self.seq_iterator = self._read_input_file()  # creates iterator for input file
-        if int(self.workers) > os.cpu_count():
-            self.log.warning(
-                "You are spawning more processes than you have CPU cores, this might lead to performance issues."
-            )
+            self.log.info("Running prediction in Single")
+            SingleProcess.run(self.algorithm_input, self.call_construct, self.separator)
 
     # Finds File type based on file ending
-    def _find_filetype(
-        self,
-    ) -> tuple[
-        str,
-        bool,
-    ]:
-        if self.iFile.name.split(".")[-1] == "gz" or self.iFile.name.split(".")[-1] == "zip":
-            file_extension = self.iFile.name.split(".")[-2]
-            self.iFile_zipped = True
-            self.log.info("File is compressed, decompressing with gzip...")
+    def _find_filetype(self) -> None:
+        if self.input.split(".")[-1] == "gz" or self.input.split(".")[-1] == "zip":
+            file_extension = self.input.split(".")[-2]
+            input_zipped = True
         else:
-            file_extension = self.iFile.name.split(".")[-1]
-            self.iFile_zipped = False
+            file_extension = self.input.split(".")[-1]
+            input_zipped = False
 
         match file_extension:
             case "fasta" | "fas" | "fa" | "fna" | "ffn" | "faa" | "mpfa" | "frn" | "txt" | "fsa":
-                self.log.info("Filetype identified as fasta, reading ...")
-                self.filetype = "fasta"
+                filetype = "fasta"
 
             case "fastq" | "fq":
-                self.log.info("Filetype identified as fastq, reading...")
-                self.filetype = "fastq"
+                filetype = "fastq"
 
             case "stk" | "stockholm" | "sto":
-                self.log.info("Filetype identified as stockholm, reading ...")
-                self.filetype = "stockholm"
-
+                filetype = "stockholm"
             case _:
-                self.log.error(
+                self.log.critical(
                     "Could not identify file type as fasta, fastq or stockholm. If the file is zipped make sure it is .zip or .gz"
-                )
-                sys.stdout.write(
-                    f"Couldnt recognize file type or zip of input file: {self.iFile.name}\n"
                 )
                 raise TypeError(
                     "Filetype was not recognized as fasta, fastq or stockholm format. Or file could not be unpacked, please ensure it is zipped with either .gz or .zip or unzipped"
                 )
+        self.log.info(f"File type recognized as {filetype}")
+        return (input_zipped, filetype)
 
     def _read_input_file(
         self,
@@ -392,29 +346,91 @@ class MultiProcess(Process):
         | SeqIO.QualityIO.FastqPhredIterator
         | Generator[SeqIO.SeqRecord, None, None]
     ):
-        if not self.iFile_zipped:
-            return SeqIO.parse(self.iFile, self.filetype)
+        (zipped, filetype) = self._find_filetype()
+        if not zipped:
+            return SeqIO.parse(self.input, filetype)
         else:
-            with gzip.open(self.iFile.name, "rt") as handle:
-                return SeqIO.parse(handle, self.filetype)
+            with gzip.open(self.input, "rt") as handle:
+                return SeqIO.parse(handle, filetype)
 
-    def run_process(
+    def _create_record(self) -> SeqIO.SeqRecord:
+        rec = SeqRecord(seq=Seq(self.input), id=self.name)
+        if "T" in rec.seq:
+            rec.seq = rec.seq.transcribe()
+            self.dna = True
+        else:
+            self.dna = False
+        self.log.info(f"SeqRecord created as {rec.id}: {str(rec.seq)}")
+        return rec
+
+
+class SingleProcess:
+    def __init__(self, input_seq_record: str, call_construct: str, separator: str) -> None:
+        self.record = input_seq_record
+        self.call_construct = call_construct
+        self.separator = separator
+
+    @classmethod
+    def run(cls, input_seq_record, call_construct, separator) -> results.algorithm_output | str:
+        obj = cls(input_seq_record, call_construct, separator)
+        return obj.run_process()
+
+    def run_process(self) -> results.algorithm_output | str:
+        subproc_out = subprocess.run(
+            self.call_construct + str(self.record.seq),
+            text=True,
+            capture_output=True,
+            shell=True,
+        )
+        if not subproc_out.returncode:
+            results.algorithm_output(
+                self.record.id, subproc_out.stdout, subproc_out.stderr
+            ).write_results(self.separator, False)
+        else:
+            sys.stderr.write(subproc_out.stderr)
+
+    def __repr__(self) -> str:
+        return f"{type(self).__name__}: {self.__dict__}"
+
+    def __str__(self) -> str:
+        return f"{type(self).__name__}, ID: {self.record.id}, Process: {self.call_construct+str(self.record.seq)}"
+
+
+class MultiProcess:
+    def __init__(
         self,
-    ) -> None:  # Main processing function running and managing multiprocessing.
-        (main_conn, listener_conn) = multiprocessing.Pipe(duplex=False)
+        iterator: (
+            SeqIO.FastaIO.FastaIterator
+            | SeqIO.QualityIO.FastqPhredIterator
+            | Generator[SeqIO.SeqRecord, None, None]
+        ),
+        call_construct: str,
+        separator: str,
+        workers: int,
+    ):
+        self.seq_iterator = iterator
+        self.call_construct = call_construct
+        self.workers = workers
+        self.separator = separator
+
+    @classmethod
+    def run(cls, input_iterator, call_construct, workers, separator):
+        obj = cls(input_iterator, call_construct, workers, separator)
+        obj.run_process()
+
+    # Main processing function running and managing multiprocessing.
+    def run_process(self) -> None:
         Manager = multiprocessing.Manager()
         input_q = Manager.Queue(
             maxsize=self.workers * 2
         )  # type:multiprocessing.Queue[SeqIO.SeqRecord | None]
         output_q = Manager.Queue()  # type:multiprocessing.Queue[tuple]
         Pool = multiprocessing.Pool(processes=self.workers)
-        listening = multiprocessing.Process(target=self._listener, args=(output_q, listener_conn))
-        listening.start()  # start the listener, patiently waiting for processes to finish
+        listening = multiprocessing.Process(target=self._listener, args=(output_q,))
+        listening.start()  # start the listener
         workers = []  # type:list[multiprocessing.AsyncResult]
         for i in range(self.workers):
-            work = Pool.apply_async(
-                worker, (self.call_construct, input_q, output_q, self.algorithm, self.pfc)
-            )
+            work = Pool.apply_async(worker, (self.call_construct, input_q, output_q))
             workers.append(work)  # put workers on the funny list
 
         for record in self.seq_iterator:
@@ -429,39 +445,27 @@ class MultiProcess(Process):
         output_q.put(None)
         Pool.join()
         listening.join()
-        L_List = []  # type:list[str]
-        while main_conn.poll():
-            L = main_conn.recv()
-            L_List.append(L)
-        main_conn.close()
-        if L_List:
-            self.log.info(
-                f"Calculations for {self.iFile.name} completed. Tasks failed: {len(L_List)}"
-            )
-            self.log.info(f"Failed calculations: {L_List}")
-        else:
-            self.log.info(
-                f"Calculations for {self.iFile.name} completed. All tasks completed successfully"
-            )
 
     # listener has the sole write access to make writing the logs and results mp save, connected back to the main process through a pipe (main_proc_conn)
-    def _listener(
-        self,
-        q: multiprocessing.Queue,
-        main_proc_conn: multiprocessing.connection.Connection,
-    ):
+    def _listener(self, q: multiprocessing.Queue):
         writing_started = False
         while True:
-            output = q.get()  # type:tuple[result.ClassScoreClass|result.ClassScore|str,str]|None
+            output = q.get()  # type:'results.algorithm_output | results.error | None'
             if output is None:
-                main_proc_conn.close()
                 break
             else:
-                if isinstance(output[0], result.algorithm_type):
-                    writing_started = self._write_output(output, writing_started)
-                else:
-                    self.log.error(f"{output[0]}:{output[1].strip()}")
-                    main_proc_conn.send(output[0])
+                if isinstance(output, results.algorithm_output):
+                    writing_started = output.write_results(self.separator, writing_started)
+                    sys.stdout.flush()
+                if isinstance(output, results.error):
+                    sys.stderr.write(f"{output.id}: {output.error}")
+
+    # str and repr methods for better documentation and useablity
+    def __repr__(self) -> str:
+        return f"{type(self).__name__}: {self.__dict__}"
+
+    def __str__(self) -> str:
+        return f"{type(self).__name__}, Call: {self.call_construct}, Input: {self.seq_iterator}. Worker Processes: {self.workers}"
 
 
 # Non Process class function that need to be unbound to be pickle'able. See: https://stackoverflow.com/questions/1816958/cant-pickle-type-instancemethod-when-using-multiprocessing-pool-map, guess it kinda is possible it really isnt all that necessary though.
@@ -485,92 +489,34 @@ def make_new_logger(
     return logger
 
 
-def create_output_tpl(
-    record: SeqIO.SeqRecord,
-    sub_out: subprocess.CompletedProcess[str],
-    algorithm,
-    decider: Optional[int],
-    dna: bool,
-    pfc=None,
-) -> tuple:
-    if not sub_out.returncode:
-        if not decider:
-            subprocess_output = (
-                result.ClassScore(record.id, record.seq, sub_out.stdout, algorithm, dna, pfc),
-                sub_out.stderr,
-            )
-        else:
-            subprocess_output = (
-                result.ClassScoreClass(record.id, record.seq, sub_out.stdout, algorithm, dna),
-                sub_out.stderr,
-            )
-    else:  # this captures return_code = 1, returned if subprocess.run did not work
-        subprocess_output = (
-            record.id,
-            sub_out.stderr,
-        )
-    return subprocess_output
-
-
-def find_subclass(
-    stdout: str,
-) -> int:
-    split = stdout.strip().split("\n")
-    split_result = split[0].split("|")
-    if len(split_result) == 2:
-        return 0  # class score
-    elif len(split_result) == 3:
-        return 1  # class score class
-    else:
-        raise ValueError("Could not identify algorithm output as ClassScore or ClassScoreClass.")
-
-
 def worker(
     call: str,
     iq: multiprocessing.Queue,
     oq: multiprocessing.Queue,
-    alg: str,
-    pfc_bool: bool,
-) -> None:
-    initialized = False
-    sublcass_decider = None
+) -> list:
     while True:
-        record = iq.get()  # type:SeqIO.SeqRecord | None
+        record = iq.get()  # type:Optional[SeqIO.SeqRecord]
         if record is None:
             break
         else:
             if "T" in str(record.seq):
                 record.seq = record.seq.transcribe()
-                dna = True
             subprocess_output = subprocess.run(
-                call + str(record.seq),
-                text=True,
-                capture_output=True,
-                shell=True,
+                call + str(record.seq), text=True, capture_output=True, shell=True
             )
-            dna = False
-
-        # checks if it already did subclass checking and if the the returncode is ok, in case first attempt fails. "if return code is not" returns true when returncode = 0, signaling the subprocess completed successfully
-        if not initialized and not subprocess_output.returncode:
-            sublcass_decider = find_subclass(subprocess_output.stdout)
-            initialized = True
-
-        oq.put(
-            create_output_tpl(
-                record,
-                subprocess_output,
-                alg,
-                sublcass_decider,
-                dna,
-                pfc_bool,
+        if not subprocess_output.returncode:
+            result = results.algorithm_output(
+                record.id, subprocess_output.stdout, subprocess_output.stderr
             )
-        )
+        else:
+            result = results.error(record.id, subprocess_output.stderr)
+        oq.put(result)
 
 
 if __name__ == "__main__":
     cmd_args = args.get_cmdarguments()
-    if cmd_args.iFile_path:
-        proc = MultiProcess(cmd_args)
+    if cmd_args.config:
+        proc = Process.from_config(args.get_config(Constants.get_conf_path()))
     else:
-        proc = SingleProcess(cmd_args)
+        proc = Process.from_argparse(cmd_args)
     proc.run_process()
