@@ -33,10 +33,10 @@ string bl(Subsequence f1, Subsequence x, string e, Subsequence f2) {
   string r;
   char sub = '.';
   char mot = identify_motif_b(x, sub);
-  append(r,e);
   if (mot != '.') {
       append(r,mot);
   }
+  append(r,e);
   return r;
 }
 
