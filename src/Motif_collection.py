@@ -100,7 +100,6 @@ class Hairpin(Motif):
                     )
                 )
         self.instances = alignments
-        print(self.instances)
 
     def get_rfam_sequences(self):
         self.rfam_api_calls = self.make_rfam_api_calls()
@@ -521,8 +520,4 @@ if __name__ == "__main__":
             remove = True
     except:
         remove = False
-    update(
-        log,
-        remove,
-        Path(__file__).resolve().parents[1],
-    )
+    update(log, remove, Path(__file__).resolve().parents[1])

@@ -143,6 +143,12 @@ class Process:
         self.local_motif_version = self.config["VERSIONS"]["hairpins"]
         self.current_motifs = Constants.get_current_motifs()
 
+        if self.algorithm[-3:] == "pfc":
+            self.pfc = True
+        else:
+            self.pfc = False
+        results.algorithm_output.set_pfc(self.pfc)
+
         # Double negative, if no_update is used it is set to positive failing the if not check.
         if not self.no_update:
             try:
@@ -155,12 +161,6 @@ class Process:
         else:
             self.log.debug("Motif sequence updating disabled.")
 
-        if self.algorithm[-3:] == "pfc":
-            self.pfc = True
-        else:
-            self.pfc = False
-        results.algorithm_output.set_pfc(self.pfc)
-
         if self.time:
             self.time = True
         else:
@@ -170,7 +170,9 @@ class Process:
         self._set_algorithm()
         self.algorithm_path = self._identify_algorithm()  # type:str
         self.call_construct = self._call_constructor()  # type:str
-        self.algorithm_input = self._check_input()
+        self.algorithm_input = (
+            self._check_input()
+        )  # type: SeqIO.FastaIO.FastaIterator | SeqIO.QualityIO.FastqPhredIterator | Generator[SeqRecord, None, None] | SeqIO.SeqRecord
 
     def _check_input(
         self,
@@ -213,7 +215,7 @@ class Process:
             )
             mc.update(self.log, sequence_remove_bool, self.RNALoops_folder_path)
             self.config.set("VERSIONS", "hairpins", self.current_motifs)
-            with open(self.conf_path, "w") as file:
+            with open(Constants.get_conf_path(), "w") as file:
                 self.config.write(file)
             self.log.info(
                 f"Motif sequences have been updated to {self.current_motifs}. Updating algorithm..."

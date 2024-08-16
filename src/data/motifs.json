@@ -12,7 +12,7 @@
     {
         "motif_name":"GNRA",
         "abbreviation":"G",
-        "instances":["HL_35490"],
+        "instances":["HL_85603"],
         "loop_type":"hairpin",
         "rfam_id":["RM00008"],
         "rfam_lower_bound":"35",
@@ -21,7 +21,7 @@
     {
         "motif_name":"UNCG",
         "abbreviation":"U",
-        "instances":["HL_03562"],
+        "instances":["HL_29960"],
         "loop_type":"hairpin",
         "rfam_id":["RM00029"],
         "rfam_lower_bound":"24",
@@ -69,6 +69,7 @@
                      "IL_93830",
                      "IL_38862",
                      "IL_02349",
+                     "IL_34470",
                      "IL_35728",
                      "IL_26785",
                      "IL_81631",
