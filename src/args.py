@@ -2,7 +2,6 @@ import argparse
 import configparser
 import logging
 import os
-from pathlib import Path
 
 
 class LogCheck(argparse.Action):
@@ -194,20 +193,6 @@ def get_cmdarguments() -> argparse.Namespace:
         help="When specified you can remove specific sequences from motifs if you do not want them to be recognized. These need to be specified in Motif_collection.py update function in the for-loop. THIS IS PERMANENT UNTIL YOU UPDATE THE SEQUENCES AGAIN (with -fu or naturally through a bgsu update). By default removes UUCAA and UACG from GNRA, GUGA from UNCG. ",
         action="store_true",
         dest="remove",
-    )
-    parser.add_argument(
-        "--custom_algorithm_call",
-        help="Specify a custom algorithm call that will overwrite all other variables.",
-        type=str,
-        default=None,
-        dest="custom_algorithm_call",
-    )
-    parser.add_argument(
-        "--custom_algorithm_comp",
-        help="Specify a custom algorithm compilation call.",
-        type=str,
-        default=None,
-        dest="custom_algorithm_comp",
     )
 
     args = parser.parse_args()

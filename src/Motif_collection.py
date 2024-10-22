@@ -342,6 +342,7 @@ def update(main_process_logger: Logger, deletion_bool: bool, RNALoops_location: 
         for mot in motifs:
             mot.remove_sequence("UUCAA", "GNRA")
             mot.remove_sequence("UACG", "GNRA")
+            mot.remove_sequence("GAAA", "UNCG")
             mot.remove_sequence("GUGA", "UNCG")
     seq_abbreviation_dict = dupe_check(motifs, main_process_logger)
     create_hexdumbs(motifs, seq_abbreviation_dict, RNALoops_location)
@@ -499,7 +500,7 @@ def flatten(xss: list[list[str]]) -> list:
 def sequences2header(seq_set: list, name: str) -> str:
     joined_seq_set = "\n".join(seq_set)
     out = []
-    out.append("static unsigned char {var_name}[] = {{".format(var_name=name))
+    out.append("static char {var_name}[] = {{".format(var_name=name))
     data = [joined_seq_set[i : i + 12] for i in range(0, len(joined_seq_set), 12)]
     for i, x in enumerate(data):
         line = ", ".join((["0x{val:02x}".format(val=ord(c)) for c in x]))

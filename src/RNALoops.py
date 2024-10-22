@@ -20,16 +20,16 @@ from pathlib import Path
 
 
 class Constants:
-    @classmethod
-    def get_conf_path(cls):
+    @staticmethod
+    def get_conf_path():
         return os.path.join(str(Path(__file__).resolve().parent), "data", "config.ini")
 
-    @classmethod
-    def get_RNALoops_path(cls):
+    @staticmethod
+    def get_RNALoops_path():
         return str(Path(__file__).resolve().parents[1])
 
-    @classmethod
-    def get_current_motifs(cls):
+    @staticmethod
+    def get_current_motifs():
         return (
             mc.get_api_response("http://rna.bgsu.edu/rna3dhub/motifs/release/hl/current/json")
             .headers["Content-disposition"]
@@ -59,8 +59,6 @@ class Process:
             cmd_args.no_update,
             cmd_args.force_update,
             cmd_args.remove,
-            cmd_args.custom_algorithm_call,
-            cmd_args.custom_algorithm_comp,
         )
 
     @classmethod
@@ -86,6 +84,7 @@ class Process:
             config.getboolean("PARAMETERS", "no_update"),
             config.getboolean("PARAMETERS", "force_update"),
             config.getboolean("PARAMETERS", "remove_bool"),
+            config.getboolean("PARAMETERS", "custom_algorithm_bool"),
             config["PARAMETERS"]["custom_algorithm_call"],
             config["PARAMETERS"]["custom_algorithm_comp"],
         )
@@ -110,9 +109,12 @@ class Process:
         no_update: bool = False,
         force_update: bool = False,
         remove: bool = False,
+        # custom algorithm compilation and calling is only available through the config file
+        custom_algorithm_bool: Optional[bool] = False,
         custom_algorithm_call: Optional[str] = None,
         custom_algorithm_comp: Optional[str] = None,
     ):
+
         # Set process parameters
         self.input = input  # type:str
         self.algorithm = algorithm  # type:str
@@ -132,6 +134,7 @@ class Process:
         self.force_update = force_update  # type:bool
         self.remove_bool = remove  # type:bool
         # custom algorithm call and custom algorithm compilation can only be set in the config file, will be checked with if clause [empty str or None both return false]
+        self.custom_algorithm_bool = custom_algorithm_bool  # type:Optional[bool]
         self.custom_algorithm_call = custom_algorithm_call  # type:Optional[str]
         self.custom_algorithm_comp = custom_algorithm_comp  # type:Optional[str]
         # Extrapolated Process parameters
@@ -141,7 +144,12 @@ class Process:
 
         self.config = args.get_config(Constants.get_conf_path())
         self.local_motif_version = self.config["VERSIONS"]["hairpins"]
-        self.current_motifs = Constants.get_current_motifs()
+        try:
+            self.current_motifs = Constants.get_current_motifs()
+        except Exception as e:
+            self.log.error(e)
+            self.log.error("Unable to get current motif version, resuming without updating.")
+            self.no_update = True
 
         if self.algorithm[-3:] == "pfc":
             self.pfc = True
@@ -166,13 +174,13 @@ class Process:
         else:
             self.time = False
         results.algorithm_output.set_time(self.time)
-
         self._set_algorithm()
         self.algorithm_path = self._identify_algorithm()  # type:str
         self.call_construct = self._call_constructor()  # type:str
         self.algorithm_input = (
             self._check_input()
         )  # type: SeqIO.FastaIO.FastaIterator | SeqIO.QualityIO.FastqPhredIterator | Generator[SeqRecord, None, None] | SeqIO.SeqRecord
+        print(vars(self))
 
     def _check_input(
         self,
@@ -223,9 +231,7 @@ class Process:
             self._compile_algorithm()
 
     # searches for algorithm, if it doesn't find it tries to compile it and then searches again.
-    def _identify_algorithm(
-        self,
-    ) -> str:
+    def _identify_algorithm(self) -> str:
         alg_path = os.path.join(self.RNALoops_folder_path, self.algorithm)
         if alg_path in glob.glob(self.RNALoops_folder_path + "/*"):
             self.log.debug(f"Found algorithm {self.algorithm}")
@@ -253,17 +259,20 @@ class Process:
             )
 
     # compile algorithm function that allows for the customization of calls through editing the compilation_call string. Just add a case or edit the cases present here.
-    def _compile_algorithm(
-        self,
-    ) -> bool:
-        if self.custom_algorithm_comp:
-            compilation_call = f"cd {self.RNALoops_folder_path}; {self.custom_algorithm_comp}; perl Misc/Applications/addRNAoptions.pl {self.algorithm}.mf 0; make -f {self.algorithm}.mf"
-        elif self.pfc:
-            compilation_call = f"cd {self.RNALoops_folder_path}; gapc -o {self.algorithm}.cc -t --kbest -i {self.algorithm} RNALoops.gap; perl Misc/Applications/addRNAoptions.pl {self.algorithm}.mf 0; make -f {self.algorithm}.mf"
-        elif self.subopt:
-            compilation_call = f"cd {self.RNALoops_folder_path}; gapc -o {self.algorithm}.cc -t --kbacktrace -i {self.algorithm} RNALoops.gap; perl Misc/Applications/addRNAoptions.pl {self.algorithm}.mf 0; make -f {self.algorithm}.mf"
-        else:
-            compilation_call = f"cd {self.RNALoops_folder_path}; gapc -o {self.algorithm}.cc -t --kbacktrace --kbest -i {self.algorithm} RNALoops.gap; perl Misc/Applications/addRNAoptions.pl {self.algorithm}.mf 0; make -f {self.algorithm}.mf"
+    def _compile_algorithm(self) -> bool:
+        match self.custom_algorithm_bool:
+            case True:
+                self.log.info(
+                    f"Using custom algorithm compilation call: {self.custom_algorithm_comp}"
+                )
+                compilation_call = f"cd {self.RNALoops_folder_path}; {self.custom_algorithm_comp}; perl Misc/Applications/addRNAoptions.pl {self.algorithm}.mf 0; make -f {self.algorithm}.mf"
+            case False:
+                if self.pfc:
+                    compilation_call = f"cd {self.RNALoops_folder_path}; gapc -o {self.algorithm}.cc -t --kbest -i {self.algorithm} RNALoops.gap; perl Misc/Applications/addRNAoptions.pl {self.algorithm}.mf 0; make -f {self.algorithm}.mf"
+                elif self.subopt:
+                    compilation_call = f"cd {self.RNALoops_folder_path}; gapc -o {self.algorithm}.cc -t --kbacktrace -i {self.algorithm} RNALoops.gap; perl Misc/Applications/addRNAoptions.pl {self.algorithm}.mf 0; make -f {self.algorithm}.mf"
+                else:
+                    compilation_call = f"cd {self.RNALoops_folder_path}; gapc -o {self.algorithm}.cc -t --kbacktrace --kbest -i {self.algorithm} RNALoops.gap; perl Misc/Applications/addRNAoptions.pl {self.algorithm}.mf 0; make -f {self.algorithm}.mf"
         compilation_info = subprocess.run(
             compilation_call, shell=True, stdout=subprocess.PIPE, stderr=subprocess.PIPE
         )
@@ -282,21 +291,19 @@ class Process:
             return True  # return compilation was successful.
 
     # Call construction function, if you add a new algorithm you will need to add a call construction string here for the python script to call on each sequence in your input. Remember to keep the cd {path} && {time} with path = self.algorithm_path
-    def _call_constructor(
-        self,
-    ) -> str:
-        if self.custom_algorithm_call:
-            call = f"{self.algorithm_path} {self.custom_algorithm_call} "
-            self.log.debug(f"Using custom algorithm call: {call}")
-            return call
-        if self.subopt:
-            call = f"{self.algorithm_path} -e {self.energy} -Q {self.motif_src} -b {self.motif_orientation} "
-        else:
-            call = f"{self.algorithm_path} -k {self.kvalue} -Q {self.motif_src} -b {self.motif_orientation} "
+    def _call_constructor(self) -> str:
+        match self.custom_algorithm_bool:
+            case True:
+                call = f"{self.algorithm_path} {self.custom_algorithm_call} "
+            case False:
+                if self.subopt:
+                    call = f"{self.algorithm_path} -e {self.energy} -Q {self.motif_src} -b {self.motif_orientation} "
+                else:
+                    call = f"{self.algorithm_path} -k {self.kvalue} -Q {self.motif_src} -b {self.motif_orientation} "
+                if self.algorithm == "motshapeX":
+                    call = call + f" -q {self.shape} "
         if self.time:
             call = "time " + call
-        if self.algorithm == "motshapeX":
-            call = call + f" -q {self.shape} "
         self.log.debug(f"Algorithm call construct created as: {call}")
         return call
 
@@ -486,7 +493,9 @@ def make_new_logger(
     else:
         formatter = logging.Formatter(fmt="%(asctime)s:%(levelname)s: %(message)s")
     handler.setFormatter(formatter)
-    logger.propagate = False  # Permanent propagate False since I'm not utilizing any subloggers and sublcasses. THis way I can just treat each loggers as a standalone, makes it easier.
+    logger.propagate = (
+        False  # Permanent propagate False since I'm not utilizing any subloggers and sublcasses.
+    )
     logger.addHandler(handler)
     return logger
 

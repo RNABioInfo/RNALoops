@@ -39,45 +39,45 @@ inline std::vector<std::string> split (const std::string &s, char delim){
 }
 
 //HashMap implementation functions for all three loop types in the macrostate grammar.DB =database, which one gets used 1=BGSU, 2=RMFAM, 3 = bot // R = reverse, 1= No Reverses, 2 = Only Reverses, 3 = Both reverse and Forward
-inline HashMap Motif_HashMap(HashMap x, std::array<unsigned char* ,9> &arr, std::array<unsigned int,9> len_arr) {
+inline HashMap Motif_HashMap(HashMap x, std::array<char* ,9> arr, std::array<unsigned int,9> len_arr) {
     std::string str_mot_ar;
     switch(gapc::Opts::getOpts()->reversed){
        case 1:     
            switch(gapc::Opts::getOpts()->motifs){
                case 1:
-                   str_mot_ar = reinterpret_cast<const char*>(arr[0]), len_arr[0];
+                   str_mot_ar.assign(arr[0],len_arr[0]);
                    break;
                case 2:
-                   str_mot_ar = reinterpret_cast<const char*>(arr[1]), len_arr[1];
+                   str_mot_ar.assign(arr[1],len_arr[1]);
                    break;
                case 3:
-                   str_mot_ar = reinterpret_cast<const char*>(arr[2]), len_arr[2];
+                   str_mot_ar.assign(arr[2],len_arr[2]);
                    break;
                    }
        break;
        case 2:
            switch(gapc::Opts::getOpts()->motifs){
                case 1:
-                   str_mot_ar = reinterpret_cast<const char*>(arr[3]), len_arr[3];
+                   str_mot_ar.assign(arr[3],len_arr[3]);
                    break;
                case 2:
-                   str_mot_ar = reinterpret_cast<const char*>(arr[4]), len_arr[4];
+                   str_mot_ar.assign(arr[4],len_arr[4]);
                    break;
                case 3:
-                   str_mot_ar = reinterpret_cast<const char*>(arr[5]), len_arr[5];
+                   str_mot_ar.assign(arr[5],len_arr[5]);
                    break;
                    }
        break;
        case 3:
            switch(gapc::Opts::getOpts()->motifs){
                 case 1:
-                    str_mot_ar = reinterpret_cast<const char*>(arr[6]), len_arr[6];
+                    str_mot_ar.assign(arr[6],len_arr[6]);
                     break;
                 case 2:
-                    str_mot_ar = reinterpret_cast<const char*>(arr[7]), len_arr[7];
+                    str_mot_ar.assign(arr[7],len_arr[7]);
                     break;
                 case 3:
-                    str_mot_ar = reinterpret_cast<const char*>(arr[8]), len_arr[8];
+                    str_mot_ar.assign(arr[8],len_arr[8]);
                     break;
                    }
        break;
@@ -86,9 +86,7 @@ inline HashMap Motif_HashMap(HashMap x, std::array<unsigned char* ,9> &arr, std:
    std::istringstream isstream(str_mot_ar);
    while (std::getline (isstream, Line,'\n')) {
        std::vector<std::string> v = split(Line,',');
-       char value[v[1].length()];
-       strcpy(value,v[1].c_str());
-       x[v[0]]=value[0];
+       x[v[0]]=v[1].c_str()[0];
    }
     return x;
 }
@@ -158,9 +156,7 @@ inline char identify_motif(const Basic_Subsequence<char, unsigned int> &a, char 
     if (auto search = HairpinHashMap.find(Motif); search != HairpinHashMap.end()){
         return search->second;
     }
-    else {
-        return res;
-    }
+    return res;
 }
 
 inline char identify_motif(const Basic_Subsequence<char, unsigned int> &a, const Basic_Subsequence<char, unsigned int> &b, char res) {
@@ -175,9 +171,7 @@ inline char identify_motif(const Basic_Subsequence<char, unsigned int> &a, const
     if (auto search = InternalHashMap.find(Motif); search != InternalHashMap.end()) {
         return search->second;
     }
-    else {
-        return res;
-    }
+    return res;
 }
 
 inline char identify_motif_b(const Basic_Subsequence<char, unsigned int> &a, char res) {
@@ -192,8 +186,6 @@ inline char identify_motif_b(const Basic_Subsequence<char, unsigned int> &a, cha
     if (auto search = BulgeHashMap.find(Motif); search != BulgeHashMap.end()) {
         return search->second;
     }
-    else {
-        return res;
-    }
+    return res;
 }
 #endif
