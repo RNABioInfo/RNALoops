@@ -180,7 +180,6 @@ class Process:
         self.algorithm_input = (
             self._check_input()
         )  # type: SeqIO.FastaIO.FastaIterator | SeqIO.QualityIO.FastqPhredIterator | Generator[SeqRecord, None, None] | SeqIO.SeqRecord
-        print(vars(self))
 
     def _check_input(
         self,
