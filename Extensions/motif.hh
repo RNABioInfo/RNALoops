@@ -14,18 +14,20 @@
 #include<sstream>
 #include<map>
 #include<mutex>
+#include<optional>
 #include "mot_header.hh"
+struct Motif {std::string seq; char abb {'X'};};
 typedef std::unordered_map<std::string, char> HashMap;
 static HashMap HairpinHashMap;
 static HashMap InternalHashMap;
 static HashMap BulgeHashMap;
 static bool initialized;
-static std::array Hairpins         = {hbgsu_fw, hrfam_fw, hboth_fw, hbgsu_rv, hrfam_rv, hboth_rv, hbgsu_both, hrfam_both, hboth_both};
-static std::array Hairpin_lengths  = {hbgsu_fw_len, hrfam_fw_len, hboth_fw_len, hbgsu_rv_len, hrfam_rv_len, hboth_rv_len, hbgsu_both_len, hrfam_both_len, hboth_both_len};
-static std::array Internals        = {ibgsu_fw, irfam_fw, iboth_fw, ibgsu_rv, irfam_rv, iboth_rv, ibgsu_both, irfam_both, iboth_both};
-static std::array Internal_lengths = {ibgsu_fw_len, irfam_fw_len, iboth_fw_len, ibgsu_rv_len, irfam_rv_len, iboth_rv_len, ibgsu_both_len, irfam_both_len, iboth_both_len};
-static std::array Bulges           = {bbgsu_fw, brfam_fw, bboth_fw, bbgsu_rv, brfam_rv, bboth_rv, bbgsu_both, brfam_both, bboth_both};
-static std::array Bulge_lengths    = {bbgsu_fw_len, brfam_fw_len, bboth_fw_len, bbgsu_rv_len, brfam_rv_len, bboth_rv_len, bbgsu_both_len, brfam_both_len, bboth_both_len};
+static std::array Hairpins         = {rna3d_hairpins_fw, rfam_hairpins_fw, both_hairpins_fw, rna3d_hairpins_rv, rfam_hairpins_rv, both_hairpins_rv, rna3d_hairpins_both, rfam_hairpins_both, both_hairpins_both,custom_hairpins};
+static std::array Hairpin_lengths  = {rna3d_hairpins_fw_len, rfam_hairpins_fw_len, both_hairpins_fw_len, rna3d_hairpins_rv_len, rfam_hairpins_rv_len, both_hairpins_rv_len, rna3d_hairpins_both_len, rfam_hairpins_both_len, both_hairpins_both_len,custom_hairpins_len};
+static std::array Internals        = {rna3d_internals_fw, rfam_internals_fw, both_internals_fw, rna3d_internals_rv, rfam_internals_rv, both_internals_rv, rna3d_internals_both, rfam_internals_both, both_internals_both,custom_internals};
+static std::array Internal_lengths = {rna3d_internals_fw_len, rfam_internals_fw_len, both_internals_fw_len, rna3d_internals_rv_len, rfam_internals_rv_len, both_internals_rv_len, rna3d_internals_both_len, rfam_internals_both_len, both_internals_both_len,custom_internals_len};
+static std::array Bulges           = {rna3d_bulges_fw, rfam_bulges_fw, both_bulges_fw, rna3d_bulges_rv, rfam_bulges_rv, both_bulges_rv, rna3d_bulges_both, rfam_bulges_both, both_bulges_both,custom_bulges};
+static std::array Bulge_lengths    = {rna3d_bulges_fw_len, rfam_bulges_fw_len, both_bulges_fw_len, rna3d_bulges_rv_len, rfam_bulges_rv_len, both_bulges_rv_len, rna3d_bulges_both_len, rfam_bulges_both_len, both_bulges_both_len,custom_bulges_len};
 
 //Split function that allows me to split my input strings from they xx,yy form into v[0]="xx" and v[1]="yy" splitting the sequences from their single letter abbreviations
 inline std::vector<std::string> split (const std::string &s, char delim){
@@ -38,8 +40,36 @@ inline std::vector<std::string> split (const std::string &s, char delim){
     return result;   
 }
 
+
+inline std::optional<Motif> parse_motif (const std::string &input){
+    constexpr char delim = ',';
+    std::stringstream sinput (input);
+    size_t elements {0};
+    Motif motif{};
+    std::string item;
+    while (getline(sinput,item,delim)) {
+        if (elements == 0){
+            motif.seq = item;
+        }
+        else if (elements == 1){
+            motif.abb = item.front();
+        }
+        else{
+            std::cerr << "Error more than one motif in one line" << std::endl;
+            return std::nullopt;
+        }
+        ++elements;
+    }
+    if (elements > 2){
+        std::cerr << "Found " << elements << ", Expecetd " << 2 << std::endl;
+        return std::nullopt;
+    }
+    return motif;
+}
+
+
 //HashMap implementation functions for all three loop types in the macrostate grammar.DB =database, which one gets used 1=BGSU, 2=RMFAM, 3 = bot // R = reverse, 1= No Reverses, 2 = Only Reverses, 3 = Both reverse and Forward
-inline HashMap Motif_HashMap(HashMap x, std::array<char* ,9> arr, std::array<unsigned int,9> len_arr) {
+inline HashMap Motif_HashMap(HashMap x, std::array<char* ,10> arr, std::array<unsigned int,10> len_arr) {
     std::string str_mot_ar;
     switch(gapc::Opts::getOpts()->reversed){
        case 1:     
@@ -52,6 +82,9 @@ inline HashMap Motif_HashMap(HashMap x, std::array<char* ,9> arr, std::array<uns
                    break;
                case 3:
                    str_mot_ar.assign(arr[2],len_arr[2]);
+                   break;
+                case 4:
+                   str_mot_ar.assign(arr[9],len_arr[9]);
                    break;
                    }
        break;
@@ -66,6 +99,9 @@ inline HashMap Motif_HashMap(HashMap x, std::array<char* ,9> arr, std::array<uns
                case 3:
                    str_mot_ar.assign(arr[5],len_arr[5]);
                    break;
+                case 4:
+                   str_mot_ar.assign(arr[9],len_arr[9]);
+                   break;
                    }
        break;
        case 3:
@@ -79,14 +115,18 @@ inline HashMap Motif_HashMap(HashMap x, std::array<char* ,9> arr, std::array<uns
                 case 3:
                     str_mot_ar.assign(arr[8],len_arr[8]);
                     break;
+                case 4:
+                    str_mot_ar.assign(arr[9],len_arr[9]);
+                    break;
                    }
        break;
    }
-   std::string Line;
+   std::string line;
    std::istringstream isstream(str_mot_ar);
-   while (std::getline (isstream, Line,'\n')) {
-       std::vector<std::string> v = split(Line,',');
-       x[v[0]]=v[1].c_str()[0];
+   while (std::getline (isstream, line,'\n')) {
+        if (const auto motif = parse_motif(line)){
+            x[motif.value().seq]=motif.value().abb;
+        }
    }
     return x;
 }

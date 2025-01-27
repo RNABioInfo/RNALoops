@@ -317,9 +317,9 @@ class Opts {
         << "for dot plots, aka. outside computation." << std::endl
         << "   0 = consensus, 1 = most informative sequence" << std::endl
         << std::endl
-        << "-Q <1,2,3> Select motif source: 1 = BGSU, 2 = RFAM, 3 = Both" << std::endl
+        << "-Q <1,2,3,4> Select motif source: 1 = RNA 3D Motif Atlas, 2 = RFAM, 3 = Both, 4 = Custom Motifs" << std::endl
         << std::endl
-        << "-b <1,2,3> Select motif direction : 1 = 5' -> 3', 2 = 3' -> 5', 3  = Both" << std::endl
+        << "-b <1,2,3> Select motif direction : 1 = 5' -> 3', 2 = 3' -> 5', 3  = Both | (This option is currently not available with custom motifs, if you select -Q 4 it does not matter which -b you set)" << std::endl
         << std::endl
         << "-h, --help Print this help." << std::endl << std::endl
         << " (-[drk] [0-9]+)*" << std::endl << std::endl
@@ -538,6 +538,7 @@ class Opts {
         break;
       case 'Q':
         motifs = std::atoi(optarg);
+        break;
       case 'b':
         reversed = std::atoi(optarg);
         break;
@@ -666,8 +667,8 @@ class Opts {
       throw OptException("Consensus type must either be 0 "
                          "(=consensus) or 1 (=mis).");
     }
-    if (motifs < 1 || motifs > 3) {
-      throw OptException("Choose motif mode between 1 and 3");
+    if (motifs < 1 || motifs > 4) {
+      throw OptException("Choose motif mode between 1 and 4");
     }
     if (reversed < 1 || reversed > 3) {
       throw OptException("Choose reverse mode between 1 and 3");
