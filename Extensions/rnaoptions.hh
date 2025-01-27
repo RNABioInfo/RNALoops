@@ -317,9 +317,9 @@ class Opts {
         << "for dot plots, aka. outside computation." << std::endl
         << "   0 = consensus, 1 = most informative sequence" << std::endl
         << std::endl
-        << "-Q <1,2,3,4> Select motif source: 1 = RNA 3D Motif Atlas, 2 = RFAM, 3 = Both, 4 = Custom Motifs" << std::endl
+        << "-Q <1,2,3,4> Select motif source: 1 = RNA 3D Motif Atlas, 2 = RFAM, 3 = Both, 4 = Custom Motifs. Default is 1." << std::endl
         << std::endl
-        << "-b <1,2,3> Select motif direction : 1 = 5' -> 3', 2 = 3' -> 5', 3  = Both | (This option is currently not available with custom motifs, if you select -Q 4 it does not matter which -b you set)" << std::endl
+        << "-b <1,2,3> Select motif direction : 1 = 5' -> 3', 2 = 3' -> 5', 3  = Both. Default is 1. (This option is currently not available with custom motifs, if you select -Q 4 it does not matter which -b you set)" << std::endl
         << std::endl
         << "-h, --help Print this help." << std::endl << std::endl
         << " (-[drk] [0-9]+)*" << std::endl << std::endl
