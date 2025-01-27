@@ -78,29 +78,26 @@
 		return shape_t(openParen) + shape_t(mot) + shape_t(closeParen);
 	}
 	else{
-    return shape_t(openParen) + shape_t(closeParen);
+    	return shape_t(openParen) + shape_t(closeParen);
 	}
   }
 
   shape_t bl(Subsequence lb,Subsequence lregion,shape_t x,Subsequence rb) {
 	if (shapelevel() <= 3) {
-		shape_t res;
-		append(res, shape_t(openParen));
 		char mot;
-		char sub = '_';		
+		char sub = '_';
+		mot = identify_motif_b(lregion, sub);
 		if (shapelevel() <= 2) { 
-			mot = identify_motif_b(lregion, sub);
-			append(res, mot); 
+			return shape_t(openParen) + shape_t(mot) + x + shape_t(closeParen);
 			}
 		else{
-			mot = identify_motif_b(lregion, sub);
-			if (mot != '_'){
-				append(res,mot);
+			if (mot != '_') {
+				return shape_t(openParen) + shape_t(mot) + x + shape_t(closeParen);
+			}
+			else {
+				return shape_t(openParen) + x + shape_t(closeParen);
 			}
 		}
-		append(res, x);
-		append(res, shape_t(closeParen));
-		return res;
 	} else {
 		return x;
 	}
@@ -108,23 +105,20 @@
 
   shape_t br(Subsequence lb,shape_t x,Subsequence rregion,Subsequence rb) {
 	if (shapelevel() <= 3) {
-		shape_t res;
-		append(res, shape_t(openParen));
-		append(res, x);
 		char mot;
 		char sub = '_';
+		mot = identify_motif_b(rregion, sub);
 		if (shapelevel() <= 2) { 
-			mot = identify_motif_b(rregion, sub);
-			append(res, mot);
+			return shape_t(openParen) +  x + shape_t(mot) + shape_t(closeParen);
 			}
 		else{
-			mot = identify_motif_b(rregion, sub);
 			if (mot != '_'){
-				append(res,mot);
+				return shape_t(openParen) +  x + shape_t(mot) + shape_t(closeParen);
+			}
+			else {
+				return shape_t(openParen) + x + shape_t(closeParen);
 			}
 		}
-		append(res, shape_t(closeParen));
-		return res;
 	} else {
 		return x;
 	}
@@ -132,32 +126,22 @@
 
   shape_t il(Subsequence lb,Subsequence lregion,shape_t x,Subsequence rregion,Subsequence rb) {
 	if (shapelevel() <= 4) {
-		shape_t res;
-		append(res, shape_t(openParen));
 		char mot;
 		char sub = '_';
+		mot = identify_motif(lregion, rregion, sub);
 		if (shapelevel() <= 2) {
-			mot = identify_motif(lregion, rregion, sub);
-			append(res, mot); 
-			}
-		else {
-			mot = identify_motif(lregion, rregion, sub);
-			if (mot != '_'){
-				append(res,mot);
-			}
+			return shape_t(openParen) + shape_t(mot) + x + shape_t(mot) +shape_t(closeParen);
 		}
-		append(res, x);
-		if (shapelevel() <= 2) {
-			append(res, mot);
-			}
 		else {
-			if (mot != '_'){
-				append(res,mot);
+			if (mot != '_') {
+				return shape_t(openParen) + shape_t(mot) + x + shape_t(mot) + shape_t(closeParen);
 			}
-		}
-		append(res, shape_t(closeParen));
-		return res;
-	} else {
+			else{
+				return shape_t(openParen) + x + shape_t(closeParen);
+				}
+			}	
+	}
+	else{
 		return x;
 	}
   }
