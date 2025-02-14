@@ -15,6 +15,7 @@
 #include<map>
 #include<mutex>
 #include<optional>
+#include <tuple>
 #include "mot_header.hh"
 struct Motif {std::string seq; char abb {'X'};};
 typedef std::unordered_map<std::string, char> HashMap;
@@ -22,12 +23,12 @@ static HashMap HairpinHashMap;
 static HashMap InternalHashMap;
 static HashMap BulgeHashMap;
 static bool initialized;
-static std::array Hairpins         = {rna3d_hairpins_fw, rfam_hairpins_fw, both_hairpins_fw, rna3d_hairpins_rv, rfam_hairpins_rv, both_hairpins_rv, rna3d_hairpins_both, rfam_hairpins_both, both_hairpins_both,custom_hairpins};
-static std::array Hairpin_lengths  = {rna3d_hairpins_fw_len, rfam_hairpins_fw_len, both_hairpins_fw_len, rna3d_hairpins_rv_len, rfam_hairpins_rv_len, both_hairpins_rv_len, rna3d_hairpins_both_len, rfam_hairpins_both_len, both_hairpins_both_len,custom_hairpins_len};
-static std::array Internals        = {rna3d_internals_fw, rfam_internals_fw, both_internals_fw, rna3d_internals_rv, rfam_internals_rv, both_internals_rv, rna3d_internals_both, rfam_internals_both, both_internals_both,custom_internals};
-static std::array Internal_lengths = {rna3d_internals_fw_len, rfam_internals_fw_len, both_internals_fw_len, rna3d_internals_rv_len, rfam_internals_rv_len, both_internals_rv_len, rna3d_internals_both_len, rfam_internals_both_len, both_internals_both_len,custom_internals_len};
-static std::array Bulges           = {rna3d_bulges_fw, rfam_bulges_fw, both_bulges_fw, rna3d_bulges_rv, rfam_bulges_rv, both_bulges_rv, rna3d_bulges_both, rfam_bulges_both, both_bulges_both,custom_bulges};
-static std::array Bulge_lengths    = {rna3d_bulges_fw_len, rfam_bulges_fw_len, both_bulges_fw_len, rna3d_bulges_rv_len, rfam_bulges_rv_len, both_bulges_rv_len, rna3d_bulges_both_len, rfam_bulges_both_len, both_bulges_both_len,custom_bulges_len};
+static std::array Hairpins         = {rna3d_hairpins_fw, rfam_hairpins_fw, both_hairpins_fw, rna3d_hairpins_rv, rfam_hairpins_rv, both_hairpins_rv, rna3d_hairpins_both, rfam_hairpins_both, both_hairpins_both};
+static std::array Hairpin_lengths  = {rna3d_hairpins_fw_len, rfam_hairpins_fw_len, both_hairpins_fw_len, rna3d_hairpins_rv_len, rfam_hairpins_rv_len, both_hairpins_rv_len, rna3d_hairpins_both_len, rfam_hairpins_both_len, both_hairpins_both_len};
+static std::array Internals        = {rna3d_internals_fw, rfam_internals_fw, both_internals_fw, rna3d_internals_rv, rfam_internals_rv, both_internals_rv, rna3d_internals_both, rfam_internals_both, both_internals_both};
+static std::array Internal_lengths = {rna3d_internals_fw_len, rfam_internals_fw_len, both_internals_fw_len, rna3d_internals_rv_len, rfam_internals_rv_len, both_internals_rv_len, rna3d_internals_both_len, rfam_internals_both_len, both_internals_both_len};
+static std::array Bulges           = {rna3d_bulges_fw, rfam_bulges_fw, both_bulges_fw, rna3d_bulges_rv, rfam_bulges_rv, both_bulges_rv, rna3d_bulges_both, rfam_bulges_both, both_bulges_both};
+static std::array Bulge_lengths    = {rna3d_bulges_fw_len, rfam_bulges_fw_len, both_bulges_fw_len, rna3d_bulges_rv_len, rfam_bulges_rv_len, both_bulges_rv_len, rna3d_bulges_both_len, rfam_bulges_both_len, both_bulges_both_len};
 
 //Split function that allows me to split my input strings from they xx,yy form into v[0]="xx" and v[1]="yy" splitting the sequences from their single letter abbreviations
 inline std::vector<std::string> split (const std::string &s, char delim){
@@ -69,7 +70,7 @@ inline std::optional<Motif> parse_motif (const std::string &input){
 
 
 //HashMap implementation functions for all three loop types in the macrostate grammar.DB =database, which one gets used 1=BGSU, 2=RMFAM, 3 = bot // R = reverse, 1= No Reverses, 2 = Only Reverses, 3 = Both reverse and Forward
-inline HashMap Motif_HashMap(HashMap x, std::array<char* ,10> arr, std::array<unsigned int,10> len_arr) {
+inline HashMap Motif_HashMap(HashMap x, std::array<char* ,9> arr, std::array<unsigned int,9> len_arr) {
     std::string str_mot_ar;
     switch(gapc::Opts::getOpts()->reversed){
        case 1:     
@@ -82,9 +83,6 @@ inline HashMap Motif_HashMap(HashMap x, std::array<char* ,10> arr, std::array<un
                    break;
                case 3:
                    str_mot_ar.assign(arr[2],len_arr[2]);
-                   break;
-                case 4:
-                   str_mot_ar.assign(arr[9],len_arr[9]);
                    break;
                    }
        break;
@@ -99,9 +97,6 @@ inline HashMap Motif_HashMap(HashMap x, std::array<char* ,10> arr, std::array<un
                case 3:
                    str_mot_ar.assign(arr[5],len_arr[5]);
                    break;
-                case 4:
-                   str_mot_ar.assign(arr[9],len_arr[9]);
-                   break;
                    }
        break;
        case 3:
@@ -115,9 +110,6 @@ inline HashMap Motif_HashMap(HashMap x, std::array<char* ,10> arr, std::array<un
                 case 3:
                     str_mot_ar.assign(arr[8],len_arr[8]);
                     break;
-                case 4:
-                    str_mot_ar.assign(arr[9],len_arr[9]);
-                    break;
                    }
        break;
    }
@@ -128,6 +120,21 @@ inline HashMap Motif_HashMap(HashMap x, std::array<char* ,10> arr, std::array<un
             x[motif.value().seq]=motif.value().abb;
         }
    }
+    return x;
+}
+
+
+ inline HashMap Custom_Motif_HashMap(HashMap x, const std::string &y){
+    std::string line;
+    std::ifstream ifstream(y);
+    if (!ifstream.is_open()){
+        throw std::runtime_error("File not found");
+    }
+    for (std::string line; std::getline(ifstream, line);) {
+        if (const auto motif = parse_motif(line)){
+            x[motif.value().seq]=motif.value().abb;
+        }
+    }
     return x;
 }
 
@@ -183,13 +190,52 @@ inline std::string InputManagement(const Basic_Subsequence<char, unsigned int> &
     return Motif; //Return the Motif string, correctly formatted for the HashMap
 }
 
+//Void function that alters the global HashMaps (I know this might be bad practice but it's easy and it works.)
+inline void create_hashmaps(){
+    if (!gapc::Opts::getOpts()->custom_hairpins.empty()){
+        if (gapc::Opts::getOpts() -> replaceH){
+            HairpinHashMap  = Custom_Motif_HashMap(HairpinHashMap, gapc::Opts::getOpts() -> custom_hairpins);
+        }
+        else{
+            HairpinHashMap  = Motif_HashMap(HairpinHashMap, Hairpins, Hairpin_lengths);
+            HairpinHashMap  = Custom_Motif_HashMap(HairpinHashMap, gapc::Opts::getOpts() -> custom_hairpins);
+        }
+    }
+    else{
+        HairpinHashMap  = Motif_HashMap(HairpinHashMap, Hairpins, Hairpin_lengths);
+    }
+
+    if (!gapc::Opts::getOpts()->custom_internals.empty()){
+        if (gapc::Opts::getOpts() -> replaceI){
+            InternalHashMap  = Custom_Motif_HashMap(InternalHashMap, gapc::Opts::getOpts() -> custom_internals);
+        }
+        else{
+            InternalHashMap  = Motif_HashMap(InternalHashMap, Internals, Internal_lengths);
+            InternalHashMap  = Custom_Motif_HashMap(InternalHashMap, gapc::Opts::getOpts() -> custom_internals);
+        }
+    }
+    else{
+        InternalHashMap  = Motif_HashMap(InternalHashMap, Internals, Internal_lengths);
+    }
+    if (!gapc::Opts::getOpts()->custom_bulges.empty()){
+        if (gapc::Opts::getOpts() -> replaceB){
+            BulgeHashMap  = Custom_Motif_HashMap(BulgeHashMap, gapc::Opts::getOpts() -> custom_bulges);
+        }
+        else{
+            BulgeHashMap  = Motif_HashMap(BulgeHashMap, Bulges, Bulge_lengths);
+            BulgeHashMap  = Custom_Motif_HashMap(BulgeHashMap, gapc::Opts::getOpts() -> custom_bulges);
+        }
+    }
+    else{
+        BulgeHashMap  = Motif_HashMap(BulgeHashMap, Bulges, Bulge_lengths);
+    }
+}
+
 //Overloaded identify_motif functions, two identify_motif for Hairpins and Internal Loops respectively while identify_motif_b is for bulge loops
 inline char identify_motif(const Basic_Subsequence<char, unsigned int> &a, char res) {
     if (!initialized){
         initialized = true;
-        HairpinHashMap  = Motif_HashMap(HairpinHashMap, Hairpins, Hairpin_lengths);
-        InternalHashMap = Motif_HashMap(InternalHashMap, Internals, Internal_lengths);
-        BulgeHashMap    = Motif_HashMap(BulgeHashMap, Bulges, Bulge_lengths);
+        create_hashmaps();
     }
     std::string Motif;
     Motif = InputManagement(a);
@@ -202,9 +248,7 @@ inline char identify_motif(const Basic_Subsequence<char, unsigned int> &a, char 
 inline char identify_motif(const Basic_Subsequence<char, unsigned int> &a, const Basic_Subsequence<char, unsigned int> &b, char res) {
     if (!initialized){
         initialized = true;
-        HairpinHashMap  = Motif_HashMap(HairpinHashMap, Hairpins, Hairpin_lengths);
-        InternalHashMap = Motif_HashMap(InternalHashMap, Internals, Internal_lengths);
-        BulgeHashMap    = Motif_HashMap(BulgeHashMap, Bulges, Bulge_lengths);
+        create_hashmaps();
     }   
     std::string Motif;
     Motif = InputManagement(a,b); //Jedes mal wenn die Funktion aufgerufen wird, wird erst res erstellt und dann Input Management gerufen um die Basic_Subsequence zu verarbeiten
@@ -217,9 +261,7 @@ inline char identify_motif(const Basic_Subsequence<char, unsigned int> &a, const
 inline char identify_motif_b(const Basic_Subsequence<char, unsigned int> &a, char res) {
     if (!initialized){
         initialized = true;
-        HairpinHashMap  = Motif_HashMap(HairpinHashMap, Hairpins, Hairpin_lengths);
-        InternalHashMap = Motif_HashMap(InternalHashMap, Internals, Internal_lengths);
-        BulgeHashMap    = Motif_HashMap(BulgeHashMap, Bulges, Bulge_lengths);
+        create_hashmaps();
     }
     std::string Motif;
     Motif = InputManagement(a); //Jedes mal wenn die Funktion aufgerufen wird, wird erst res erstellt und dann Input Management gerufen um die Basic_Subsequence zu verarbeiten

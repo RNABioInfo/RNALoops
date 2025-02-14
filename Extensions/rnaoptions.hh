@@ -41,6 +41,7 @@ extern "C" {
 #include <exception>
 #include <cassert>
 #include <utility>
+#include <filesystem>
 
 // define _XOPEN_SOURCE=500
 
@@ -135,6 +136,12 @@ class Opts {
     const char* probing_normalization;
     int motifs;
     int reversed;
+    bool replaceH;
+    bool replaceI;
+    bool replaceB;
+    std::string custom_hairpins;
+    std::string custom_internals;
+    std::string custom_bulges;
 #ifdef CHECKPOINTING_INTEGRATED
     size_t checkpoint_interval;  // default interval: 3600s (1h)
     boost::filesystem::path  checkpoint_out_path;  // default path: cwd
@@ -180,6 +187,12 @@ class Opts {
             probing_normalization("centroid"),
             motifs(1),
             reversed(1),
+            replaceH(false),
+            replaceI(false),
+            replaceB(false),
+            custom_hairpins("\0"),
+            custom_internals("\0"),
+            custom_bulges("\0"),
     #ifdef CHECKPOINTING_INTEGRATED
             checkpoint_interval(DEFAULT_CHECKPOINT_INTERVAL),
             checkpoint_out_path(boost::filesystem::current_path()),
@@ -317,7 +330,7 @@ class Opts {
         << "for dot plots, aka. outside computation." << std::endl
         << "   0 = consensus, 1 = most informative sequence" << std::endl
         << std::endl
-        << "-Q <1,2,3,4> Select motif source: 1 = RNA 3D Motif Atlas, 2 = RFAM, 3 = Both, 4 = Custom Motifs. Default is 1." << std::endl
+        << "-Q <1,2,3> Select motif source: 1 = RNA 3D Motif Atlas, 2 = RFAM, 3 = Both Default is 1." << std::endl
         << std::endl
         << "-b <1,2,3> Select motif direction : 1 = 5' -> 3', 2 = 3' -> 5', 3  = Both. Default is 1. (This option is currently not available with custom motifs, if you select -Q 4 it does not matter which -b you set)" << std::endl
         << std::endl
@@ -413,7 +426,7 @@ class Opts {
          * N: normalization of plain reactivities
          * (centroid, RNAstructure, logplain, asProbabilities)
          */
-        "S:A:B:M:N:"
+        "S:A:B:M:N:X:Y:Z:L:E:G:"
         "hd:r:k:p:I:KO:Q:b:", long_opts, nullptr)) != -1) {
       switch (o) {
       case 'f':
@@ -542,6 +555,24 @@ class Opts {
       case 'b':
         reversed = std::atoi(optarg);
         break;
+      case 'X':
+        custom_hairpins = optarg;
+        break;
+      case 'Y':
+        custom_internals = optarg;
+        break;
+      case 'Z':
+        custom_bulges = optarg;
+        break;
+      case 'L':
+        replaceH = (std::atoi(optarg) >= 1);
+        break;
+      case 'E':
+        replaceI = (std::atoi(optarg) >= 1);
+        break;
+      case 'G':
+        replaceB = (std::atoi(optarg) >= 1);
+        break;
       case 'a':
         consensusType = std::atoi(optarg);
         break;
@@ -667,12 +698,24 @@ class Opts {
       throw OptException("Consensus type must either be 0 "
                          "(=consensus) or 1 (=mis).");
     }
-    if (motifs < 1 || motifs > 4) {
-      throw OptException("Choose motif mode between 1 and 4");
+    if (motifs < 1 || motifs > 3) {
+      throw OptException("Choose motif mode between 1 and 3");
     }
     if (reversed < 1 || reversed > 3) {
       throw OptException("Choose reverse mode between 1 and 3");
     }
+    if (!custom_hairpins.empty()){
+       if (!std::filesystem::is_regular_file(custom_hairpins)){
+           throw OptException("Chosen path is not a file");}
+    }
+    if (!custom_internals.empty()){
+      if (!std::filesystem::is_regular_file(custom_internals)){
+          throw OptException("Chosen path is not a file");}
+   }
+   if (!custom_bulges.empty()){
+    if (!std::filesystem::is_regular_file(custom_bulges)){
+        throw OptException("Chosen path is not a file");}
+ }
     if (strcmp(dotPlotFilename, "\0") == 0) {
       dotPlotFilename = "./dotPlot.ps";
     }

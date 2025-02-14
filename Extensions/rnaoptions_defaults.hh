@@ -148,6 +148,9 @@ inline static float getProbing_slope() { return 1.8 * 100; }
 inline static float getProbing_intercept() { return -0.6 * 100; }
 inline static const char* getProbing_modifier() { return "unknown"; }
 inline static const char* getProbing_normalization() { return "centroid"; }
+inline static const char* getCustom_hairpins() {return "\0";}
+inline static const char* getCustom_internals() {return "\0";}
+inline static const char* getCustom_bulges() {return "\0";}
 inline static std::vector<std::pair<const char*, unsigned> > getInputs() {
   std::vector<std::pair<const char*, unsigned> > emptyInput;
   emptyInput.push_back(std::make_pair(const_cast<char*>(""), 0));
