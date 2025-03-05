@@ -332,10 +332,17 @@ class Opts {
         << std::endl
         << "-Q <1,2,3> Select motif source: 1 = RNA 3D Motif Atlas, 2 = RFAM, 3 = Both Default is 1." << std::endl
         << std::endl
-        << "-b <1,2,3> Select motif direction : 1 = 5' -> 3', 2 = 3' -> 5', 3  = Both. Default is 1. (This option is currently not available with custom motifs, if you select -Q 4 it does not matter which -b you set)" << std::endl
+        << "-b <1,2,3> Select motif direction : 1 = 5' -> 3', 2 = 3' -> 5', 3  = Both. Default is 1." << std::endl
         << std::endl
+        << "-X Specify absolute path to a csv file with hairpin loop motif sequences, these will be included in your RNA 3D Motif predictions with the algebra motif, motShapeX and RNAheliCes. CSV-Structure: [sequence],[abbreviation][newline]" << std::endl
+        << "-Y Specify absolute path to a csv file with internal loop motif sequences, these will be included in your RNA 3D Motif predictions with the algebra motif, motShapeX and RNAheliCes. CSV-Structure: [sequence1]$[sequence2],[abbreviation][newline]" << std::endl
+        << "-Z Specify absolute path to a csv file with bulge loop motif sequences, these will be included in your RNA 3D Motif predictions with the algebra motif, motShapeX and RNAheliCes. CSV-Structure: [sequence],[abbreviation][newline]" << std::endl
+        << "-L If set to 1, your custom hairpin motifs (set with -X option) will replace the RNA 3D Motif Atlas or Rfam sequences instead of being added to them. Default is 0." << std::endl
+        << "-E If set to 1, your custom internal motifs (set with -Y option) will replace the RNA 3D Motif Atlas or Rfam sequences instead of being added to them. Default is 0." << std::endl
+        << "-G If set to 1, your custom bulge motifs (set with -Z option) will replace the RNA 3D Motif Atlas or Rfam sequences instead of being added to them. Default is 0." << std::endl
         << "-h, --help Print this help." << std::endl << std::endl
         << " (-[drk] [0-9]+)*" << std::endl << std::endl
+
   #ifdef CHECKPOINTING_INTEGRATED
         << "-p, --checkpointInterval <d:h:m:s> specify the "
         << "periodic checkpointing interval; default: 0:1:0:0 (1h)"
@@ -706,15 +713,15 @@ class Opts {
     }
     if (!custom_hairpins.empty()){
        if (!std::filesystem::is_regular_file(custom_hairpins)){
-           throw OptException("Chosen path is not a file");}
+           throw OptException("Given path is not a regular file");}
     }
     if (!custom_internals.empty()){
       if (!std::filesystem::is_regular_file(custom_internals)){
-          throw OptException("Chosen path is not a file");}
+          throw OptException("Given path is not a regular file");}
    }
    if (!custom_bulges.empty()){
     if (!std::filesystem::is_regular_file(custom_bulges)){
-        throw OptException("Chosen path is not a file");}
+        throw OptException("Given path is not a regular file");}
  }
     if (strcmp(dotPlotFilename, "\0") == 0) {
       dotPlotFilename = "./dotPlot.ps";
