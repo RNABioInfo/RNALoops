@@ -49,7 +49,7 @@ inline std::optional<Motif> parse_motif (const std::string &input, bool rev){
     size_t elements {0};
     Motif motif{};
     std::string item;
-    while (getline(sinput,item,delim)) {
+    while (std::getline(sinput,item,delim)) {
         if (elements == 0){
             if (rev){
                 std::reverse(item.begin(),item.end());
@@ -82,8 +82,6 @@ inline std::string add_entry(HashMap &CurrentHashMap, std::string &line, bool re
            if (std::tolower(search->second) == std::tolower(motif.value().abb)){;}
            else{
             duplicate_string = motif.value().seq + "=" + motif.value().abb + "/" + CurrentHashMap[motif.value().seq];
-            
-            //std::cerr << "Attention, sequence " << motif.value().seq << " can represent both " << CurrentHashMap[motif.value().seq] << " and " << motif.value().abb << std::endl;
             CurrentHashMap[motif.value().seq]=std::tolower(CurrentHashMap[motif.value().seq]);
             
            }
@@ -113,7 +111,8 @@ inline std::vector<std::string> Motif_HashMap(HashMap &CurrentHashMap, std::arra
         while (std::getline (isstream, line,'\n')) {
             dupe = add_entry(CurrentHashMap,line,false,dupe);
             if (!dupe.empty()){
-                dupe_collector.push_back(dupe);}
+                dupe_collector.push_back(dupe);
+            }
         }
     }
     isstream.clear();
@@ -122,7 +121,8 @@ inline std::vector<std::string> Motif_HashMap(HashMap &CurrentHashMap, std::arra
         while (std::getline (isstream, line,'\n')) {
             dupe = add_entry(CurrentHashMap,line,true,dupe);
             if (!dupe.empty()){
-                dupe_collector.push_back(dupe);}
+                dupe_collector.push_back(dupe);
+            }
         }
     }
     return dupe_collector;
@@ -137,11 +137,13 @@ inline std::vector<std::string> Motif_HashMap(HashMap &CurrentHashMap, std::arra
     }
     std::string dupe;
     if (direction.forward){
+        for (std::string line; std::getline(ifstream, line);) {
             dupe = add_entry(CurrentHashMap,line,false,dupe);
             if (!dupe.empty()){
                 dupe_collector.push_back(dupe);
             }
         }
+    }
     ifstream.clear();
     ifstream.seekg(0);
     if (direction.reverse){
@@ -153,8 +155,7 @@ inline std::vector<std::string> Motif_HashMap(HashMap &CurrentHashMap, std::arra
         }
     }
     return dupe_collector;
- }
-
+}
 //Input Manipulation Function, allowing for ONE RNA Basic_Subsequence inputs to be converted to the HashMap Key Formatting
 inline std::string InputManagement(const Basic_Subsequence<char,unsigned int> &a) {
     std::string Motif;//Motif is initialized to later be the carrier of the actual sequence which is returned and later used to find the Motif in the HashMap
@@ -252,11 +253,13 @@ inline void create_hashmaps(){
     bool replace_hairpins = gapc::Opts::getOpts() -> replaceH;
     bool replace_internals = gapc::Opts::getOpts() -> replaceI;
     bool replace_bulges = gapc::Opts::getOpts() -> replaceB;
-    collector = fill_hashmap( custom_hairpin_path,  replace_hairpins,  HairpinHashMap, directions,  Hairpins,  Hairpin_lengths, collector);
+    collector = fill_hashmap(custom_hairpin_path,  replace_hairpins,  HairpinHashMap,  directions, Hairpins,  Hairpin_lengths,  collector);
     collector = fill_hashmap(custom_internal_path, replace_internals, InternalHashMap, directions, Internals, Internal_lengths, collector);
-    collector = fill_hashmap(   custom_bulge_path,    replace_bulges,    BulgeHashMap, directions,    Bulges,    Bulge_lengths, collector);
+    collector = fill_hashmap(custom_bulge_path,    replace_bulges,    BulgeHashMap,    directions, Bulges,    Bulge_lengths,    collector);
+    if (collector.size() > 0){
     std::string dupe_string = std::accumulate(std::next(collector.begin()), collector.end(),collector[0],[](std::string a, std::string b){ return a +", " + b;});
-    std::cerr << "Attention, duplicate sequences in motif set: " << dupe_string << "\n";
+    std::cerr << "Attention, duplicate sequences in motif set: " << dupe_string << "\n";}
+    else{;}
 }
 
 //Overloaded identify_motif functions, two identify_motif for Hairpins and Internal Loops respectively while identify_motif_b is for bulge loops
