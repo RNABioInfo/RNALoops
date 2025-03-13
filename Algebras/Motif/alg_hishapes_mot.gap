@@ -1,11 +1,9 @@
 //Helix center algebras as defined by Jiabin Huang (Freiburg), motified by Marius Sebeke (Stuttgart)
-algebra alg_hishape_h_mot implements sig_foldrna(alphabet = char, answer = Rope) {
+algebra alg_hishapes_mot implements sig_foldrna(alphabet = char, answer = Rope) {
   Rope sadd(Subsequence b,Rope e) {
     Rope emptyShape;
     Rope res;
-    
     if (e == emptyShape) {
-      append(res, '_');
       append(res, e);
       return res;
     } else {
@@ -14,11 +12,10 @@ algebra alg_hishape_h_mot implements sig_foldrna(alphabet = char, answer = Rope)
   }
 
   Rope cadd(Rope le,Rope re) {  
-    if (re == "_") {
-      return le;
-    } else {
-      return le + re;
-    }
+    Rope res;
+    append(res, le);
+    append(res, re);
+    return res;
   }
 
   Rope cadd_Pr(Rope le,Rope re) {
@@ -29,11 +26,10 @@ algebra alg_hishape_h_mot implements sig_foldrna(alphabet = char, answer = Rope)
   }
 
   Rope cadd_Pr_Pr(Rope le,Rope re) {
-    if (re == "_") {
-      return le;
-    } else {
-      return le + re;
-    }
+    Rope res;
+    append(res, le);
+    append(res, re);
+    return res;
   }
 
   Rope cadd_Pr_Pr_Pr(Rope le,Rope re) {
@@ -90,29 +86,87 @@ algebra alg_hishape_h_mot implements sig_foldrna(alphabet = char, answer = Rope)
     Rope res;
     int pos;
     char mot;
-    char sub = '_';
-    pos = (lb.i+rb.j+1)/2;
-    if ( pos*2 > lb.i+rb.j+1 ) pos = pos - 1;  
-    append(res, pos);
-    if ( pos*2 != lb.i+rb.j+1 ) append(res, ".5", 2);
+    char sub = underScore;
     mot = identify_motif(region, sub);
-    if (mot != '_'){
-      append(res,mot);
+    if (mot != underScore) {
+      pos = (lb.i+rb.j+1)/2;
+      if ( pos*2 > lb.i+rb.j+1 ) {
+         pos = pos - 1;  
+      }
+      append(res, pos);
+      if ( pos*2 != lb.i+rb.j+1 ) {
+        append(res, ".5", 2);
+      }
+      append(res, mot);
+      append(res, comma);
     }
-    append(res, ',');
     return res;
   }
 
   Rope bl(Subsequence lb,Subsequence lregion,Rope e,Subsequence rb) {
-    return e;
+    Rope res;
+    char mot;
+    char sub = underScore;
+    append(res, e);
+    int pos;
+    mot = identify_motif_b(lregion, sub);
+    if (mot != underScore) {
+      pos = (lb.i+rb.j+1)/2;
+      if ( pos*2 > lb.i+rb.j+1 ) {
+        pos = pos - 1;
+      }
+      append(res, pos);
+      if ( pos*2 != lb.i+rb.j+1 ) {
+        append(res, ".5", 2);
+      }
+      append(res,mot);
+      append(res, comma);
+  }
+  return res;    
   }
 
   Rope br(Subsequence lb,Rope e,Subsequence rregion,Subsequence rb) {
-    return e;
+    Rope res;
+    char mot;
+    char sub = underScore;
+    append(res, e);
+    int pos;
+    mot = identify_motif_b(rregion, sub);
+    if (mot != underScore) {
+      pos = (lb.i+rb.j+1)/2;
+      if ( pos*2 > lb.i+rb.j+1 ) {
+        pos = pos - 1;
+      }
+      append(res, pos);
+      if ( pos*2 != lb.i+rb.j+1 ) {
+        append(res, ".5", 2);
+      }
+      append(res,mot);
+      append(res, comma);
+  }
+  return res;    
   }
 
   Rope il(Subsequence lb,Subsequence lregion,Rope e,Subsequence rregion,Subsequence rb) {
-    return e;
+    Rope res;
+    char mot;
+    char sub = underScore;
+    append(res, e);
+    int pos;
+    mot = identify_motif(lregion, rregion, sub);
+    if (mot != underScore){
+      pos = (lb.i+rb.j+1)/2;
+      if ( pos*2 > lb.i+rb.j+1 ) {
+        pos = pos - 1; 
+      }  
+      append(res, pos);
+      if ( pos*2 != lb.i+rb.j+1 ) {
+        append(res, ".5", 2);
+      }
+      append(res,mot);
+      append(res, comma);
+    }
+    return res;    
   }
 
   Rope ml(Subsequence lb,Rope e,Subsequence rb) {
@@ -187,196 +241,5 @@ algebra alg_hishape_h_mot implements sig_foldrna(alphabet = char, answer = Rope)
 
   choice [Rope] h([Rope] i) {
     return unique(i);
-  }
-}
-
-algebra alg_hishape_m_mot extends alg_hishape_h_mot {
-  Rope ml(Subsequence lb,Rope e,Subsequence rb) {
-    Rope res;       
-    append(res, e);
-    int pos;
-    pos = (lb.i+rb.j+1)/2;
-    if ( pos*2 > lb.i+rb.j+1 ) pos = pos - 1;  
-    append(res, pos);
-    if ( pos*2 != lb.i+rb.j+1 ) append(res, ".5", 2);
-    append(res, 'm');
-    append(res, ',');
-    return res;
-  }
-
-  Rope mlall(Subsequence lb,Rope e,Subsequence rb) {
-    Rope res;       
-    append(res, e);
-    int pos;
-    pos = (lb.i+rb.j+1)/2;
-    if ( pos*2 > lb.i+rb.j+1 ) pos = pos - 1;  
-    append(res, pos);
-    if ( pos*2 != lb.i+rb.j+1 ) append(res, ".5", 2);
-    append(res, 'm');
-    append(res, ',');
-    return res;
-  }
-
-  Rope mldr(Subsequence lb,Rope e,Subsequence dr,Subsequence rb) {
-    Rope res;
-    append(res, e);
-    int pos;
-    pos = (lb.i+rb.j+1)/2;
-    if ( pos*2 > lb.i+rb.j+1 ) pos = pos - 1;  
-    append(res, pos);
-    if ( pos*2 != lb.i+rb.j+1 ) append(res, ".5", 2);
-    append(res, 'm');
-    append(res, ',');
-    return res;
-  }
-
-  Rope mladr(Subsequence lb,Rope e,Subsequence dr,Subsequence rb) {
-    Rope res;
-    append(res, e);
-    int pos;
-    pos = (lb.i+rb.j+1)/2;
-    if ( pos*2 > lb.i+rb.j+1 ) pos = pos - 1;  
-    append(res, pos);
-    if ( pos*2 != lb.i+rb.j+1 ) append(res, ".5", 2);
-    append(res, 'm');
-    append(res, ',');
-    return res;
-  }
-
-  Rope mldlr(Subsequence lb,Subsequence dl,Rope e,Subsequence dr,Subsequence rb) {
-    Rope res;
-    append(res, e);
-    int pos;
-    pos = (lb.i+rb.j+1)/2;
-    if ( pos*2 > lb.i+rb.j+1 ) pos = pos - 1;  
-    append(res, pos);
-    if ( pos*2 != lb.i+rb.j+1 ) append(res, ".5", 2);
-    append(res, 'm');
-    append(res, ',');
-    return res;
-  }
-
-  Rope mladlr(Subsequence lb,Subsequence dl,Rope e,Subsequence dr,Subsequence rb) {
-    Rope res;
-    append(res,e);
-    int pos;
-    pos = (lb.i+rb.j+1)/2;
-    if ( pos*2 > lb.i+rb.j+1 ) pos = pos - 1;  
-    append(res, pos);
-    if ( pos*2 != lb.i+rb.j+1 ) append(res, ".5", 2);
-    append(res, 'm');
-    append(res, ',');
-    return res;
-  }
-
-  Rope mldladr(Subsequence lb,Subsequence dl,Rope e,Subsequence dr,Subsequence rb) {
-    Rope res;
-    append(res, e);
-    int pos;
-    pos = (lb.i+rb.j+1)/2;
-    if ( pos*2 > lb.i+rb.j+1 ) pos = pos - 1;  
-    append(res, pos);
-    if ( pos*2 != lb.i+rb.j+1 ) append(res, ".5", 2);
-    append(res, 'm');
-    append(res, ',');
-    return res;
-  }
-
-  Rope mladldr(Subsequence lb,Subsequence dl,Rope e,Subsequence dr,Subsequence rb) {
-    Rope res;
-    append(res, e);
-    int pos;
-    pos = (lb.i+rb.j+1)/2;
-    if ( pos*2 > lb.i+rb.j+1 ) pos = pos - 1;  
-    append(res, pos);
-    if ( pos*2 != lb.i+rb.j+1 ) append(res, ".5", 2);
-    append(res, 'm');
-    append(res, ',');
-    return res;
-  }
-
-  Rope mldl(Subsequence lb,Subsequence dl,Rope e,Subsequence rb) {
-    Rope res;
-    append(res,e);
-    int pos;
-    pos = (lb.i+rb.j+1)/2;
-    if ( pos*2 > lb.i+rb.j+1 ) pos = pos - 1;  
-    append(res, pos);
-    if ( pos*2 != lb.i+rb.j+1 ) append(res, ".5", 2);
-    append(res, 'm');
-    append(res, ',');
-    return res;
-  }
-
-  Rope mladl(Subsequence lb,Subsequence dl,Rope e,Subsequence rb) {
-    Rope res;
-    append(res, e);
-    int pos;
-    pos = (lb.i+rb.j+1)/2;
-    if ( pos*2 > lb.i+rb.j+1 ) pos = pos - 1;  
-    append(res, pos);
-    if ( pos*2 != lb.i+rb.j+1 ) append(res, ".5", 2);
-    append(res, 'm');
-    append(res, ',');
-    return res;
-  }
-}
-
-algebra alg_hishape_b_mot extends alg_hishape_m_mot {
-  Rope bl(Subsequence lb,Subsequence lregion,Rope e,Subsequence rb) {
-    Rope res;
-    char mot;
-    char sub = '_';
-    append(res, e);
-    int pos;
-    pos = (lb.i+rb.j+1)/2;
-    if ( pos*2 > lb.i+rb.j+1 ) pos = pos - 1;  
-    append(res, pos);
-    if ( pos*2 != lb.i+rb.j+1 ) append(res, ".5", 2);
-    append(res, 'b');
-    mot = identify_motif_b(lregion, sub);
-    if (mot != '_'){
-      append(res,mot);
-    }
-    append(res, ',');
-    return res;    
-  }
-  
-  Rope br(Subsequence lb,Rope e,Subsequence rregion,Subsequence rb) {
-    Rope res;
-    char mot;
-    char sub = '_';
-    append(res, e);
-    int pos;
-    pos = (lb.i+rb.j+1)/2;
-    if ( pos*2 > lb.i+rb.j+1 ) pos = pos - 1;  
-    append(res, pos);
-    if ( pos*2 != lb.i+rb.j+1 ) append(res, ".5", 2);
-    append(res, 'b');
-    mot = identify_motif_b(rregion, sub);
-        if (mot != '_'){
-      append(res,mot);
-    }
-    append(res, ',');
-    return res;    
-  }
-
-  Rope il(Subsequence lb,Subsequence lregion,Rope e,Subsequence rregion,Subsequence rb) {
-    Rope res;
-    char mot;
-    char sub = '_';
-    append(res, e);
-    int pos;
-    pos = (lb.i+rb.j+1)/2;
-    if ( pos*2 > lb.i+rb.j+1 ) pos = pos - 1;  
-    append(res, pos);
-    if ( pos*2 != lb.i+rb.j+1 ) append(res, ".5", 2);
-    append(res, 'i');
-    mot = identify_motif(lregion, rregion, sub);
-        if (mot != '_'){
-      append(res,mot);
-    }
-    append(res, ',');
-    return res;    
   }
 }

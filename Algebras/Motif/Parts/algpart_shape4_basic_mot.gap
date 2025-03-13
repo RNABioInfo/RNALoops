@@ -1,13 +1,13 @@
-//openParen and closeParen are defined in Extensions/shapes.hh as char '[' ']' and in Extensions/pknot_shape.hh as '(' ')'
+//openParen and closeParen and underScore are defined in Extensions/shapes.hh as char '[' ']' '_' and in Extensions/pknot_shape.hh as '(' ')'
 
   shape_t il(Subsequence lb,Subsequence lregion,shape_t e,Subsequence rregion,Subsequence rb) {
     char mot;
-    char sub = '_';
+    char sub = underScore;
     mot = identify_motif(lregion,rregion, sub);
-    if (mot != '_'){
+    if (mot != underScore) {
       return shape_t(openParen) + shape_t(mot) + e + shape_t(mot) + shape_t(closeParen);
     }
-    else{
+    else {
       return shape_t(openParen) + e + shape_t(closeParen);
     }
   }

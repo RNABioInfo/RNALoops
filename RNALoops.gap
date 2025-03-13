@@ -47,15 +47,10 @@ instance RNAmoSh_subopt = gra_macrostate((alg_shapeX_mot*alg_mfe_subopt)*alg_mot
 instance RNAmoSh_pfc = gra_macrostate(alg_shapeX_mot*alg_pfunc);
 
 //Mothishapes
-instance RNAmotiCes_h = gra_macrostate((alg_hishape_h_mot*alg_mfe)*alg_motBracket);
-instance RNAmotiCes_m = gra_macrostate((alg_hishape_m_mot*alg_mfe)*alg_motBracket);
-instance RNAmotiCes_b = gra_macrostate((alg_hishape_b_mot*alg_mfe)*alg_motBracket);
-instance RNAmotiCes_h_subopt = gra_macrostate((alg_hishape_h_mot*alg_mfe_subopt)*alg_motBracket);
-instance RNAmotiCes_m_subopt = gra_macrostate((alg_hishape_m_mot*alg_mfe_subopt)*alg_motBracket);
-instance RNAmotiCes_b_subopt = gra_macrostate((alg_hishape_b_mot*alg_mfe_subopt)*alg_motBracket);
-instance RNAmotiCes_h_pfc = gra_macrostate(alg_hishape_h_mot*alg_pfunc);
-instance RNAmotiCes_m_pfc = gra_macrostate(alg_hishape_m_mot*alg_pfunc);
-instance RNAmotiCes_b_pfc = gra_macrostate(alg_hishape_b_mot*alg_pfunc);
+instance RNAmotiCes = gra_macrostate((alg_hishapes_mot*alg_mfe)*alg_motBracket);
+instance RNAmotiCes_subopt = gra_macrostate((alg_hishapes_mot*alg_mfe_subopt)*alg_motBracket);
+instance RNAmotiCes_pfc = gra_macrostate(alg_hishapes_mot*alg_pfunc);
+
 
 instance RNAmotiFold_pfc = gra_macrostate(alg_motif*alg_pfunc);
 instance RNAmotiFold = gra_macrostate ((alg_motif * alg_mfe) * alg_motBracket);

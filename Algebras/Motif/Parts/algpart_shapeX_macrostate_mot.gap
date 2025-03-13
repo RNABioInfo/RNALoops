@@ -6,7 +6,7 @@
 	if (shapelevel() == 1) {
 		return le + tail(re);
 	} else {
-		if (re == '_') {
+		if (re == underScore) {
 		  return le;
 		} else {
 		  return le + re;
@@ -20,7 +20,7 @@
 
   shape_t ambd(shape_t le,Subsequence b,shape_t re) {
 	if (shapelevel() == 1) {
-		return le + shape_t('_') + re;
+		return le + shape_t(underScore) + re;
 	} else {
 		return le + re;
 	}
@@ -28,7 +28,7 @@
 
   shape_t ambd_Pr(shape_t le,Subsequence b,shape_t re) {
 	if (shapelevel() == 1) {
-		return le + shape_t('_') + re;
+		return le + shape_t(underScore) + re;
 	} else {
 		return le + re;
 	}
@@ -36,47 +36,47 @@
 
   shape_t mladr(Subsequence lb,shape_t e,Subsequence dr,Subsequence rb) {
 	  shape_t res;
-	  append(res, '[');
+	  append(res, openParen);
 	  append(res, e);
-	  if (shapelevel() == 1) { append(res, '_'); }
-	  append(res, ']');
+	  if (shapelevel() == 1) { append(res, underScore); }
+	  append(res, closeParen);
 	  return res;
   }
 
   shape_t mladlr(Subsequence lb,Subsequence dl,shape_t e,Subsequence dr,Subsequence rb) {
 	  shape_t res;
-	  append(res, '[');
-	  if (shapelevel() == 1) { append(res, '_'); }
+	  append(res, openParen);
+	  if (shapelevel() == 1) { append(res, underScore); }
 	  append(res, e);
-	  if (shapelevel() == 1) { append(res, '_'); }
-	  append(res, ']');
+	  if (shapelevel() == 1) { append(res, underScore); }
+	  append(res, closeParen);
 	  return res;
   }
 
   shape_t mldladr(Subsequence lb,Subsequence dl,shape_t e,Subsequence dr,Subsequence rb) {
 	  shape_t res;
-	  append(res, '[');
+	  append(res, openParen);
 	  append(res, e);
-	  if (shapelevel() == 1) { append(res, '_'); }
-	  append(res, ']');
+	  if (shapelevel() == 1) { append(res, closeParen); }
+	  append(res, closeParen);
 	  return res;
   }
 
   shape_t mladldr(Subsequence lb,Subsequence dl,shape_t e,Subsequence dr,Subsequence rb) {
 	  shape_t res;
-	  append(res, '[');
-	  if (shapelevel() == 1) { append(res, '_'); }
+	  append(res, openParen);
+	  if (shapelevel() == 1) { append(res, underScore); }
 	  append(res, e);
-	  append(res, ']');
+	  append(res, closeParen);
 	  return res;
   }
 
   shape_t mladl(Subsequence lb,Subsequence dl,shape_t e,Subsequence rb) {
 	  shape_t res;
-	  append(res, '[');
-	  if (shapelevel() == 1) { append(res, '_'); }
+	  append(res, openParen);
+	  if (shapelevel() == 1) { append(res, underScore); }
 	  append(res, e);
-	  append(res, ']');
+	  append(res, closeParen);
 	  return res;
   }
 
@@ -89,7 +89,7 @@
   }
 
   shape_t combine(shape_t le,shape_t re) {
-	if ((shapelevel() == 1) && (back(le) == '_') && (front(re) == '_')) {
+	if ((shapelevel() == 1) && (back(le) == underScore) && (front(re) == underScore)) {
 		return le + tail(re);
     } else {
 		return le + re;
@@ -98,7 +98,7 @@
 
   shape_t acomb(shape_t le,Subsequence b,shape_t re) {
 	if (shapelevel() == 1) {
-		return le + shape_t('_') + re;
+		return le + shape_t(underScore) + re;
 	} else {
 		return le + re;
 	}

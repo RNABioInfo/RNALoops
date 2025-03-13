@@ -1,5 +1,4 @@
-#ifndef MOTIF_HH
-#define MOTIF_HH
+#pragma once
 #include "subsequence.hh"
 #include "rnaoptions.hh"
 #include<stdio.h>
@@ -18,6 +17,7 @@
 #include <tuple>
 #include <algorithm>
 #include "mot_header.hh"
+#include "shapes.hh"
 struct Motif {std::string seq; char abb {'X'};};
 struct directions {bool forward {false}; bool reverse {false};};
 typedef std::unordered_map<std::string, char> HashMap;
@@ -226,7 +226,7 @@ inline directions get_directions(directions &direction){
     return direction;
 }
 
-//Void function that alters the global HashMaps (I know this might be bad practice but it's easy and it works.)
+//function that alters the global HashMaps (I know this might be bad practice but it's easy and it works.)
 inline std::vector<std::string> fill_hashmap(std::string custom_path, bool custom_replace, HashMap &map, directions directions, std::array<char* ,3> arr, std::array<unsigned int,3> len_arr, std::vector<std::string> dupe_collector){
     if (!custom_path.empty()){
         if (custom_replace){
@@ -301,4 +301,90 @@ inline char identify_motif_b(const Basic_Subsequence<char, unsigned int> &a, cha
     }
     return res;
 }
-#endif
+
+inline shape_t bl_shapeX(char mot, unsigned int shapelevel, shape_t &x){
+    switch (shapelevel){
+        case 5: 
+            [[fallthrough]];
+        case 4:
+            if (mot != underScore) {
+                return shape_t(mot) + x;
+            }
+            else{
+                return x;
+            }
+        case 3:
+            if (mot != underScore){
+                return shape_t(openParen) + shape_t(mot) + x + shape_t(closeParen);
+            }
+            else{
+                return shape_t(openParen) + x + shape_t(closeParen);
+            }
+        case 2:
+            [[fallthrough]];
+        case 1:
+            return shape_t(openParen) + shape_t(mot) + x + shape_t(closeParen);
+        default:
+            std::cerr << "Shape level is not set" << std::endl;
+            break;
+    }
+    throw std::invalid_argument("Shape level is not set");
+}
+
+inline shape_t br_shapeX(char mot, unsigned int shapelevel, shape_t &x){
+    switch (shapelevel){
+        case 5:
+            [[fallthrough]];
+        case 4:
+            if (mot != underScore) {
+                return x + shape_t(mot);
+            }
+            else{
+                return x;
+            }
+        case 3:
+            if (mot != underScore){
+                return shape_t(openParen) + x + shape_t(mot) + shape_t(closeParen);
+            }
+            else{
+                return shape_t(openParen) + x + shape_t(closeParen);
+            }
+        case 2:
+            [[fallthrough]];
+        case 1:
+            return shape_t(openParen) + x + shape_t(mot) + shape_t(closeParen);
+        default:
+            std::cerr << "Shape level is not set" << std::endl;
+            break;
+    }
+    throw std::invalid_argument("Shape level is not set");
+}
+
+inline shape_t il_shapeX(char mot, unsigned int shapelevel, shape_t &x){
+    switch (shapelevel){
+        case 5:
+            if (mot != underScore) {
+                return shape_t(mot) + x + shape_t(mot);
+            }
+            else{
+                return x;
+            }
+        case 4:
+            [[fallthrough]];
+        case 3:
+            if (mot != underScore) {
+                return shape_t(openParen) + shape_t(mot) + x + shape_t(mot) + shape_t(closeParen);
+            }
+            else {
+                return shape_t(openParen) + x + shape_t(closeParen);
+            }
+        case 2:
+            [[fallthrough]];
+        case 1:
+            return shape_t(openParen) + shape_t(mot) + x + shape_t(mot) +shape_t(closeParen);
+        default:
+            std::cerr << "Shape level is not set" << std::endl;
+            break;
+    }
+    throw std::invalid_argument("Shape level is not set");
+}
