@@ -1,23 +1,24 @@
 #pragma once
 #include "subsequence.hh"
 #include "rnaoptions.hh"
-#include<stdio.h>
-#include<stdlib.h>
-#include<string.h>
-#include<iostream>
-#include<typeinfo>
-#include<fstream>
-#include<unordered_map>
-#include<string>
-#include<vector>
-#include<sstream>
-#include<map>
-#include<mutex>
-#include<optional>
-#include <tuple>
-#include <algorithm>
 #include "mot_header.hh"
 #include "shapes.hh"
+#include <stdio.h>
+#include <stdlib.h>
+#include <string.h>
+#include <iostream>
+#include <typeinfo>
+#include <fstream>
+#include <unordered_map>
+#include <string>
+#include <vector>
+#include <sstream>
+#include <map>
+#include <mutex>
+#include <optional>
+#include <tuple>
+#include <algorithm>
+
 struct Motif {std::string seq; char abb {'X'};};
 struct directions {bool forward {false}; bool reverse {false};};
 typedef std::unordered_map<std::string, char> HashMap;
@@ -43,7 +44,7 @@ inline std::vector<std::string> split (const std::string &s, char delim){
     return result;   
 }
 
-inline std::optional<Motif> parse_motif (const std::string &input, bool rev){
+inline std::optional<Motif> parse_motif (const std::string &input, bool rev) {
     constexpr char delim = ',';
     std::stringstream sinput (input);
     size_t elements {0};
@@ -74,7 +75,7 @@ inline std::optional<Motif> parse_motif (const std::string &input, bool rev){
 
 inline std::string add_entry(HashMap &CurrentHashMap, std::string &line, bool reverse, std::string duplicate_string){
     duplicate_string = "";
-    if (const auto motif = parse_motif(line, reverse)){
+    if (const auto motif = parse_motif(line, reverse)) {
        if (auto search = CurrentHashMap.find(motif.value().seq); search == CurrentHashMap.end()){
         CurrentHashMap[motif.value().seq]=motif.value().abb;
        }
@@ -93,7 +94,7 @@ inline std::string add_entry(HashMap &CurrentHashMap, std::string &line, bool re
 //HashMap implementation functions for all three loop types in the macrostate grammar.DB =database, which one gets used 1=BGSU, 2=RMFAM, 3 = bot // R = reverse, 1= No Reverses, 2 = Only Reverses, 3 = Both reverse and Forward
 inline std::vector<std::string> Motif_HashMap(HashMap &CurrentHashMap, std::array<char* ,3> arr, std::array<unsigned int,3> len_arr, directions directions, std::vector<std::string> dupe_collector) {
     std::string str_mot_ar;
-    switch(gapc::Opts::getOpts()->motifs){
+    switch(gapc::Opts::getOpts()->motifs) {
         case 1:
             str_mot_ar.assign(arr[0],len_arr[0]);
             break;
@@ -107,7 +108,7 @@ inline std::vector<std::string> Motif_HashMap(HashMap &CurrentHashMap, std::arra
     std::istringstream isstream(str_mot_ar);
     std::string line;
     std::string dupe;
-    if (directions.forward){
+    if (directions.forward) {
         while (std::getline (isstream, line,'\n')) {
             dupe = add_entry(CurrentHashMap,line,false,dupe);
             if (!dupe.empty()){
@@ -117,10 +118,10 @@ inline std::vector<std::string> Motif_HashMap(HashMap &CurrentHashMap, std::arra
     }
     isstream.clear();
     isstream.seekg(0);
-    if (directions.reverse){
+    if (directions.reverse) {
         while (std::getline (isstream, line,'\n')) {
             dupe = add_entry(CurrentHashMap,line,true,dupe);
-            if (!dupe.empty()){
+            if (!dupe.empty()) {
                 dupe_collector.push_back(dupe);
             }
         }
@@ -132,14 +133,14 @@ inline std::vector<std::string> Motif_HashMap(HashMap &CurrentHashMap, std::arra
  inline std::vector<std::string> Custom_Motif_HashMap(HashMap &CurrentHashMap, const std::string &path_to_csv, directions direction, std::vector<std::string> dupe_collector){
     std::string line;
     std::ifstream ifstream(path_to_csv);
-    if (!ifstream.is_open()){
+    if (!ifstream.is_open()) {
         throw std::runtime_error("File not found");
     }
     std::string dupe;
     if (direction.forward){
         for (std::string line; std::getline(ifstream, line);) {
             dupe = add_entry(CurrentHashMap,line,false,dupe);
-            if (!dupe.empty()){
+            if (!dupe.empty()) {
                 dupe_collector.push_back(dupe);
             }
         }
@@ -149,7 +150,7 @@ inline std::vector<std::string> Motif_HashMap(HashMap &CurrentHashMap, std::arra
     if (direction.reverse){
         for (std::string line; std::getline(ifstream, line);) {
             dupe = add_entry(CurrentHashMap,line,true,dupe);
-            if (!dupe.empty()){
+            if (!dupe.empty()) {
                 dupe_collector.push_back(dupe);
             }
         }
@@ -159,16 +160,17 @@ inline std::vector<std::string> Motif_HashMap(HashMap &CurrentHashMap, std::arra
 //Input Manipulation Function, allowing for ONE RNA Basic_Subsequence inputs to be converted to the HashMap Key Formatting
 inline std::string InputManagement(const Basic_Subsequence<char,unsigned int> &a) {
     std::string Motif;//Motif is initialized to later be the carrier of the actual sequence which is returned and later used to find the Motif in the HashMap
-    for(unsigned int p = 0; p < a.size();p++){
-        int sum;
-        sum = a.i + p;
-        if (base_t(a.seq->seq[sum]) == G_BASE){
+    for(const auto pos: a) {
+        if (base_t(pos) == G_BASE) {
             Motif += "G";
-        }   else if (base_t(a.seq->seq[sum]) == A_BASE){
+        }   
+        else if (base_t(pos) == A_BASE) {
             Motif += "A";
-        }   else if (base_t(a.seq->seq[sum]) == C_BASE){
+        }   
+        else if (base_t(pos) == C_BASE) {
             Motif += "C";
-        }   else {
+        }   
+        else if (base_t(pos) == U_BASE) {
             Motif += "U";
         }
     }
@@ -178,34 +180,61 @@ inline std::string InputManagement(const Basic_Subsequence<char,unsigned int> &a
 //Input Manipulation allowing for TWO RNA Basic_Subsequence inputs to be converted to the HashMap Key formatting
 inline std::string InputManagement(const Basic_Subsequence<char, unsigned int> &a, const Basic_Subsequence<char, unsigned int> &b) {
     std::string Motif1, Motif2, Motif;//Same as the Standard Version, except both sequences are converted to String first to then be connected via "$" sign
-    for(unsigned int t = 0; t < a.size();t++){
-        int sum;
-        sum = a.i + t;
-        if (base_t(a.seq->seq[sum]) == G_BASE){
-            Motif1 += "G";           
-        }   else if (base_t(a.seq->seq[sum]) == A_BASE){
+    for(const auto pos1: a) {
+        if (base_t(pos1) == G_BASE) {
+            Motif1 += "G";
+        }   
+        else if (base_t(pos1) == A_BASE) {
             Motif1 += "A";
-        }   else if (base_t(a.seq->seq[sum]) == C_BASE){
+        }   
+        else if (base_t(pos1) == C_BASE) {
             Motif1 += "C";
-        }   else {
+        }   
+        else if (base_t(pos1) == U_BASE) {
             Motif1 += "U";
         }
+        throw std::runtime_error("Base of invalid type");
     }
-    for(unsigned int t2 = 0; t2 < b.size();t2++){
-        int sum;
-        sum = b.i + t2;
-        if (base_t(b.seq->seq[sum]) == G_BASE){
-            Motif2 += "G";
-        }   else if (base_t(b.seq->seq[sum]) == A_BASE){
-            Motif2 += "A";
-        }   else if (base_t(b.seq->seq[sum]) == C_BASE){
-            Motif2 += "C";
-        }   else {
-            Motif2 += "U";
+    for(const auto pos2: b) {
+        if (base_t(pos2) == G_BASE) {
+            Motif += "G";
+        }   
+        else if (base_t(pos2) == A_BASE) {
+            Motif += "A";
+        }   
+        else if (base_t(pos2) == C_BASE) {
+            Motif += "C";
+        }   
+        else if (base_t(pos2) == U_BASE) {
+            Motif += "U";
         }
+        else {
+            throw std::runtime_error("Base of invalid type");
+        }
+
     }
     Motif = Motif1 + "$" + Motif2;
     return Motif; //Return the Motif string, correctly formatted for the HashMap
+}
+
+//Creates a Bellman's GAP style string from a Basic_Subsequence, this is different from the standard strings and not compatible with them!
+inline String bgap_string(const Basic_Subsequence<char, unsigned int> &a) {
+    String Motif;
+    for (const auto sum: a) {
+        if (base_t(sum) == G_BASE) {
+            Motif.append('G'); //No += operator is implemented so we have to use append.
+        }
+        else if (base_t(sum) == A_BASE) {
+            Motif.append('A');
+        }
+        else if (base_t(sum) == C_BASE) {
+            Motif.append('C');
+        }
+        else {
+            Motif.append('U');
+        }
+    }
+    return Motif; // return the bgap style string
 }
 
 inline directions get_directions(directions &direction){
@@ -276,6 +305,20 @@ inline char identify_motif(const Basic_Subsequence<char, unsigned int> &a, char 
     return res;
 }
 
+//Experimental function that I want to later use for syntactic filtering, currently not in use
+inline bool test_motif(const Basic_Subsequence<char, unsigned int> &a) {
+    if (!initialized){
+        initialized = true;
+        create_hashmaps();
+    }
+    std::string Motif;
+    Motif = InputManagement(a);
+    if (auto search = HairpinHashMap.find(Motif); search != HairpinHashMap.end()){
+        return true;
+    }
+    return false;
+}
+
 inline char identify_motif(const Basic_Subsequence<char, unsigned int> &a, const Basic_Subsequence<char, unsigned int> &b, char res) {
     if (!initialized){
         initialized = true;
@@ -300,6 +343,37 @@ inline char identify_motif_b(const Basic_Subsequence<char, unsigned int> &a, cha
         return search->second;
     }
     return res;
+}
+
+inline char identify_motif_align(const Basic_Subsequence<char, unsigned int> &a, const Basic_Subsequence<char, unsigned int> &b, char res) {
+    if (!initialized) {
+        initialized = true;
+        create_hashmaps();
+    }
+    std::string Motif1;
+    std::string Motif2;
+    Motif1 = InputManagement(a); // Jedes mal wenn die Funktion aufgerufen wird, wird erst res erstellt und dann Input Management gerufen um die Basic_Subsequence zu verarbeiten
+    Motif2 = InputManagement(b);
+    char found1;
+    char found2;
+    if (auto search1 = HairpinHashMap.find(Motif1); search1 != HairpinHashMap.end()) {
+        found1 = search1->second;
+    }
+    else {
+        return res;
+    }
+    if (auto search2 = HairpinHashMap.find(Motif2); search2 != HairpinHashMap.end()) {
+        found2 = search2->second;
+    }
+    else {
+        return res;
+    }
+    if (std::toupper(found1) == std::toupper(found2)) {
+        return found1;
+    }
+    else {
+        return res;
+    }
 }
 
 inline shape_t bl_shapeX(char mot, unsigned int shapelevel, shape_t &x){
