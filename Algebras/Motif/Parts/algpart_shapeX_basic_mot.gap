@@ -86,21 +86,21 @@
 	char mot;
 	char sub = underScore;
 	mot = identify_motif_b(lregion, sub);
-	return bl_shapeX(mot, shapelevel(), x);
+	return bl_shapeX(mot, x);
   }
 
   shape_t br(Subsequence lb,shape_t x,Subsequence rregion,Subsequence rb) {
 	char mot;
 	char sub = underScore;
 	mot = identify_motif_b(rregion, sub);
-	return br_shapeX(mot, shapelevel(), x);
+	return br_shapeX(mot, x);
   }
 
   shape_t il(Subsequence lb,Subsequence lregion,shape_t x,Subsequence rregion,Subsequence rb) {
 	char mot;
 	char sub = underScore;
 	mot = identify_motif(lregion, rregion, sub);
-	return il_shapeX(mot, shapelevel(), x);
+	return il_shapeX(mot, x);
   }
 
   shape_t ml(Subsequence lb,shape_t e,Subsequence rb) {
