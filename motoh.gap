@@ -1,7 +1,8 @@
 import "Extensions/rnaoptions_defaults.hh"
 import "Extensions/motif.hh"
+import "ali_t.hh"
 
-input < rna, rna >
+input < rnali, rnali >
 
 // Equality operator for Subsequences, just as a reminder here and a backup in case I goof some shit.
 //  friend bool operator==(const Basic_Subsequence &a, const Basic_Subsequence &b)
@@ -36,6 +37,7 @@ type spair = (string first, string second)
 type strip = (string first, string second, string third)
 type shape_t = shape
 type base_t = extern
+type ali_t = extern
 
 signature sig_motoh(alphabet, answer) {
   answer match(<Subsequence, Subsequence>, answer);
@@ -61,7 +63,7 @@ algebra alg_mali implements sig_motoh(alphabet = char, answer = int) {
   }
 
   int match( < Subsequence a, Subsequence b > , int m) {
-	if (bgap_string(a) == bgap_string(b)){
+	if (a == b){
 		return m + 4;
 	}
 	else {
@@ -96,8 +98,8 @@ algebra alg_mali implements sig_motoh(alphabet = char, answer = int) {
 algebra alg_prettier implements sig_motoh(alphabet = char, answer = strip) {
 	strip motif(< Subsequence a, Subsequence b>, strip m) {
 		strip r;
-		append(r.first, bgap_string(a));
-		append(r.second, bgap_string(b));
+		ali_append(r.first, a);
+		ali_append(r.second, b);
     	char sub = '|';
     	char mot = identify_motif_align(a, b, sub);
 		if (mot != sub){
@@ -126,11 +128,11 @@ algebra alg_prettier implements sig_motoh(alphabet = char, answer = strip) {
 
 	strip match(<Subsequence a, Subsequence b>, strip m) {
 		strip r;
-		append(r.first, bgap_string(a));
+		ali_append(r.first, a);
 		append(r.first, m.first);
-		append(r.second, bgap_string(b));
+		ali_append(r.second, b);
 		append(r.second, m.second);
-		if (bgap_string(a) == bgap_string(b)) {
+		if (a == b) {
 			append(r.third, '|');
 		}
 		else {
@@ -142,7 +144,7 @@ algebra alg_prettier implements sig_motoh(alphabet = char, answer = strip) {
 
 	strip del(<Subsequence a, void>,strip m) {
 		strip r;
-		append(r.first, bgap_string(a));
+		ali_append(r.first, a);
 		append(r.first, m.first);
 		append(r.second, '=');
 		append(r.second, m.second);
@@ -152,17 +154,17 @@ algebra alg_prettier implements sig_motoh(alphabet = char, answer = strip) {
 	}
 	strip ins(<void, Subsequence b>, strip m){
 		strip r;
-		append(r.first, '=');
+		append(r.first, '=',1);
 		append(r.first, m.first);
-		append(r.second, bgap_string(b));
+		ali_append(r.second, b);
 		append(r.second, m.second);
-		append(r.third, ' ');
+		append(r.third, char_to_ali_base(' '));
 		append(r.third, m.third);
 		return r;
 	}
 	strip delx(<Subsequence a, void>, strip m) {
 		strip r;
-		append(r.first, bgap_string(a));
+		ali_append(r.first, a);
 		append(r.first, m.first);
 		append(r.second, '-');
 		append(r.second, m.second);
@@ -175,7 +177,7 @@ algebra alg_prettier implements sig_motoh(alphabet = char, answer = strip) {
 		strip r;
 		append(r.first, '-');
 		append(r.first, m.first);
-		append(r.second, bgap_string(b));
+		ali_append(r.second, b);
 		append(r.second, m.second);
 		append(r.third, ' ');
 		append(r.third, m.third);
@@ -199,16 +201,16 @@ algebra alg_enum auto enum;
 grammar gra_motoh uses sig_motoh(axiom = alignment) {
 
     alignment = nil( < EMPTY, EMPTY> )   |
-                del( < REGION with maxsize(1), EMPTY >, xDel) |
-                ins( < EMPTY, REGION with maxsize(1) >, xIns ) |
-                match( < REGION with maxsize(1), REGION with maxsize(1) >, alignment) |
-				motif( < REGION with maxsize(7), REGION with maxsize(7) >, alignment) # h ;
+                del( < CHAR, EMPTY >, xDel) |
+                ins( < EMPTY, CHAR>, xIns ) |
+                match( < CHAR, CHAR >, alignment) |
+				motif( < REGION with maxsize(7), REGION with maxsize(7) >, alignment ) # h ;
   
     xDel = alignment |
-           delx( <REGION with maxsize(1), EMPTY>, xDel) # h ;
+           delx( <CHAR, EMPTY>, xDel) # h ;
   
     xIns = alignment |
-           insx( < EMPTY, REGION with maxsize(1) >, xIns) # h ;
+           insx( < EMPTY, CHAR >, xIns) # h ;
   
   }
 
