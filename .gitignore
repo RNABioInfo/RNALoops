@@ -9,4 +9,7 @@ string.d
 *.o
 *.hh
 *.mf
-!/Extensions/mot_header.hh
+/Extensions/mot_header.hh
+.clangd
+compile_commands.json
+.cache/
