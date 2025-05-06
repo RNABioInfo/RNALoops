@@ -4,35 +4,6 @@ import "ali_t.hh"
 
 input < rnali, rnali >
 
-// Equality operator for Subsequences, just as a reminder here and a backup in case I goof some shit.
-//  friend bool operator==(const Basic_Subsequence &a, const Basic_Subsequence &b)
-//  {
-//    if (a.size() != b.size())
-//    {
-//      return false;
-//    }
-//    else
-//    {
-//      for (unsigned int p = 0; p < a.size(); p++)
-//      {
-//        int sum;
-//        sum = a.i + p;
-//        if (base_t(a.seq->seq[sum]) == base_t(b.seq->seq[sum]))
-//        {
-//          continue;
-//        }
-//        else
-//        {
-//          return false;
-//        }
-//      }
-//      return true;
-//    }
-//  }
-
-
-
-
 type spair = (string first, string second)
 type strip = (string first, string second, string third)
 type shape_t = shape
@@ -201,16 +172,16 @@ algebra alg_enum auto enum;
 grammar gra_motoh uses sig_motoh(axiom = alignment) {
 
     alignment = nil( < EMPTY, EMPTY> )   |
-                del( < CHAR, EMPTY >, xDel) |
-                ins( < EMPTY, CHAR>, xIns ) |
-                match( < CHAR, CHAR >, alignment) |
-				motif( < REGION with maxsize(7), REGION with maxsize(7) >, alignment ) # h ;
-  
+                del( < REGION with maxsize(1), EMPTY >, xDel) |
+                ins( < EMPTY, REGION with maxsize(1)>, xIns ) |
+                match( < REGION with maxsize(1), REGION with maxsize(1) >, alignment) |
+				motif( < REGION, REGION  > with motif_match, alignment ) # h ;
+  // with minsize(1) with maxsize(7) with has_motif, if motif match returns true then I dont need other filters!
     xDel = alignment |
-           delx( <CHAR, EMPTY>, xDel) # h ;
+           delx( <REGION with maxsize(1), EMPTY>, xDel) # h ;
   
     xIns = alignment |
-           insx( < EMPTY, CHAR >, xIns) # h ;
+           insx( < EMPTY, REGION with maxsize(1) >, xIns) # h ;
   
   }
 
