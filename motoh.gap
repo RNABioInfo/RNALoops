@@ -25,11 +25,11 @@ algebra alg_mali implements sig_motoh(alphabet = char, answer = int) {
   int motif(<Subsequence a, Subsequence b>, int m) {
     char sub = '|';
     char mot = identify_motif_align(a, b, sub);
-	if (mot != sub){
-		return m + 100000000;
+	if (size(a) >= size(b)){
+		return motif_scoring(size(a), mot);
   	}
 	else {
-		return m - 1000000;
+		return motif_scoring(size(b),mot);
 	}
   }
 
@@ -63,7 +63,7 @@ algebra alg_mali implements sig_motoh(alphabet = char, answer = int) {
  }
  choice [int] h([int] l) {
     return list(maximum(l));
- }
+	}
 }
 
 algebra alg_prettier implements sig_motoh(alphabet = char, answer = strip) {
@@ -73,24 +73,14 @@ algebra alg_prettier implements sig_motoh(alphabet = char, answer = strip) {
 		ali_append(r.second, b);
     	char sub = '|';
     	char mot = identify_motif_align(a, b, sub);
-		if (mot != sub){
-			if (size(a) < size(b)) {
-				append(r.first,'~',size(b)-size(a));
-				append(r.third,mot,size(b));
+		if (size(a) <= size(b)) {
+			append(r.first,'~',size(b)-size(a));
+			append(r.third,mot,size(b));
 			}
-			if (size(a) > size(b)) {
-				append(r.second,'~',size(a)-size(b));
-				append(r.third,mot,size(a));
+		else { //covers the inverse case that motif sequence a is bigger than b
+			append(r.second,'~',size(a)-size(b));
+			append(r.third,mot,size(a));
 			}
-			if (size(a) == size(b)){
-				append(r.third,mot,size(a));
-			}
-		}
-		else {
-			//This is undefined behavior rn cause I dont know what to do about it but this case will never happen cause non matching motifs give - 10000000 score.
-			return r;
-
-		}
 		append(r.first, m.first);
 		append(r.second, m.second);
 		append(r.third, m.third);
@@ -129,7 +119,7 @@ algebra alg_prettier implements sig_motoh(alphabet = char, answer = strip) {
 		append(r.first, m.first);
 		ali_append(r.second, b);
 		append(r.second, m.second);
-		append(r.third, char_to_ali_base(' '));
+		append(r.third, ' ');
 		append(r.third, m.third);
 		return r;
 	}
@@ -164,8 +154,6 @@ algebra alg_prettier implements sig_motoh(alphabet = char, answer = strip) {
 	}
 }
 
-
-
 algebra alg_count auto count;
 algebra alg_enum auto enum;
 
@@ -175,8 +163,9 @@ grammar gra_motoh uses sig_motoh(axiom = alignment) {
                 del( < REGION with maxsize(1), EMPTY >, xDel) |
                 ins( < EMPTY, REGION with maxsize(1)>, xIns ) |
                 match( < REGION with maxsize(1), REGION with maxsize(1) >, alignment) |
-				motif( < REGION, REGION  > with motif_match, alignment ) # h ;
-  // with minsize(1) with maxsize(7) with has_motif, if motif match returns true then I dont need other filters!
+				motif( < REGION with minsize(3) with maxsize(7), REGION with minsize(3) with maxsize(7) > with motif_match, alignment ) # h ;
+  // with minsize(3) with maxsize(7) with has_motif, if motif match returns true then I dont need other filters!
+  // minsize back to 1 when I implement Internal Loops, for hairpins minsize(3) works. I should keep the filters to minimize lookups
     xDel = alignment |
            delx( <REGION with maxsize(1), EMPTY>, xDel) # h ;
   
@@ -186,4 +175,4 @@ grammar gra_motoh uses sig_motoh(axiom = alignment) {
   }
 
 instance test = gra_motoh(alg_mali*alg_enum);
-instance test2 = gra_motoh(alg_mali*alg_prettier);
+instance motoh = gra_motoh(alg_mali*alg_prettier);

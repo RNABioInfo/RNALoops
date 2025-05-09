@@ -1,6 +1,7 @@
 #pragma once
 #include "ali_t.hh"
 #include "rna.hh"
+#include "rope.hh"
 #include "subsequence.hh"
 #include "sequence.hh"
 #include "rnaoptions.hh"
@@ -20,15 +21,15 @@
 #include <optional>
 #include <algorithm>
 
-struct size2_array_ash {
+struct size2_vector_hash {
     template <class T1>
-    std::size_t operator () (const std::array<T1,2> &input_array) const {
-        auto value1 = std::hash<T1>{}(input_array[0]);
-        auto value2 = std::hash<T1>{}(input_array[1]);
+    size_t operator () (const std::vector<T1> &input_vector) const {
+        auto value1 = std::hash<T1>{}(input_vector[0]);
+        auto value2 = std::hash<T1>{}(input_vector[1]);
 
         // Mainly for demonstration purposes, i.e. works but is overly simple
         // In the real world, use sth. like boost.hash_combine
-        return value1 ^ (value2 << 1 );  
+        return value1 ^( value2 << 1);
     }
 };
 
@@ -39,7 +40,7 @@ using HashMap = std::unordered_map<Basic_Sequence<char, unsigned int>, char, Has
 static HashMap HairpinHashMap;
 static HashMap InternalHashMap;
 static HashMap BulgeHashMap;
-static std::unordered_map<std::array<char, 2>, char, size2_array_ash> DupeHashMap;
+static std::unordered_map<std::vector<char>, char, size2_vector_hash> DupeHashMap;
 static bool initialized;
 static std::array Hairpins         = {rna3d_hairpins, rfam_hairpins};
 static std::array Hairpin_lengths  = {rna3d_hairpins_len, rfam_hairpins_len};
@@ -101,29 +102,28 @@ inline void add_entry(HashMap &CurrentHashMap, std::string &line, bool reverse, 
        else{
            if (std::tolower(search->second) == std::tolower(motif.value().abb,std::locale())){;}
            else{//This is where we go if the same sequences has different motifs
-                std::array<char,2> dupes {std::toupper(search->second,std::locale()),std::toupper(motif.value().abb,std::locale())};
+
+                std::vector<char> dupes {std::toupper(search->second,std::locale()),std::toupper(motif.value().abb,std::locale())};
+
                 std::sort(dupes.begin(),dupes.end());
-                if (auto dupe_search = DupeHashMap.find(dupes); dupe_search == DupeHashMap.end()){ //If the dupe pair has not yet been seen:
-                                                                                                                //The dupe pair doesn't exist yet, but that doesnt mean neither of the lowercase characters isn't already
-                                                                                                                //in use. Check the dupe vector, if tolower(motif.value().abb) is already in there
-                                                                                                                //we check if to_lower(search->second) is already in there and if both are already in there we gotta choose
-                                                                                                                //another different character that isn't already in there
-                    if (std::find(dupe_collector.begin(),dupe_collector.end(),std::tolower(search->second)) != dupe_collector.end()){ // If we enter this if the first character is already used
-                        if (std::find(dupe_collector.begin(),dupe_collector.end(),std::tolower(motif.value().abb)) != dupe_collector.end()){ // If we enter this if we're boned cause the other one is already used aswell! This indicates a three way sequence!
-                            CurrentHashMap[basic_seq_motif] = std::tolower(motif.value().abb,std::locale());
-                            DupeHashMap[dupes] = std::tolower(motif.value().abb,std::locale());
-                            dupe_collector.push_back(std::tolower(motif.value().abb,std::locale()));
-                        }
-                        else { //Implement something to deal with three way sequences, like choosing a random unused character or something
-                            throw std::runtime_error("A single sequence is bound to three different motif, this WILL lead to issues. No fix for this currently available.");
-                        }
-                    }
-                    else {
+                if (auto dupe_search = DupeHashMap.find(dupes); dupe_search == DupeHashMap.end()){ //If these two motifs haven't appeared as a duplicate yet:
+                
+                    if (std::find(dupe_collector.begin(),dupe_collector.end(),std::tolower(search->second)) == dupe_collector.end()){ // If the first element of dupes is not used yet:
                         CurrentHashMap[basic_seq_motif] = std::tolower(search->second,std::locale());
                         DupeHashMap[dupes] = std::tolower(search->second,std::locale());
                         dupe_collector.push_back(std::tolower(search->second,std::locale()));
-                    }  
-                }
+                    }
+
+                    else if (std::find(dupe_collector.begin(),dupe_collector.end(),std::tolower(motif.value().abb)) == dupe_collector.end()){ // If the second element of dupes is also not used yet:
+                            CurrentHashMap[basic_seq_motif] = std::tolower(motif.value().abb,std::locale());
+                            DupeHashMap[dupes] = std::tolower(motif.value().abb,std::locale());
+                            dupe_collector.push_back(std::tolower(motif.value().abb,std::locale()));
+                    }
+
+                    else { //Threeway sequence, throw errro cause this aint implemented (yet)
+                        throw std::runtime_error("A single sequence is bound to three different motif, this WILL lead to issues. No fix for this currently available.");
+                    }
+                }  
                 else {
                     CurrentHashMap[basic_seq_motif] = dupe_search->second;
             }
@@ -238,13 +238,13 @@ inline void create_hashmaps(){
     fill_hashmap(custom_internal_path, replace_internals, InternalHashMap, directions, Internals, Internal_lengths, collector);
     fill_hashmap(custom_bulge_path,    replace_bulges,    BulgeHashMap,    directions, Bulges,    Bulge_lengths,    collector);
     std::vector<std::string> strings;
-    for (auto keyvalue: DupeHashMap){
+    for (const auto &keyvalue: DupeHashMap){
         std::string this_kv = std::string() + keyvalue.first[0] + "/" + keyvalue.first[1] + " -> " + keyvalue.second;
         strings.emplace_back(this_kv);
         }
         std::string dupe_string = std::accumulate(std::next(strings.begin()), strings.end(),strings[0],[](const std::string& Existing_string, const std::string& Added_string){ return Existing_string +", " + Added_string;});
         std::cerr << "Attention, the same sequences appears for different motifs. Ambiguity cases: " << dupe_string << "\n";
-    }
+}
 
 //Overloaded identify_motif functions, two identify_motif for Hairpins and Internal Loops respectively while identify_motif_b is for bulge loops
 inline char identify_motif(const Basic_Subsequence<char, unsigned int> &input_subsequence, char res) {
@@ -308,10 +308,15 @@ inline char identify_motif_align(const Basic_Subsequence<char, unsigned int> &fi
         return res;
     }
     if (std::toupper(found1) == std::toupper(found2)) {
-        return found1;
+        return std::toupper(found1,std::locale());
     }
     return res;
    
+}
+
+inline int motif_scoring(const int &length_of_motif_region, const char motif_char) {
+    int motif_score = (4 * length_of_motif_region);
+    return motif_score;
 }
 
 //Filter function for RNAmotiFold alignments, makes two hashmap searches and compares the outputs. This ensures only motif matching regions are checked for motifs.
