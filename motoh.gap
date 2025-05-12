@@ -26,36 +26,36 @@ algebra alg_mali implements sig_motoh(alphabet = char, answer = int) {
     char sub = '|';
     char mot = identify_motif_align(a, b, sub);
 	if (size(a) >= size(b)){
-		return motif_scoring(size(a), mot);
+		return m + motif_scoring(size(a), mot);
   	}
 	else {
-		return motif_scoring(size(b),mot);
+		return m + motif_scoring(size(b),mot);
 	}
   }
 
   int match( < Subsequence a, Subsequence b > , int m) {
-	if (a == b){
-		return m + 4;
+	if (a == b) {
+		return m + alignment_match();
 	}
 	else {
-		return m - 3;
+		return m - alignment_mismatch();
 	}
   }
 
   int del(<Subsequence a, void>, int m) {
-    return m - pkissinit() - pkinit();
+    return m - alignment_gap_open() - alignment_gap_extension();
   }
 
   int ins(<void, Subsequence b>, int m) {
-    return m - pkissinit() - pkinit();
+    return m - alignment_gap_open() - alignment_gap_extension();
   }
 
   int delx(< Subsequence a, void>, int m) {
-      return m - pkissinit();
+      return m - alignment_gap_extension();
   }
 
  int insx(<void, Subsequence b>, int m) {
-     return m - pkissinit();
+     return m - alignment_gap_extension();
  }
 
  int nil(<void,void>){

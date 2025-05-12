@@ -11,8 +11,20 @@
 // initializing pseudoknots, minimal length of kissing hairpin stems and the
 // pKiss strategy
 #include "rnaoptions.hh"
-inline static int
-pkinit() {  // initialization cost for opening a new pseudoknot. Default is 900.
+
+inline static int alignment_match() {
+  return gapc::Opts::getOpts()->match_score;
+}
+inline static int alignment_mismatch() {
+  return gapc::Opts::getOpts()->mismatch_score;
+}
+inline static int alignment_gap_open() {
+  return gapc::Opts::getOpts()->gap_open;
+}
+inline static int alignment_gap_extension() {
+  return gapc::Opts::getOpts()->gap_extension;
+}
+inline static int pkinit() {  // initialization cost for opening a new pseudoknot. Default is 900.
   return gapc::Opts::getOpts()->energyPenaltyHtype;
 }
 inline static int pkissinit() {  // initialization cost for opening a new

@@ -24,6 +24,7 @@
 #ifndef RTLIB_GENERIC_OPTS_HH_
 #define RTLIB_GENERIC_OPTS_HH_
 
+#include <ostream>
 extern "C" {
   #include <stdio.h>
   #include <ctype.h>
@@ -142,6 +143,10 @@ class Opts {
     std::string custom_hairpins;
     std::string custom_internals;
     std::string custom_bulges;
+    int match_score;
+    int mismatch_score;
+    int gap_open;
+    int gap_extension;
 #ifdef CHECKPOINTING_INTEGRATED
     size_t checkpoint_interval;  // default interval: 3600s (1h)
     boost::filesystem::path  checkpoint_out_path;  // default path: cwd
@@ -193,6 +198,10 @@ class Opts {
             custom_hairpins("\0"),
             custom_internals("\0"),
             custom_bulges("\0"),
+            match_score(1),
+            mismatch_score(1),
+            gap_open(3),
+            gap_extension(1),
     #ifdef CHECKPOINTING_INTEGRATED
             checkpoint_interval(DEFAULT_CHECKPOINT_INTERVAL),
             checkpoint_out_path(boost::filesystem::current_path()),
@@ -334,12 +343,17 @@ class Opts {
         << std::endl
         << "-b <1,2,3> Select motif direction : 1 = 5' -> 3', 2 = 3' -> 5', 3  = Both. Default is 1." << std::endl
         << std::endl
+        << "-g <int-value> Set match score in alignment (only implemented for motoh). Default is 1." << std::endl
+        << "-i <int-value> Set mismatch score in alignment (only implemented for motoh). Default is 1." <<std::endl
+        << "-V <int-value> Set gap open penalty in alignment (only implemented for motoh). Default is 3" << std::endl
+        << "-v <int-value> Set gap extension penalty in alignment (only implemented for motoh). Default is 1." << std::endl
+        << std::endl
         << "-X Specify absolute path to a csv file with hairpin loop motif sequences, these will be included in your RNA 3D Motif predictions with the algebra motif, motShapeX and RNAheliCes. CSV-Structure: [sequence],[abbreviation][newline]" << std::endl
         << "-Y Specify absolute path to a csv file with internal loop motif sequences, these will be included in your RNA 3D Motif predictions with the algebra motif, motShapeX and RNAheliCes. CSV-Structure: [sequence1]$[sequence2],[abbreviation][newline]" << std::endl
         << "-Z Specify absolute path to a csv file with bulge loop motif sequences, these will be included in your RNA 3D Motif predictions with the algebra motif, motShapeX and RNAheliCes. CSV-Structure: [sequence],[abbreviation][newline]" << std::endl
         << "-L If set to 1, your custom hairpin motifs (set with -X option) will replace the RNA 3D Motif Atlas or Rfam sequences instead of being added to them. Default is 0." << std::endl
         << "-E If set to 1, your custom internal motifs (set with -Y option) will replace the RNA 3D Motif Atlas or Rfam sequences instead of being added to them. Default is 0." << std::endl
-        << "-G If set to 1, your custom bulge motifs (set with -Z option) will replace the RNA 3D Motif Atlas or Rfam sequences instead of being added to them. Default is 0." << std::endl
+        << "-G If set to 1, your custom bulge motifs (set with -Z option) will replace the RNA 3D Motif Atlas or Rfam sequences instead of being added to them. Default is 0." << std::endl << std::endl
         << "-h, --help Print this help." << std::endl << std::endl
         << " (-[drk] [0-9]+)*" << std::endl << std::endl
 
@@ -433,8 +447,8 @@ class Opts {
          * N: normalization of plain reactivities
          * (centroid, RNAstructure, logplain, asProbabilities)
          */
-        "S:A:B:M:N:X:Y:Z:L:E:G:"
-        "hd:r:k:p:I:KO:Q:b:", long_opts, nullptr)) != -1) {
+        "S:A:B:M:N:X:Y:Z:L:E:G:V"
+        "hd:r:k:p:I:KO:Q:b:g:j:v", long_opts, nullptr)) != -1) {
       switch (o) {
       case 'f':
         {
@@ -583,6 +597,18 @@ class Opts {
       case 'a':
         consensusType = std::atoi(optarg);
         break;
+      case 'g':
+        match_score = std::atoi(optarg);
+        break;
+      case 'j':
+        mismatch_score = std::atoi(optarg);
+        break;
+      case 'V':
+        gap_open = std::atoi(optarg);
+        break;
+      case 'v':
+        gap_extension = std::atoi(optarg);
+        break;
     #ifdef CHECKPOINTING_INTEGRATED
       case 'p' :
         checkpoint_interval = parse_checkpointing_interval(optarg);
@@ -687,6 +713,18 @@ class Opts {
         && (strategy != 'D') && (strategy != 'P')) {
       throw OptException("Invalid strategy. Please select one out of "
                          "'A', 'B', 'C', 'D' or 'P'!");
+    }
+    if (match_score < 0) {
+      throw OptException("Set match score to positive integer");
+    }
+    if (mismatch_score < 0) {
+      throw OptException("Set mismatch score to positive integer");
+    }
+    if (gap_open < 0) {
+      throw OptException("Set gap open penalty to a positive integer");
+    }
+    if (gap_extension < 0) {
+      throw OptException("Set gap extension penalty to a positive integer");
     }
     if (minimalHelixLength < 1) {
       throw OptException("minimal length of pseudoknot helices "
