@@ -1,26 +1,23 @@
 //basic version of the alg_motif should be compatible with OverDanle, NoDangle and Microstate. Extended version alg_motif is compatible with gra_macrostate
 
-string sadd(Subsequence lb, string e) {
+shape_t sadd(Subsequence lb, shape_t e) {
   return e;
 }
 
-string cadd(string x, string e) {
-  string res;
-  append(res, x);
-  append(res, e);
-  return res;
+shape_t cadd(shape_t x, shape_t e) {
+  return x + e;
 }
 
-string dall(Subsequence lb, string e, Subsequence rb) {
+shape_t dall(Subsequence lb, shape_t e, Subsequence rb) {
   return e;
 }
 
-string sr(Subsequence lb, string e, Subsequence rb) {
+shape_t sr(Subsequence lb, shape_t e, Subsequence rb) {
   return e;
 }
 
-string hl(Subsequence f1, Subsequence x, Subsequence f2) {
-  string r;
+shape_t hl(Subsequence f1, Subsequence x, Subsequence f2) {
+  shape_t r;
   char sub = '.';
   char mot = identify_motif(x, sub);
   if (mot != '.') {
@@ -29,95 +26,82 @@ string hl(Subsequence f1, Subsequence x, Subsequence f2) {
   return r;
 }
 
-string bl(Subsequence f1, Subsequence x, string e, Subsequence f2) {
-  string r;
+shape_t bl(Subsequence f1, Subsequence x, shape_t e, Subsequence f2) {
   char sub = '.';
   char mot = identify_motif_b(x, sub);
   if (mot != '.') {
-      append(r,mot);
+      return mot + e;
   }
-  append(r,e);
-  return r;
+  return e;
 }
 
-string br(Subsequence f1, string e, Subsequence x, Subsequence f2) {
-  string r;
+shape_t br(Subsequence f1, shape_t e, Subsequence x, Subsequence f2) {
   char sub = '.';
   char mot = identify_motif_b(x, sub);
-  append(r,e);
   if (mot != '.') {
-      append(r,mot);
+      return e + shape_t(mot);
   }
-  return r;
+  return e;
 }
 
-string il(Subsequence f2, Subsequence r1, string x, Subsequence r2, Subsequence f3) {
-  string r;
+shape_t il(Subsequence f2, Subsequence r1, shape_t x, Subsequence r2, Subsequence f3) {
   char sub = '.';
-  char mot = identify_motif(r1, r2, sub);
-  append(r,x);    
+  char mot = identify_motif(r1, r2, sub);  
   if (mot != '.') {
-      append(r,mot);
+      return x + shape_t(mot);
   }
-  return r;
-}
-
-string ml(Subsequence f1, string x, Subsequence f2) {
   return x;
 }
 
-string app(string c1, string c) {
-  string r;
-  append(r, c1);
-  append(r, c);
-  return r;
+shape_t ml(Subsequence f1, shape_t x, Subsequence f2) {
+  return x;
 }
 
-string addss(string c1, Subsequence e) {
+shape_t addss(shape_t c1, Subsequence e) {
   return c1;
 }
 
-string nil(Subsequence a) {
-  string r;
+shape_t nil(Subsequence a) {
+  shape_t r;
   return r;
 }
 
-string edl(Subsequence a, string x, Subsequence c){
+shape_t edl(Subsequence a, shape_t x, Subsequence c){
   return x;
 }
 
-string edr(Subsequence a, string x, Subsequence c){
+shape_t edr(Subsequence a, shape_t x, Subsequence c){
   return x;
 }
 
-string edlr(Subsequence a, string x, Subsequence c){
+shape_t edlr(Subsequence a, shape_t x, Subsequence c){
   return x;
 }
 
-string drem(Subsequence a, string x, Subsequence c){
+shape_t drem(Subsequence a, shape_t x, Subsequence c){
   return x;
 }
 
-string mlall(Subsequence a, string x, Subsequence c){
+shape_t mlall(Subsequence a, shape_t x, Subsequence c){
   return x;
 }
   
-string mldr(Subsequence a, string x, Subsequence c, Subsequence d){
+shape_t mldr(Subsequence a, shape_t x, Subsequence c, Subsequence d){
   return x;
 }
 
-string mldlr(Subsequence a, Subsequence b, string x, Subsequence c, Subsequence d){
+shape_t mldlr(Subsequence a, Subsequence b, shape_t x, Subsequence c, Subsequence d){
   return x;
 }
 
-string mldl(Subsequence a,Subsequence b, string x, Subsequence c){
+shape_t mldl(Subsequence a,Subsequence b, shape_t x, Subsequence c){
   return x;
 }
 
-string incl(string x){
+shape_t incl(shape_t x){
   return x;
 }
 
-choice [string] h([string] i){
+choice [shape_t] h([shape_t] i){
   return unique(i);
 }

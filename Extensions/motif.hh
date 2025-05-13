@@ -1,6 +1,7 @@
 #pragma once
 #include "ali_t.hh"
 #include "rna.hh"
+#include "rnaoptions_defaults.hh"
 #include "rope.hh"
 #include "subsequence.hh"
 #include "sequence.hh"
@@ -10,6 +11,7 @@
 #include "shape.hh"
 #include <cctype>
 #include <cstddef>
+#include <functional>
 #include <stdexcept>
 #include <string>
 #include <iostream>
@@ -26,9 +28,6 @@ struct size2_vector_hash {
     size_t operator () (const std::vector<T1> &input_vector) const {
         auto value1 = std::hash<T1>{}(input_vector[0]);
         auto value2 = std::hash<T1>{}(input_vector[1]);
-
-        // Mainly for demonstration purposes, i.e. works but is overly simple
-        // In the real world, use sth. like boost.hash_combine
         return value1 ^( value2 << 1);
     }
 };
@@ -50,7 +49,6 @@ static std::array Bulges           = {rna3d_bulges, rfam_bulges};
 static std::array Bulge_lengths    = {rna3d_bulges_len, rfam_bulges_len};
 
 enum shapelevel_enum: std::uint8_t {five=5,four=4,three=3,two=2,one=1};
-
 
 //Split function that allows me to split my input strings from they xx,yy form into v[0]="xx" and v[1]="yy" splitting the sequences from their single letter abbreviations
 inline std::vector<std::string> split (const std::string &input_str, char delim){
@@ -293,32 +291,56 @@ inline char identify_motif_align(const Basic_Subsequence<char, unsigned int> &fi
     }
     Basic_Sequence subseq1{&first_track_seq.front(),first_track_seq.size()};
     Basic_Sequence subseq2{&second_track_seq.front(),second_track_seq.size()};
-    char found1;
-    char found2;
+    char found1 = '\0';
+    char found2 = '\0';
+    char found3;
+    char found4;
     if (auto search1 = HairpinHashMap.find(subseq1); search1 != HairpinHashMap.end()) {
         found1 = search1->second;
+        if (auto search2 = HairpinHashMap.find(subseq2); search2 != HairpinHashMap.end()) {
+            found2 = search2->second;
+            if (std::toupper(found1, std::locale()) == std::toupper(found2,std::locale())) {
+                return std::toupper(found1, std::locale());
+            }
+        }
     }
-    else {
-        return res;
-    }
-    if (auto search2 = HairpinHashMap.find(subseq2); search2 != HairpinHashMap.end()) {
-        found2 = search2->second;
-    }
-    else {
-        return res;
-    }
-    if (std::toupper(found1) == std::toupper(found2)) {
-        return std::toupper(found1,std::locale());
+    if (auto search3 = BulgeHashMap.find(subseq1); search3 != BulgeHashMap.end()){
+        found3 = search3->second;
+        if (auto search4 = BulgeHashMap.find(subseq1); search4 != BulgeHashMap.end()){
+            found4 = search4->second;
+            if (std::toupper(found3, std::locale()) == std::toupper(found4,std::locale())) {
+                return std::toupper(found3, std::locale());
+            }
+        }
     }
     return res;
-   
 }
 
 inline int motif_scoring(const int &length_of_motif_region, const char motif_char) {
-    int motif_score = (4 * length_of_motif_region);
-    return motif_score;
+    return alignment_match() * length_of_motif_region;
 }
 
+//inline bool hairpin_bulge_matching(char FirstFound, char SecondFound){
+//    if (std::tolower(FirstFound,std::locale()) == std::tolower(SecondFound,std::locale())){
+//        return true;
+//    }
+//    std::pair values {FirstFound,SecondFound};
+//    std::sort(values.first,values.second); //Sort elements, always puts upper case characters first and lower case characters to the back
+//    if (std::islower(values.second,std::locale())) { //If the second character isn't lowercase, the first one isn't either.
+//        if (std::islower(values.first,std::locale())){
+//            std::cout << "bruh\n"; //Double cross check
+//        }
+//        else {
+//            std::cout << "bruh2\n"; //Single cross check
+//            return true;
+//        }
+//    }
+//    else{
+//        return false;
+//    }
+//    return true; //dummy to make warning go away
+//}
+//
 //Filter function for RNAmotiFold alignments, makes two hashmap searches and compares the outputs. This ensures only motif matching regions are checked for motifs.
 template<typename alphabet, typename pos_type, typename T>
 inline bool motif_match(const Basic_Sequence<alphabet, pos_type> &seq1, const Basic_Sequence<alphabet, pos_type> &seq2, T i_seq1, T j_seq1, T i_seq2, T j_seq2){
@@ -328,21 +350,27 @@ inline bool motif_match(const Basic_Sequence<alphabet, pos_type> &seq1, const Ba
         initialized = true;
         create_hashmaps();
     }
-    char found1;
-    char found2;
+    //std::array<bool,3> mot_match;
+    //Hairpin Check
     if (auto search = HairpinHashMap.find(subseq1); search != HairpinHashMap.end()){
-        found1 = search->second;}
-        
-    else {
-        return false;
+        char found1 = search->second;
+        if (auto search2 = HairpinHashMap.find(subseq2); search2 != HairpinHashMap.end()){
+            char found2 = search2->second;
+            return std::tolower(found1,std::locale()) == std::tolower(found2,std::locale());
+            //mot_match.fill(hairpin_bulge_matching(found1, found2));
+            }
     }
-    if (auto search2 = HairpinHashMap.find(subseq2); search2 != HairpinHashMap.end()){
-        found2 = search2->second;
+    else if (auto search3 = BulgeHashMap.find(subseq1); search3 != BulgeHashMap.end()) {
+        char found3 = search3 -> second;
+        if (auto search4 = BulgeHashMap.find(subseq2); search4 != BulgeHashMap.end()) {
+            char found4 = search4->second;
+            return std::tolower(found3,std::locale()) == std::tolower(found4,std::locale());
         }
+    }
     else {
         return false;
     }
-    return std::tolower(found1) == std::tolower(found2);
+    return false;
 }
 
 //shapeX functions are here to avoid massive if/else statements in the shape_X algebra. This should theoretically make it faster.
