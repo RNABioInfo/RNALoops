@@ -20,8 +20,8 @@ do
     filename=$(basename "$f")
     extension="${filename##*.}"
     if [ "$extension" = "csv" ]
-        then
-            grep -v '^#' $f | xxd -i -n $(basename "$f" .csv) | sed 's/\<unsigned\>/static unsigned/g' >> $HEXDUMP_FILE
+        then #chad_gpt generated sed string for replacing "unsigned [filepath]" with "static unsigned [filename]",because xxd on ubuntu 22.04 doesn't have -n parameter
+            xxd -i $f | sed -E 's/(unsigned )?(char|int) _[a-zA-Z0-9_]*_([a-zA-Z0-9]+_[a-zA-Z0-9]+)_csv/static \1\2 \3/g' >> $HEXDUMP_FILE
     fi
 done
 
@@ -31,6 +31,6 @@ do
     extension="${filename##*.}"
     if [ "$extension" = "csv" ]
         then
-            grep -v '^#' $f | xxd -i -n $(basename "$f" .csv) | sed 's/\<unsigned\>/static unsigned/g' >> $HEXDUMP_FILE
+            xxd -i $f | sed -E 's/(unsigned )?(char|int) _[a-zA-Z0-9_]*_([a-zA-Z0-9]+_[a-zA-Z0-9]+)_csv/static \1\2 \3/g' >> $HEXDUMP_FILE
     fi
 done

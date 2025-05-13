@@ -291,14 +291,14 @@ def write_csv(loop_type_sequences: list[str], loop_type: str, version: str) -> N
     """Writes all strings from a list of strings into a csv file named after the loop type"""
     setted = set(loop_type_sequences)
     Path.mkdir(
-        Path(__file__).resolve().parent.joinpath("versions", f"{version.replace(".","_")}"),
+        Path(__file__).resolve().parent.joinpath("versions", f"{version.replace('.','_')}"),
         parents=False,
         exist_ok=True,
     )
     with open(
         Path(__file__)
         .resolve()
-        .parent.joinpath("versions", f"{version.replace(".","_")}", f"rna3d_{loop_type}.csv"),
+        .parent.joinpath("versions", f"{version.replace('.','_')}", f"rna3d_{loop_type}.csv"),
         mode="w+",
     ) as file:
         file.write(f"#{version}\n")
@@ -348,7 +348,7 @@ def update_prep(version: str) -> str:
     while True:
         if any(x != version for x in versions.values()):
             print(
-                f"At least one of your motif files [ {", ".join([x for x in versions if versions[x] != version])} ] is not on version {version}, update ? [y/n] ",
+                f"At least one of your motif files [ {', '.join([x for x in versions if versions[x] != version])} ] is not on version {version}, update ? [y/n] ",
                 end="",
             )
         else:
@@ -389,7 +389,7 @@ def parse_args():
 
 def update_hexdumps(version: str):
     subprocess.run(
-        f'./update_hexdump.sh VERSION="{version.replace(".","_")}"',
+        f'./update_hexdump.sh VERSION="{version.replace('.','_')}"',
         cwd=Path(__file__).resolve().parent,
         check=True,
         shell=True,
@@ -468,6 +468,7 @@ def check_backups(version: str):
     versions_path = Path(__file__).resolve().parent.joinpath("versions")
     version_dir = version.replace(".", "_")
     for dir in get_dirs(versions_path):
+        print(dir)
         if dir == versions_path.joinpath(version_dir):
             logger.info("Found requested version in backups, overwriting hexdump...")
             update_hexdumps(version=version)
