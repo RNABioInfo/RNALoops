@@ -389,7 +389,7 @@ def parse_args():
 
 def update_hexdumps(version: str):
     subprocess.run(
-        f'./update_hexdump.sh VERSION="{version.replace('.','_')}"',
+        f'./update_hexdump.sh VERSION="{version.replace(".","_")}"',
         cwd=Path(__file__).resolve().parent,
         check=True,
         shell=True,

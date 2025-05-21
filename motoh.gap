@@ -4,7 +4,6 @@ import "ali_t.hh"
 
 input < rnali, rnali >
 
-type spair = (string first, string second)
 type strip = (string first, string second, string third)
 type shape_t = shape
 type base_t = extern
@@ -115,7 +114,7 @@ algebra alg_prettier implements sig_motoh(alphabet = char, answer = strip) {
 	}
 	strip ins(<void, Subsequence b>, strip m){
 		strip r;
-		append(r.first, '=',1);
+		append(r.first, '=');
 		append(r.first, m.first);
 		ali_append(r.second, b);
 		append(r.second, m.second);
