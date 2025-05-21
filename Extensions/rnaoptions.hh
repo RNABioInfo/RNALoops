@@ -447,7 +447,7 @@ class Opts {
          * N: normalization of plain reactivities
          * (centroid, RNAstructure, logplain, asProbabilities)
          */
-        "S:A:B:M:N:X:Y:Z:L:E:G"
+        "S:A:B:M:N:X:Y:Z:L:E:G:"
         "hd:r:k:p:I:KO:Q:b:g:j:v:V:", long_opts, nullptr)) != -1) {
       switch (o) {
       case 'f':
