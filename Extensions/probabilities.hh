@@ -2,6 +2,7 @@
 #define PROBABILITIES_HH
 
 #include <utility>
+#include "rnaoptions_defaults.hh"
 #include "typesRNAfolding.hh"
 
 // needed for (shape * (mfe * pf) * pretty) --kbacktrack ing since
