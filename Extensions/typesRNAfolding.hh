@@ -743,11 +743,17 @@ struct answer_macrostate_mfe {
     }
 };
 
+
 //Normal function for macrostate grammar
+inline bool negative_energy(std::pair<rope::Ref<rope::Ref_Count>, answer_macrostate_mfe>& mfe){
+  return mfe.second < 0;
+}
+
 inline bool negative_energy(std::pair<Fiber<long unsigned int, unsigned char>, answer_macrostate_mfe>& mfe){
   return mfe.second < 0;
 }
 
+//For subopt functions
 inline bool negative_energy(std::pair<std::pair<rope::Ref<rope::Ref_Count>, answer_macrostate_mfe>, String>& mfe){
   return mfe.first.second < 0;
 }
@@ -757,20 +763,13 @@ inline bool negative_energy(std::pair<std::pair<Fiber<long unsigned int, unsigne
 }
 
 //for backtracing
-inline bool negative_energy(std::pair<std::pair<Fiber<long unsigned int, unsigned char>, answer_macrostate_mfe>, boost::intrusive_ptr<Backtrace<String, unsigned int> > >& mfe){
-  return mfe.first.second < 0;
-}
-
-//Normal function for macrostate grammar
-inline bool negative_energy(std::pair<rope::Ref<rope::Ref_Count>, answer_macrostate_mfe>& mfe){
-  return mfe.second < 0;
-}
-
-//for backtracing
 inline bool negative_energy(std::pair<std::pair<rope::Ref<rope::Ref_Count>, answer_macrostate_mfe>, boost::intrusive_ptr<Backtrace<String, unsigned int> > >& mfe){
   return mfe.first.second < 0;
 }
 
+inline bool negative_energy(std::pair<std::pair<Fiber<long unsigned int, unsigned char>, answer_macrostate_mfe>, boost::intrusive_ptr<Backtrace<String, unsigned int> > >& mfe){
+  return mfe.first.second < 0;
+}
 
 
 inline int getIntScore(const answer_macrostate_mfe &x) {
@@ -839,19 +838,20 @@ struct answer_macrostate_pfunc {
   }
 };
 
-inline bool negative_energy(std::pair<Fiber<long unsigned int, unsigned char>, answer_macrostate_pfunc>& pfunc){
-  return true;
-}
-
-inline bool negative_energy(std::pair<std::pair<Fiber<long unsigned int, unsigned char>, answer_macrostate_pfunc>, boost::intrusive_ptr<Backtrace<String, unsigned int> > >& pfunc){
-  return true;
-}
-
+//These all return True for now ?
 inline bool negative_energy(std::pair<rope::Ref<rope::Ref_Count>, answer_macrostate_pfunc>& pfunc){
   return true;
 }
 
+inline bool negative_energy(std::pair<Fiber<long unsigned int, unsigned char>, answer_macrostate_pfunc>& pfunc){
+  return true;
+}
+
 inline bool negative_energy(std::pair<std::pair<rope::Ref<rope::Ref_Count>, answer_macrostate_pfunc>, boost::intrusive_ptr<Backtrace<String, unsigned int> > >& pfunc){
+  return true;
+}
+
+inline bool negative_energy(std::pair<std::pair<Fiber<long unsigned int, unsigned char>, answer_macrostate_pfunc>, boost::intrusive_ptr<Backtrace<String, unsigned int> > >& pfunc){
   return true;
 }
 

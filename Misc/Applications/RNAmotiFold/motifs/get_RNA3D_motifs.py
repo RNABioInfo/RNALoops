@@ -388,8 +388,11 @@ def parse_args():
 
 
 def update_hexdumps(version: str):
+
     subprocess.run(
-        f'./update_hexdump.sh VERSION="{version.replace(".","_")}"',
+        './update_hexdump.sh VERSION="{}"'.format(
+            version.replace(".", "_")
+        ),  # Changed formatting behaviour to avoid triple quotation marks
         cwd=Path(__file__).resolve().parent,
         check=True,
         shell=True,
@@ -468,7 +471,6 @@ def check_backups(version: str):
     versions_path = Path(__file__).resolve().parent.joinpath("versions")
     version_dir = version.replace(".", "_")
     for dir in get_dirs(versions_path):
-        print(dir)
         if dir == versions_path.joinpath(version_dir):
             logger.info("Found requested version in backups, overwriting hexdump...")
             update_hexdumps(version=version)
