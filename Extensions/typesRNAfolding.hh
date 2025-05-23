@@ -838,7 +838,8 @@ struct answer_macrostate_pfunc {
   }
 };
 
-//These all return True for now ?
+//These all return True for now ? This should be changed to calculate the energy value of the substructure based on it's partition function value!
+//It should be possible to somehow retrieve the mfe values from the pfunc values without having to calculate them, how did we get the pfc value in the first place? 
 inline bool negative_energy(std::pair<rope::Ref<rope::Ref_Count>, answer_macrostate_pfunc>& pfunc){
   return true;
 }

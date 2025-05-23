@@ -10,6 +10,8 @@ string.d
 *.hh
 *.mf
 /Extensions/mot_header.hh
+!/Extensions/MotifMap.hh
+/Misc/Applications/RNAmotiFold/motifs/__pycache__/
 .clangd
 compile_commands.json
 .cache/

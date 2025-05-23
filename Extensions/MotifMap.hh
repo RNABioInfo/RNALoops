@@ -17,7 +17,7 @@ struct std_set_hash {
     size_t operator () (const std::set<T1> &input_set) const {
         std::size_t seed = input_set.size();
         for (const auto& iter: input_set) {
-            seed ^= iter + 0x9e3779b9  + (seed << 6) + (seed >> 2); 
+            seed ^= iter + 0x9e3779b9  + (seed << 6) + (seed >> 2); //NOLINT
         }
         return seed;
     }
