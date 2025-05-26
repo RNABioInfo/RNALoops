@@ -1,9 +1,5 @@
 #pragma once
-#include "ali_t.hh"
-#include "empty.hh"
-#include "rna.hh"
 #include "rnaoptions_defaults.hh"
-#include "rope.hh"
 #include "subsequence.hh"
 #include "sequence.hh"
 #include "rnaoptions.hh"
@@ -11,21 +7,14 @@
 #include "shapes.hh"
 #include "shape.hh"
 #include <cctype>
-#include <cstddef>
-#include <functional>
 #include <iterator>
 #include <locale>
-#include <set>
 #include <stdexcept>
 #include <string>
 #include <iostream>
 #include <fstream>
 #include <string_view>
-#include <unordered_map>
 #include <utility>
-#include <vector>
-#include <sstream>
-#include <optional>
 #include <algorithm>
 #include"MotifMap.hh"
 

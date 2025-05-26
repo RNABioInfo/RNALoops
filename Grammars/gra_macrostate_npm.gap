@@ -13,13 +13,13 @@ grammar gra_macrostate uses sig_foldrna(axiom = struct) {
 
   noleft_dangle = cadd_Pr_Pr(edangler, {left_dangle | left_unpaired}) | cadd_Pr_Pr_Pr(nodangle, {noleft_dangle | nil(LOC)}) | ambd_Pr(nodangle, BASE with unpaired, noleft_dangle) # h;
 
-  edanglel = edl(BASE with unpaired, strong, LOC) # h;
+  edanglel = edl(BASE with unpaired, strong, LOC) suchthat negative_energy # h;
 
-  edangler = edr(LOC, strong, BASE with unpaired) # h;
+  edangler = edr(LOC, strong, BASE with unpaired) suchthat negative_energy # h;
 
-  edanglelr = edlr(BASE with unpaired, strong, BASE with unpaired) # h;
+  edanglelr = edlr(BASE with unpaired, strong, BASE with unpaired) suchthat negative_energy # h;
 
-  nodangle = drem(LOC, strong, LOC) # h;
+  nodangle = drem(LOC, strong, LOC) suchthat negative_energy # h;
 
   strong    = {sr(BASE, weak, BASE) with basepair} with allowLonelyBasepairs(false) | 
 			  {		    weak                     } with allowLonelyBasepairs(true)  # h;

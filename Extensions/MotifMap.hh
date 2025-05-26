@@ -8,8 +8,8 @@
 #include<string_view>
 #include<utility>
 #include "ali_t.hh"
-#include "range.hh"
 #include "sequence.hh"
+#include "subsequence.hh"
 
 
 struct std_set_hash {
