@@ -30,7 +30,7 @@ include "Algebras/Motif/alg_shapes_mot.gap" // "Motified" shapes algebra includi
 include "Algebras/Motif/alg_hishapes_mot.gap" // "Motified" hishapes algebras
 
 //Grammars
-include "Grammars/gra_macrostate.gap"
+include "Grammars/gra_macrostate_npm.gap"
 
 //Instances
 
