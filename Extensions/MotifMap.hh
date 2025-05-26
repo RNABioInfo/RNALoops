@@ -81,18 +81,20 @@ class MotifMap{
     void print_duplicates(){
         std::vector<std::string> strings;
         for (const auto &keyvalue: Translations){
-            std::string this_kv = std::string();
+            std::vector<std::string> substring_vector;
+            if (keyvalue.first.size() > 1){
             for (char mot: keyvalue.first){
-                this_kv += mot;
-                this_kv += "/";
+                std::string substring(1,mot);
+                substring_vector.emplace_back(substring);
             }
-            this_kv += " -> ";
-            this_kv += keyvalue.second;
-            strings.emplace_back(this_kv);
-        }
+            std::string sub = std::accumulate(std::next(substring_vector.begin()), substring_vector.end(),substring_vector[0],[](const std::string& Existing_string, const std::string& Added_string){ return Existing_string +"/" + Added_string;});
+            sub += " -> ";
+            sub += keyvalue.second;
+            strings.emplace_back(sub);
+        }}
         if (strings.size() > 0) {
             std::string dupe_string = std::accumulate(std::next(strings.begin()), strings.end(),strings[0],[](const std::string& Existing_string, const std::string& Added_string){ return Existing_string +", " + Added_string;});
-            std::cerr << "Attention, the same sequences appears for different motifs. Ambiguity cases: " << dupe_string << "\n";
+            std::cerr << "Attention, the same sequence appears for different motifs. Ambiguity cases: " << dupe_string << "\n";
         }
     };
 

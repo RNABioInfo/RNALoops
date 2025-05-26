@@ -76,6 +76,7 @@ inline MotifMap Motif_HashMap(std::array<unsigned char* ,2> motif_array, std::ar
     }
     std::string_view istring {str_mot_ar};
     MotifMap NewMap (istring,direction);
+    NewMap.print_duplicates();
     return NewMap;
 };
 
