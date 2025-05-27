@@ -30,7 +30,7 @@ shape_t bl(Subsequence f1, Subsequence x, shape_t e, Subsequence f2) {
   char sub = '.';
   char mot = identify_motif_b(x, sub);
   if (mot != '.') {
-      return mot + e;
+      return shape_t(mot) + e;
   }
   return e;
 }

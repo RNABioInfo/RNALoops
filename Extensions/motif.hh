@@ -150,8 +150,8 @@ inline char identify_motif_align(const Basic_Subsequence<char, unsigned int> &fi
         create_hashmaps(gapc::Opts::getOpts() -> custom_bulges,gapc::Opts::getOpts() -> replaceB, BulgeHashMap,Bulges,Bulge_lengths);
         init.setAll(true);
     }
-    char found1 = '\0';
-    char found2 = '\0';
+    char found1;
+    char found2;
     char found3;
     char found4;
     if (auto search1 = HairpinHashMap.find(first_track_seq); search1 != HairpinHashMap.end()) {
@@ -179,27 +179,6 @@ inline int motif_scoring(const int &length_of_motif_region, const char motif_cha
     return alignment_match() * length_of_motif_region;
 }
 
-//inline bool hairpin_bulge_matching(char FirstFound, char SecondFound){
-//    if (std::tolower(FirstFound,std::locale()) == std::tolower(SecondFound,std::locale())){
-//        return true;
-//    }
-//    std::pair values {FirstFound,SecondFound};
-//    std::sort(values.first,values.second); //Sort elements, always puts upper case characters first and lower case characters to the back
-//    if (std::islower(values.second,std::locale())) { //If the second character isn't lowercase, the first one isn't either.
-//        if (std::islower(values.first,std::locale())){
-//            std::cout << "bruh\n"; //Double cross check
-//        }
-//        else {
-//            std::cout << "bruh2\n"; //Single cross check
-//            return true;
-//        }
-//    }
-//    else{
-//        return false;
-//    }
-//    return true; //dummy to make warning go away
-//}
-//
 //Filter function for RNAmotiFold alignments, makes two hashmap searches and compares the outputs. This ensures only motif matching regions are checked for motifs.
 template<typename alphabet, typename pos_type, typename T>
 inline bool motif_match(const Basic_Sequence<alphabet, pos_type> &seq1, const Basic_Sequence<alphabet, pos_type> &seq2, T i_seq1, T j_seq1, T i_seq2, T j_seq2){
@@ -210,17 +189,18 @@ inline bool motif_match(const Basic_Sequence<alphabet, pos_type> &seq1, const Ba
         init.setAll(true);
     }
     //Hairpin Check
-    if (auto search = HairpinHashMap.find(seq1); search != HairpinHashMap.end()){
+    Basic_Subsequence<char, unsigned int> Motif1 {seq1,i_seq1,j_seq1};
+    Basic_Subsequence<char, unsigned int> Motif2 {seq2,i_seq2,j_seq2};
+    if (auto search = HairpinHashMap.find(Motif1); search != HairpinHashMap.end()){
         char found1 = search->second;
-        if (auto search2 = HairpinHashMap.find(seq2); search2 != HairpinHashMap.end()){
+        if (auto search2 = HairpinHashMap.find(Motif2); search2 != HairpinHashMap.end()){
             char found2 = search2->second;
             return std::tolower(found1,std::locale()) == std::tolower(found2,std::locale());
-            //mot_match.fill(hairpin_bulge_matching(found1, found2));
             }
     }
-    else if (auto search3 = BulgeHashMap.find(seq1); search3 != BulgeHashMap.end()) {
+    else if (auto search3 = BulgeHashMap.find(Motif1); search3 != BulgeHashMap.end()) {
         char found3 = search3 -> second;
-        if (auto search4 = BulgeHashMap.find(seq2); search4 != BulgeHashMap.end()) {
+        if (auto search4 = BulgeHashMap.find(Motif2); search4 != BulgeHashMap.end()) {
             char found4 = search4->second;
             return std::tolower(found3,std::locale()) == std::tolower(found4,std::locale());
         }

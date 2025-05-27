@@ -51,6 +51,11 @@ class MotifMap{
         return Motifs.find(Motif);
     };
 
+    template<typename alphabet, typename pos_type>
+    MotifHashMap::iterator find(const Basic_Sequence<alphabet,pos_type> &input_sequence){
+        return Motifs.find(input_sequence);
+    };
+
     MotifHashMap::iterator find(const Basic_Subsequence<char, unsigned int> &internal_subsequence1, const Basic_Subsequence<char, unsigned int> &internal_subsequence2){
         Basic_Sequence Motif1 {&internal_subsequence1.front(),internal_subsequence1.size()};
         Basic_Sequence Motif2 {&internal_subsequence2.front(),internal_subsequence2.size()};
@@ -68,11 +73,14 @@ class MotifMap{
         switch (direction) {
             case direction_type::forward:
                 add_dupe_entries(new_input, false,Dupes);
+                break;
             case direction_type::reverse:
                 add_dupe_entries(new_input, true,Dupes);
+                break;
             case direction_type::both:
                 add_dupe_entries(new_input, false,Dupes);
                 add_dupe_entries(new_input, true,Dupes);
+                break;
         }
         Translations = create_translations(Dupes);
         Motifs = create_motif_hashmap(Dupes,Translations);
@@ -162,6 +170,7 @@ class MotifMap{
     };
 
     //General purpose in class functions
+    //Function to add entries into DupeHashMap 
     static void add_dupe_entries(const std::string_view input_string_v, bool dir_bool, DupeHashMap& DupeMap){
         size_t pos_b = 0;
         size_t pos_e = 0;
