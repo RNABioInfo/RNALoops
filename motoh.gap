@@ -25,7 +25,7 @@ algebra alg_motoh implements sig_motoh(alphabet = char, answer = shape_t) {
 		char sub = '|';
 		char mot = identify_motif_align(a,b,sub);
 		if (mot != '|') {
-			return m + shape_t(mot);
+			return shape_t(mot) + m;
 		}
 		else{
 			return m;
