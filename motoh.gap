@@ -1,10 +1,12 @@
 import "Extensions/rnaoptions_defaults.hh"
+import "Extensions/motif_type.hh"
 import "Extensions/motif.hh"
 import "ali_t.hh"
 
 input < rnali, rnali >
 
 type strip = (string first, string second, string third)
+type answer_motoh = extern
 type shape_t = shape
 type base_t = extern
 type ali_t = extern
@@ -20,19 +22,61 @@ signature sig_motoh(alphabet, answer) {
   choice [answer] h([answer]);
 }
 
-algebra alg_mali implements sig_motoh(alphabet = char, answer = int) {
-  int motif(<Subsequence a, Subsequence b>, int m) {
+algebra alg_motoh implements sig_motoh(alphabet = char, answer = shape_t) {
+	shape_t motif(<Subsequence a, Subsequence b>, shape_t m) {
+		char sub = '|';
+		char mot = identify_motif_align(a,b,sub);
+		if (mot != '|') {
+			return shape_t(mot) + m;
+		}
+		else{
+			return m;
+		}
+	}
+
+	shape_t match(<Subsequence a, Subsequence b>, shape_t m) {
+		return m;
+	}
+
+	shape_t del (<Subsequence a, void>, shape_t m){
+		return m;
+	}
+
+  	shape_t ins(<void, Subsequence b>, shape_t m) {
+    	return m;
+  	}
+
+  	shape_t delx(< Subsequence a, void>, shape_t m) {
+      return m;
+  }
+
+ 	shape_t insx(<void, Subsequence b>, shape_t m) {
+     return m;
+ }
+
+ 	shape_t nil(<void,void>){
+		shape_t r;
+    	return r;
+ }
+
+ choice [shape_t] h([shape_t] l) {
+    return unique(l);
+	}
+}
+
+algebra alg_mali implements sig_motoh(alphabet = char, answer = answer_motoh) {
+  answer_motoh motif(<Subsequence a, Subsequence b>, answer_motoh m) {
     char sub = '|';
-    char mot = identify_motif_align(a, b, sub);
+    char mot = identify_motif_align(a, b);
 	if (size(a) >= size(b)){
-		return m + motif_scoring(size(a), mot);
+		return m + motif_scoring(size(a));
   	}
 	else {
-		return m + motif_scoring(size(b),mot);
+		return m + motif_scoring(size(b));
 	}
   }
 
-  int match( < Subsequence a, Subsequence b > , int m) {
+  answer_motoh match( < Subsequence a, Subsequence b > , answer_motoh m) {
 	if (a == b) {
 		return m + alignment_match();
 	}
@@ -41,26 +85,26 @@ algebra alg_mali implements sig_motoh(alphabet = char, answer = int) {
 	}
   }
 
-  int del(<Subsequence a, void>, int m) {
+  answer_motoh del(<Subsequence a, void>, answer_motoh m) {
     return m - alignment_gap_open() - alignment_gap_extension();
   }
 
-  int ins(<void, Subsequence b>, int m) {
+  answer_motoh ins(<void, Subsequence b>, answer_motoh m) {
     return m - alignment_gap_open() - alignment_gap_extension();
   }
 
-  int delx(< Subsequence a, void>, int m) {
+  answer_motoh delx(< Subsequence a, void>, answer_motoh m) {
       return m - alignment_gap_extension();
   }
 
- int insx(<void, Subsequence b>, int m) {
+ answer_motoh insx(<void, Subsequence b>, answer_motoh m) {
      return m - alignment_gap_extension();
  }
 
- int nil(<void,void>){
+ answer_motoh nil(<void,void>){
     return 0;
  }
- choice [int] h([int] l) {
+ choice [answer_motoh] h([answer_motoh] l) {
     return list(maximum(l));
 	}
 }
@@ -162,7 +206,7 @@ grammar gra_motoh uses sig_motoh(axiom = alignment) {
                 del( < REGION with maxsize(1), EMPTY >, xDel) |
                 ins( < EMPTY, REGION with maxsize(1)>, xIns ) |
                 match( < REGION with maxsize(1), REGION with maxsize(1) >, alignment) |
-				motif( < REGION with minsize(3) with maxsize(7), REGION with minsize(3) with maxsize(7) > with motif_match, alignment ) # h ;
+				motif( < REGION with minsize(3) with maxsize(7), REGION with minsize(3) with maxsize(7) > with motif_match, alignment) # h ;
   // with minsize(3) with maxsize(7) with has_motif, if motif match returns true then I dont need other filters!
   // minsize back to 1 when I implement Internal Loops, for hairpins minsize(3) works. I should keep the filters to minimize lookups
     xDel = alignment |
@@ -175,3 +219,4 @@ grammar gra_motoh uses sig_motoh(axiom = alignment) {
 
 instance test = gra_motoh(alg_mali*alg_enum);
 instance motoh = gra_motoh(alg_mali*alg_prettier);
+instance motoh2 = gra_motoh((alg_motoh * alg_mali) * alg_prettier);

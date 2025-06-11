@@ -11,6 +11,8 @@ string.d
 *.mf
 /Extensions/mot_header.hh
 !/Extensions/MotifMap.hh
+!/Extensions/motif_ali.hh
+!Extensions/motif_type.hh
 /Misc/Applications/RNAmotiFold/motifs/__pycache__/
 .clangd
 compile_commands.json
