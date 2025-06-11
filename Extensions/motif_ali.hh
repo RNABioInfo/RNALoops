@@ -1,4 +1,6 @@
+#pragma once
 #include "motif.hh"
+#include "motif_type.hh"
 #include "subsequence.hh"
 #include <algorithm>
 #include <optional>
@@ -8,12 +10,14 @@
 static MotifMap AlignmentMap {parse_direction_opt()};
 static bool ali_init = false;
 
-inline char identify_motif_align_char(const Basic_Subsequence<char, unsigned int> &first_track_seq, const Basic_Subsequence<char, unsigned int> &second_track_seq, char res) {
+inline char identify_motif_align(const Basic_Subsequence<char, unsigned int> &first_track_seq, const Basic_Subsequence<char, unsigned int> &second_track_seq, char res) {
     if (auto search1 = HairpinHashMap.get_motif(first_track_seq); search1 != HairpinHashMap.end()) {
         char found1 = search1->second;
         if (auto search2 = HairpinHashMap.get_motif(second_track_seq); search2 != HairpinHashMap.end()) {
             char found2 = search2->second;
-            std::set_intersection(found1.begin(),found1.end(),found2.begin(),found2.end(),std::inserter(res,res.begin()));
+            if (std::tolower(found1,std::locale())== std::tolower(found2,std::locale())){
+                return found1;
+            }
             return res;
             }
         }
@@ -22,14 +26,14 @@ inline char identify_motif_align_char(const Basic_Subsequence<char, unsigned int
 
 
 
-inline std::set<char> identify_motif_align(const Basic_Subsequence<char, unsigned int> &first_track_seq, const Basic_Subsequence<char, unsigned int> &second_track_seq) {
+inline std::set<char> identify_motif_align(const Basic_Subsequence<char, unsigned int> &first_track_seq, const Basic_Subsequence<char, unsigned int> &second_track_seq, answer_motoh ans) {
     if (auto search1 = HairpinHashMap.get_motif_set(first_track_seq); search1 != HairpinHashMap.dupe_end()) {
         std::set <char> found1 = search1->second;
         if (auto search2 = HairpinHashMap.get_motif_set(second_track_seq); search2 != HairpinHashMap.dupe_end()) {
             std::set <char> found2 = search2->second;
             std::set<char> res;
             std::set_intersection(found1.begin(),found1.end(),found2.begin(),found2.end(),std::inserter(res,res.begin()));
-            return res;
+            ans.append_set(res);
             }
         }
     throw std::runtime_error("Previously identified motif region could not be identified again ? How did we get here ?");

@@ -1,5 +1,6 @@
 import "Extensions/rnaoptions_defaults.hh"
 import "Extensions/motif_type.hh"
+import "Extensions/motif_ali.hh"
 import "Extensions/motif.hh"
 import "ali_t.hh"
 
@@ -67,7 +68,7 @@ algebra alg_motoh implements sig_motoh(alphabet = char, answer = shape_t) {
 algebra alg_mali implements sig_motoh(alphabet = char, answer = answer_motoh) {
   answer_motoh motif(<Subsequence a, Subsequence b>, answer_motoh m) {
     char sub = '|';
-    char mot = identify_motif_align(a, b);
+    identify_motif_align(a, b, m);
 	if (size(a) >= size(b)){
 		return m + motif_scoring(size(a));
   	}

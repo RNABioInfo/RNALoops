@@ -91,7 +91,6 @@ inline void fill_hashmap(const std::string& custom_path, bool custom_replace, Mo
     if (!custom_replace){
         motstring.append(get_preset_motifs(arr,len_arr));
     }
-    std::cout << motstring << '\n';
     std::string_view mot_view {motstring};
     empty_map.add_motifs(mot_view);
     empty_map.print_duplicates();
