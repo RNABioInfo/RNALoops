@@ -1,6 +1,8 @@
+#pragma once
 #include <ostream>
 #include <vector>
 #include "motif.hh"
+#include "motif_ali.hh"
 #include "shape.hh"
 
 #pragma once
@@ -21,7 +23,8 @@ struct answer_motoh{
     answer_motoh() : score(0), empty_(false){}
     answer_motoh(int init_score) : score(init_score), empty_(false) {} //Called on addition/subtraction, seems suboptimal to make new obj
                                                                       //seems subopt to me but adhering to the FoldGrammars Code style.
-    
+    answer_motoh(int init_score, std::vector<std::set<char>> motifs) : score(init_score),founds(motifs),empty_(false){}
+
     bool operator>(const answer_motoh &other ) const {
         return score > other.score;
     }
@@ -55,24 +58,23 @@ struct answer_motoh{
 
     answer_motoh operator+(int addition) const {
         assert(!empty_);
-        return {score + addition};
+        return {score + addition,this->founds};
     }
 
     answer_motoh operator-(int subtract) const {
         assert(!empty_);
-        return {score - subtract};
+        return {score - subtract,this->founds};
     }
-
-    void append_set(std::set<char> new_motifs) {
-        founds.emplace_back(new_motifs);
-    }
-
 
 };
 
 inline std::ostream &operator<<(std::ostream &o, const answer_motoh& ans) {
     o << ans.score;
     return o;
+}
+
+inline void append(answer_motoh& bruh, const  std::set<char> set){
+    bruh.founds.emplace_back(set);
 }
 
 inline void empty(answer_motoh &e) {

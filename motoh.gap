@@ -25,14 +25,7 @@ signature sig_motoh(alphabet, answer) {
 
 algebra alg_motoh implements sig_motoh(alphabet = char, answer = shape_t) {
 	shape_t motif(<Subsequence a, Subsequence b>, shape_t m) {
-		char sub = '|';
-		char mot = identify_motif_align(a,b,sub);
-		if (mot != '|') {
-			return shape_t(mot) + m;
-		}
-		else{
-			return m;
-		}
+		return shape_t(identify_motif_motoh(a,b)) + m;
 	}
 
 	shape_t match(<Subsequence a, Subsequence b>, shape_t m) {
@@ -67,13 +60,16 @@ algebra alg_motoh implements sig_motoh(alphabet = char, answer = shape_t) {
 
 algebra alg_mali implements sig_motoh(alphabet = char, answer = answer_motoh) {
   answer_motoh motif(<Subsequence a, Subsequence b>, answer_motoh m) {
-    char sub = '|';
-    identify_motif_align(a, b, m);
+	answer_motoh res;
+	res.founds = m.founds;
+	append(res,identify_motif_mali(a,b));
 	if (size(a) >= size(b)){
-		return m + motif_scoring(size(a));
+		res.score = m.score + motif_scoring(size(a));
+		return res;
   	}
 	else {
-		return m + motif_scoring(size(b));
+		res.score = m.score + motif_scoring(size(b));
+		return res;
 	}
   }
 
@@ -115,8 +111,7 @@ algebra alg_prettier implements sig_motoh(alphabet = char, answer = strip) {
 		strip r;
 		ali_append(r.first, a);
 		ali_append(r.second, b);
-    	char sub = '|';
-    	char mot = identify_motif_align(a, b, sub);
+    	char mot = identify_motif_motoh(a, b);
 		if (size(a) <= size(b)) {
 			append(r.first,'~',size(b)-size(a));
 			append(r.third,mot,size(b));
