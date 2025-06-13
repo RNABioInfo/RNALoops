@@ -33,6 +33,7 @@ inline static  direction_type parse_direction_opt(){
 
 
 using shape_t =  Shape;
+namespace motif_basic{
 static MotifMap HairpinHashMap{parse_direction_opt()};
 static MotifMap InternalHashMap{parse_direction_opt()};
 static MotifMap BulgeHashMap{parse_direction_opt()};
@@ -42,7 +43,7 @@ static std::array Internals        = {rna3d_internals, rfam_internals};
 static std::array Internal_lengths = {rna3d_internals_len, rfam_internals_len,};
 static std::array Bulges           = {rna3d_bulges, rfam_bulges};
 static std::array Bulge_lengths    = {rna3d_bulges_len, rfam_bulges_len};
-
+}
 enum shapelevel_enum: std::uint8_t {five=5,four=4,three=3,two=2,one=1};
 
 struct init_status {
@@ -100,9 +101,9 @@ inline void fill_hashmap(const std::string& custom_path, bool custom_replace, Mo
 inline char identify_motif(const Basic_Subsequence<char, unsigned int> &input_subsequence, char res) {
     if (!init.initializedH()){
         init.setHairpin(true);
-        fill_hashmap(gapc::Opts::getOpts()->custom_hairpins, gapc::Opts::getOpts() -> replaceH, HairpinHashMap,Hairpins,Hairpin_lengths);
+        fill_hashmap(gapc::Opts::getOpts()->custom_hairpins, gapc::Opts::getOpts() -> replaceH, motif_basic::HairpinHashMap,motif_basic::Hairpins,motif_basic::Hairpin_lengths);
     }
-    if (auto search = HairpinHashMap.get_motif(input_subsequence); search != HairpinHashMap.end()){
+    if (auto search = motif_basic::HairpinHashMap.get_motif(input_subsequence); search != motif_basic::HairpinHashMap.end()){
         return search->second;
     }
     return res;
@@ -111,9 +112,9 @@ inline char identify_motif(const Basic_Subsequence<char, unsigned int> &input_su
 inline char identify_motif(const Basic_Subsequence<char, unsigned int> &internal_subsequence1, const Basic_Subsequence<char, unsigned int> &internal_subsequence2, char res) {
     if (!init.initializedI()){
         init.setInternal(true);
-        fill_hashmap(gapc::Opts::getOpts()->custom_internals, gapc::Opts::getOpts() -> replaceI, InternalHashMap,Internals,Internal_lengths);
+        fill_hashmap(gapc::Opts::getOpts()->custom_internals, gapc::Opts::getOpts() -> replaceI, motif_basic::InternalHashMap,motif_basic::Internals,motif_basic::Internal_lengths);
     }
-    if (auto search = InternalHashMap.get_motif(internal_subsequence1,internal_subsequence2); search != InternalHashMap.end()) {
+    if (auto search = motif_basic::InternalHashMap.get_motif(internal_subsequence1,internal_subsequence2); search != motif_basic::InternalHashMap.end()) {
         return search->second;
     }
     return res;
@@ -122,9 +123,9 @@ inline char identify_motif(const Basic_Subsequence<char, unsigned int> &internal
 inline char identify_motif_b(const Basic_Subsequence<char, unsigned int> &bulge_subsequence, char res) {
     if (!init.initializedB()){
         init.setBulge(true);
-        fill_hashmap(gapc::Opts::getOpts() -> custom_bulges,gapc::Opts::getOpts() -> replaceB, BulgeHashMap,Bulges,Bulge_lengths);
+        fill_hashmap(gapc::Opts::getOpts() -> custom_bulges,gapc::Opts::getOpts() -> replaceB, motif_basic::BulgeHashMap,motif_basic::Bulges,motif_basic::Bulge_lengths);
     }
-    if (auto search = BulgeHashMap.get_motif(bulge_subsequence); search != BulgeHashMap.end()) {
+    if (auto search = motif_basic::BulgeHashMap.get_motif(bulge_subsequence); search != motif_basic::BulgeHashMap.end()) {
         return search->second;
     }
     return res;
