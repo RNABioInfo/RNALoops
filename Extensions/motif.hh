@@ -59,7 +59,7 @@ struct init_status {
 static init_status init;
 
 //HashMap implementation functions for all three loop types in the macrostate grammar.DB =database, which one gets used 1=BGSU, 2=RMFAM, 3 = both // R = reverse, 1= No Reverses, 2 = Only Reverses, 3 = Both reverse and Forward
-inline std::string get_preset_motifs(std::array<unsigned char* ,2> motif_array, std::array<unsigned int,2> motif_len_array) {
+inline std::string add_preset_motifs(std::array<unsigned char* ,2> motif_array, std::array<unsigned int,2> motif_len_array) {
     std::string str_mot_ar;
     switch(gapc::Opts::getOpts()->motifs) {
         case 1:
@@ -90,7 +90,7 @@ inline void fill_hashmap(const std::string& custom_path, bool custom_replace, Mo
         motstring.append("\n");
     }
     if (!custom_replace){
-        motstring.append(get_preset_motifs(arr,len_arr));
+        motstring.append(add_preset_motifs(arr,len_arr));
     }
     std::string_view mot_view {motstring};
     empty_map.add_motifs(mot_view);

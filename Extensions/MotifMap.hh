@@ -106,7 +106,7 @@ class MotifMap{
                 break;
         }
         Translations = create_translations(Dupes);
-        Motifs = create_motif_hashmap(Dupes,Translations);
+        //Motifs = create_motif_hashmap(Dupes,Translations);
     };
 
     void print_duplicates(){
@@ -206,41 +206,6 @@ class MotifMap{
         }
     };
 
-    static void add_dupe_entries(const std::string_view input_string_view_internals, bool dir_bool, DupeHashMap& Internals_Front, DupeHashMap& Internals_Back){
-        size_t pos_b = 0;
-        size_t pos_e = 0;
-        while ((pos_e = input_string_view_internals.find('\n', pos_b)) != std::string::npos){
-            split_parse_line(pos_b, pos_e, input_string_view_internals, dir_bool, Internals_Front, Internals_Back);
-            pos_b = pos_e + 1;
-        }
-        if (pos_b <= input_string_view_internals.size()){
-            split_parse_line(pos_b, input_string_view_internals.size() - pos_b, input_string_view_internals, dir_bool, Internals_Front,Internals_Back);
-        }
-    };
-
-    static void split_parse_line(const size_t begin, const size_t end, const std::string_view view, bool dir_bool, DupeHashMap& Front, DupeHashMap& Back){
-        std::string line;
-        line = view.substr(begin, end-begin);
-        if (const auto motif = parse_internal_motif(line, dir_bool)){
-            Basic_Sequence<char, unsigned int> basic_seq_motif_front {motif.value().seq_front.data(), static_cast<unsigned int>(motif.value().seq_front.size())};
-            Basic_Sequence<char, unsigned int> basic_seq_motif_back  {motif.value().seq_back.data(),  static_cast<unsigned int>(motif.value().seq_back.size())};
-            char_to_rnali(basic_seq_motif_front);
-            char_to_rnali(basic_seq_motif_back);
-            if (auto dupe_search = Front.find(basic_seq_motif_front); dupe_search == Front.end()){
-                Front[basic_seq_motif_front] = std::set<char> {motif.value().abb};
-            }
-            else {
-                Front[basic_seq_motif_front].insert(motif.value().abb);
-            }
-            if (auto dupe_search = Back.find(basic_seq_motif_back); dupe_search == Back.end()){
-                Back[basic_seq_motif_back] = std::set<char> {motif.value().abb};
-            }
-            else {
-                Back[basic_seq_motif_back].insert(motif.value().abb);
-            }
-        }
-    };
-
     static void split_parse_line(const size_t begin, const size_t end, const std::string_view view, bool dir_bool, DupeHashMap& DupeMap){
         std::string line;
         line = view.substr(begin,end-begin);
@@ -285,39 +250,4 @@ class MotifMap{
         }
         return motif;
     };
-
-    static std::optional<Internal_Motif> parse_internal_motif ( const std::string &input, bool rev){
-        constexpr char delim = ',';
-        constexpr char internal_delim = '$';
-        std::stringstream sinput(input);
-        size_t elements{0};
-        std::vector<std::string> seq_collector;
-        char abb;
-        std::string item;
-        std::string segment;
-        while (std::getline(sinput, item, delim)){
-            if (elements == 0){
-                if (rev){
-                    std::reverse(item.begin(),item.end());
-                }
-                std::stringstream sitem{item};
-                while (std::getline(sitem, segment, internal_delim)){
-                    seq_collector.push_back(segment);
-                }
-
-                }
-            else if (elements == 1) {
-                abb = item.front();
-            }
-            else {
-                std::cerr << "Error more than one motif in one line\n";
-                return std::nullopt;
-            }
-            ++elements;
-            }
-        if (elements > 2){
-            std::cerr << "Found" << elements << ", expected " << 2 << "\n";
-        }
-        return Internal_Motif{seq_collector,abb};
-        }
 };

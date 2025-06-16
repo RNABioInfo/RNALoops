@@ -11,7 +11,6 @@
 struct answer_motoh{
 #ifdef CHECKPOINTING_INTEGRATED
     friend class boost::serialization::access;
-
     template <class Archive>
     void serialize(Archive &ar, const unsigned int version) {
         ar & score;
@@ -64,28 +63,28 @@ struct answer_motoh{
     }
 
     answer_motoh operator+(int addition) const {
-        assert(!this.empty_);
+        assert(!empty_);
         return {score + addition,this->founds,this->first_track_seqs,this->second_track_seqs};
     }
 
     answer_motoh operator-(int subtract) const {
-        assert(!this.empty_);
+        assert(!empty_);
         return {score - subtract,this->founds,this->first_track_seqs,this->second_track_seqs};
     }
 
     void extra_score(){
-        
+        //this is a dummy, fill out later
     }
 };
 
-inline std::ostream &operator<<(std::ostream &ostream, const answer_motoh& ans) {
-    ostream << ans.score;
-    return ostream;
-}
+//inline std::ostream &operator<<(std::ostream &ostream, const answer_motoh& ans) {
+//    ostream << ans.score;
+//    return ostream;
+//}
 
-inline void append(answer_motoh& bruh, const  std::set<char>& set){
-    bruh.founds.emplace_back(set);
-}
+//inline void append(answer_motoh& bruh, const  std::set<char>& set){
+//    bruh.founds.emplace_back(set);
+//}
 
 inline void empty(answer_motoh &make_empty) {
     make_empty.empty_ = true;
