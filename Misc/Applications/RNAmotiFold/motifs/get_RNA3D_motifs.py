@@ -318,7 +318,6 @@ def write_csv(loop_type_sequences: list[str], loop_type: str, version: str) -> N
         .parent.joinpath("versions", f"{vers}", f"rna3d_{loop_type}.csv"),
         mode="w+",
     ) as file:
-        file.write(f"#{version}\n")
         for MotSeq in setted:
             file.write(MotSeq + "\n")
 
@@ -460,7 +459,6 @@ def check_backups(version: str) -> bool:
     versions_path: Path = Path(__file__).resolve().parent.joinpath("versions")
     version_dir: str = version.replace(".", "_")
     for dir in get_dirs(versions_path):
-        print(dir)
         if dir == versions_path.joinpath(version_dir):
             logger.info("Found requested version in backups, overwriting hexdump...")
             update_hexdumps(version=version)
