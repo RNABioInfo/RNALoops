@@ -1,11 +1,17 @@
 #pragma once
+#include "MotifMap.hh"
 #include "motif.hh"
+#include "answer_motoh.hh"
 #include "rnaoptions.hh"
+#include "rnaoptions_defaults.hh"
+#include "string.hh"
 #include "subsequence.hh"
 #include <algorithm>
 #include <iterator>
 #include <stdexcept>
+#include <string>
 #include <string_view>
+#include <unordered_map>
 #include "shape.hh"
 
 
@@ -15,39 +21,83 @@ static MotifMap InternalHashMap_fronts {parse_direction_opt()};
 static MotifMap InternalHashMap_backs {parse_direction_opt()};
 static MotifMap InternalHashMap {parse_direction_opt()};
 static MotifMap BulgeHashMap {parse_direction_opt()};
-static bool ali_init = false;
+static bool init = false;
 }
+
+using seq_vector = std::vector<Basic_Subsequence<char, unsigned int>>;
+
+struct MotifsFound {
+    std::array <bool,4> states = {false,false,false,false};
+    bool& hairpin(){return states[0];};
+    bool& bulge(){return states[1];};
+    bool& interal_front(){return states[2];};
+    bool& internal_full(){return states[3];};
+    void setHairpin(bool set_to){states[0] = set_to;};
+    void setBulge(bool set_to){states[1] = set_to;};
+    void setInternal_front(bool set_to){states[2] = set_to;};
+    void setInternal_full(bool set_to){states[3] = set_to;}; 
+};
+
+static seq_vector fronts_first;
+static seq_vector fronts_second;
 
 using shape_t = Shape;
 
-inline char identify_motif_motoh(const Basic_Subsequence<char, unsigned int> &first_track_seq, const Basic_Subsequence<char, unsigned int> &second_track_seq) {
-    if (auto search1 = motif_ali::HairpinHashMap.get_motif(first_track_seq); search1 != motif_ali::HairpinHashMap.end()) {
-        char found1 = search1->second;
-        if (auto search2 = motif_ali::HairpinHashMap.get_motif(second_track_seq); search2 != motif_ali::HairpinHashMap.end()) {
-            char found2 = search2->second;
-            if (std::tolower(found1,std::locale())== std::tolower(found2,std::locale())){
-                return found1;
-                }
-            }
-        }
-    throw std::runtime_error("Previously identified motif region could not be identified again ? How did we get here ?");
+template<typename alphabet, typename pos_type>
+inline std::set<char> check_maps(Basic_Subsequence<alphabet,pos_type> seq){
+    std::set<char> return_set;
+    if (auto search = motif_ali::HairpinHashMap.get_motif_set(seq); search != motif_ali::HairpinHashMap.dupe_end()){
+        return_set.insert(search->second.begin(),search->second.end());
+    }
+    if (auto search = motif_ali::InternalHashMap_fronts.get_motif_set(seq); search != motif_ali::InternalHashMap_fronts.dupe_end()){
+        return_set.insert(search->second.begin(),search->second.end());
+    }
+    if (auto search = motif_ali::InternalHashMap_backs.get_motif_set(seq); search != motif_ali::InternalHashMap_backs.dupe_end()){
+        return_set.insert(search->second.begin(),search->second.end());
+    }
+    if (auto search = motif_ali::BulgeHashMap.get_motif_set(seq); search != motif_ali::BulgeHashMap.dupe_end()){
+        return_set.insert(search->second.begin(),search->second.end());
+    }
+    return return_set;
+};
+
+template<typename alphabet, typename pos_type>
+inline std::set<char> check_map(const Basic_Subsequence<alphabet,pos_type> &seq_first,const Basic_Subsequence<alphabet,pos_type>& seq_second, MotifMap& Checkmap){
+    std::set<char> return_set;
+    auto search_first = Checkmap.get_motif_set(seq_first);
+    auto search_second = Checkmap.get_motif_set(seq_second);
+    if (search_first != Checkmap.dupe_end() && search_second != Checkmap.dupe_end()){
+        std::set_intersection(search_first->second.begin(),search_first->second.end(),search_second->second.begin(),search_second->second.end(),std::inserter(return_set,return_set.begin()));
+    }
+    return return_set;
 }
 
-inline std::pair<std::pair<Basic_Subsequence<char, unsigned int>,Basic_Subsequence<char, unsigned int>>,std::set<char>> identify_motif_mali(const Basic_Subsequence<char, unsigned int> &first_track_seq, const Basic_Subsequence<char, unsigned int> &second_track_seq) {
+inline int identify_motif_mali(const Basic_Subsequence<char, unsigned int> &first_track_seq, const Basic_Subsequence<char, unsigned int> &second_track_seq) {
     std::set<char> res;
-    std::vector<std::set<char>> collect;
-    if (auto search1 = motif_ali::HairpinHashMap.get_motif_set(first_track_seq); search1 != motif_ali::HairpinHashMap.dupe_end()) {
-        std::set <char> found1 = search1->second;
-        if (auto search2 = motif_ali::HairpinHashMap.get_motif_set(second_track_seq); search2 != motif_ali::HairpinHashMap.dupe_end()) {
-            std::set <char> found2 = search2->second;  
-            std::set_intersection(found1.begin(),found1.end(),found2.begin(),found2.end(),std::inserter(res,res.begin()));
+    for (unsigned int index = 0; index < fronts_first.size(); index++){
+        if (first_track_seq.i - fronts_first[index].j  >= 5 && second_track_seq.i - fronts_second[index].j >= 5){
+        auto search_first = motif_ali::InternalHashMap.get_motif_set(fronts_first[index],first_track_seq);
+        auto search_second = motif_ali::InternalHashMap.get_motif_set(fronts_second[index],second_track_seq);
+        if (search_first != motif_ali::InternalHashMap.dupe_end() && search_second != motif_ali::InternalHashMap.dupe_end()) {
+            std::set_intersection(search_first->second.begin(),search_first->second.end(),search_second->second.begin(),search_second->second.end(),std::inserter(res,res.begin()));
         }
     }
-    return std::pair<std::pair<Basic_Subsequence<char, unsigned int>,Basic_Subsequence<char, unsigned int>>,std::set<char>> {std::pair<Basic_Subsequence<char, unsigned int>,Basic_Subsequence<char, unsigned int>>{first_track_seq,second_track_seq},res};
+        else{;}
+    }
+    std::set<char> internal_f = check_map(first_track_seq,second_track_seq,motif_ali::InternalHashMap_fronts);
+    if (internal_f.size() > 0){
+        fronts_first.push_back(first_track_seq);
+        fronts_second.push_back(second_track_seq);
+    } 
+    if (res.size() > 0) {
+        //we found a complete internal loop! let's add a little score
+        return 5;
+    }
+    return 0;
 }
 
 inline int motif_scoring(const int &length_of_motif_region) {
-    return (alignment_match() * length_of_motif_region) + 1;
+    return (alignment_match() * length_of_motif_region) + 3;
 }
 
 inline std::pair<std::string,std::string> preprocess_internal_motifs(std::string istring){
@@ -91,31 +141,21 @@ inline void fill_internal_hashmaps(const std::string & custom_path, bool custom_
     back_map.print_duplicates();
 }
 
-
 //Filter function for RNAmotiFold alignments, makes two hashmap searches and compares the outputs. This ensures only motif matching regions are checked for motifs.
 template<typename alphabet, typename pos_type, typename T>
 inline bool motif_match(const Basic_Sequence<alphabet, pos_type> &seq1, const Basic_Sequence<alphabet, pos_type> &seq2, T i_seq1, T j_seq1, T i_seq2, T j_seq2){
-    if (!motif_ali::ali_init) {
+    if (!motif_ali::init) {
         fill_hashmap(gapc::Opts::getOpts()->custom_hairpins, gapc::Opts::getOpts()->replaceH, motif_ali::HairpinHashMap, motif_basic::Hairpins, motif_basic::Hairpin_lengths);
         fill_hashmap(gapc::Opts::getOpts()->custom_bulges, gapc::Opts::getOpts()->replaceB, motif_ali::BulgeHashMap, motif_basic::Bulges, motif_basic::Bulge_lengths);
         fill_hashmap(gapc::Opts::getOpts()->custom_internals, gapc::Opts::getOpts()->replaceI, motif_ali::InternalHashMap, motif_basic::Internals,motif_basic::Internal_lengths);
         fill_internal_hashmaps(gapc::Opts::getOpts()->custom_internals, gapc::Opts::getOpts()->replaceI, motif_ali::InternalHashMap_fronts, motif_ali::InternalHashMap_backs, motif_basic::Internals, motif_basic::Internal_lengths);
-        motif_ali::ali_init = true;
+        motif_ali::init = true;
     }
-    Basic_Subsequence<char, unsigned int> Motif1 {seq1,i_seq1,j_seq1};
-    Basic_Subsequence<char, unsigned int> Motif2 {seq2,i_seq2,j_seq2};
-    if (auto search = motif_ali::HairpinHashMap.get_motif_set(Motif1); search != motif_ali::HairpinHashMap.dupe_end()){
-        std::set<char> found1 = search->second;
-        if (auto search2 = motif_ali::HairpinHashMap.get_motif_set(Motif2); search2 != motif_ali::HairpinHashMap.dupe_end()){
-            std::set<char> found2 = search2->second;
-            //set comparison function that checks if at least one of the motifs overlaps:
-            std::set<char> res;
-            std::set_intersection(found1.begin(),found1.end(),found2.begin(),found2.end(),std::inserter(res,res.begin()));
-            return res.size() > 0;
-            }
+    Basic_Subsequence<alphabet, pos_type> Seq1 {seq1, i_seq1, j_seq1};
+    Basic_Subsequence<alphabet, pos_type> Seq2 {seq2, i_seq2, j_seq2};
+    std::set<char> Motifs1 = check_maps(Seq1);
+    std::set<char> Motifs2 = check_maps(Seq2);
+    std::set<char> res;
+    std::set_intersection(Motifs1.begin(),Motifs1.end(),Motifs2.begin(),Motifs2.end(),std::inserter(res,res.begin()));
+    return res.size() > 0;
     }
-    else {
-        return false;
-    }
-    return false;
-}

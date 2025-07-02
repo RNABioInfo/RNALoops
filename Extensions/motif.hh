@@ -1,21 +1,17 @@
 #pragma once
-#include "rnaoptions_defaults.hh"
 #include "subsequence.hh"
-#include "sequence.hh"
 #include "rnaoptions.hh"
 #include "mot_header.hh"
 #include "shapes.hh"
 #include "shape.hh"
 #include <cctype>
 #include <iterator>
-#include <locale>
 #include <stdexcept>
 #include <string>
 #include <iostream>
 #include <fstream>
 #include <string_view>
 #include <utility>
-#include <algorithm>
 #include"MotifMap.hh"
 
 inline static  direction_type parse_direction_opt(){
@@ -94,6 +90,7 @@ inline void fill_hashmap(const std::string& custom_path, bool custom_replace, Mo
     }
     std::string_view mot_view {motstring};
     empty_map.add_motifs(mot_view);
+    empty_map.update_motif_hashmap();
     empty_map.print_duplicates();
 }
 

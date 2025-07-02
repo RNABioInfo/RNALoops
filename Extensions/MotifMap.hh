@@ -25,12 +25,7 @@ struct std_set_hash {
 };
 
 struct Motif {std::string seq; char abb {'X'};};
-struct Internal_Motif{
-    std::string seq_front;
-    std::string seq_back;
-    char abb {'X'};
-    Internal_Motif(std::vector<std::string> seq_vector,char seq_abb): seq_front(seq_vector[0]),seq_back(seq_vector[0]),abb(seq_abb){};
-};
+
 enum class direction_type: std::uint8_t {forward,reverse,both};
 
 class MotifMap{
@@ -41,44 +36,69 @@ class MotifMap{
     using TranslationHashMap = std::unordered_map<std::set<char>, char,std_set_hash>; //Type for the translation map that connects 
     const direction_type direction;
     std::string_view input;
-    
+    std::set<char> abbreviations;
 
     //Constructor used for direction only input, used mostly for ali cases probably
     MotifMap(direction_type dir): direction(dir){} 
 
     //Most used constructor to create a MotifHash Map from an input string view and a direction for the motifs
     MotifMap(const std::string_view input_string, direction_type dir): direction(dir),input(input_string){ //Constructor definition
-        Dupes = create_DupeMap(input, direction);
-        Translations = create_translations(Dupes);
-        Motifs = create_motif_hashmap(Dupes,Translations);
+        fill_Dupes(input, direction);
+        fill_Translations();
+        fill_Motifs();
     };
 
-    DupeHashMap::iterator get_motif_set(const Basic_Subsequence<char, unsigned int> &input_subsequence){
+    template<typename alphabet, typename pos_type>
+    const DupeHashMap::iterator get_motif_set(const Basic_Subsequence<alphabet, pos_type> &input_subsequence){
         Basic_Sequence Motif {&input_subsequence.front(), input_subsequence.size()};
         return Dupes.find(Motif);
     };
 
-    MotifHashMap::iterator get_motif(const Basic_Subsequence<char, unsigned int> &input_subsequence){
+    template<typename alphabet, typename pos_type>
+    const MotifHashMap::iterator get_motif(const Basic_Subsequence<alphabet, pos_type> &input_subsequence){
         Basic_Sequence Motif {&input_subsequence.front(),input_subsequence.size()};
         return Motifs.find(Motif);
     };
 
     template<typename alphabet, typename pos_type>
-    DupeHashMap::iterator get_motif_set(const Basic_Sequence<alphabet, pos_type> &input_sequence){
+    const DupeHashMap::iterator get_motif_set(const Basic_Sequence<alphabet, pos_type> &input_sequence){
         return Dupes.find(input_sequence);
     };
 
     template<typename alphabet, typename pos_type>
-    MotifHashMap::iterator get_motif(const Basic_Sequence<alphabet,pos_type> &input_sequence){
+    const MotifHashMap::iterator get_motif(const Basic_Sequence<alphabet,pos_type> &input_sequence){
         return Motifs.find(input_sequence);
     };
 
-    MotifHashMap::iterator get_motif(const Basic_Subsequence<char, unsigned int> &internal_subsequence1, const Basic_Subsequence<char, unsigned int> &internal_subsequence2){
+    template<typename alphabet, typename pos_type>
+    const MotifHashMap::iterator get_motif(const Basic_Subsequence<alphabet, pos_type> &internal_subsequence1, const Basic_Subsequence<alphabet, pos_type> &internal_subsequence2){
         Basic_Sequence Motif1 {&internal_subsequence1.front(),internal_subsequence1.size()};
         Basic_Sequence Motif2 {&internal_subsequence2.front(),internal_subsequence2.size()};
         Motif1.concat(Motif2.seq,Motif2.size());
         return Motifs.find(Motif1);
     };
+
+    template<typename alphabet, typename pos_type>
+    const DupeHashMap::iterator get_motif_set(const Basic_Subsequence<alphabet, pos_type> &internal_subsequence1, const Basic_Subsequence<alphabet, pos_type> &internal_subsequence2){
+        Basic_Sequence Motif1 {&internal_subsequence1.front(),internal_subsequence1.size()};
+        Basic_Sequence Motif2 {&internal_subsequence2.front(),internal_subsequence2.size()};
+        Motif1.concat(Motif2.seq,Motif2.size());
+        return Dupes.find(Motif1);
+    };
+
+    template<typename alphabet, typename pos_type>
+    const std::set<char> get_motif_set_ali(const Basic_Subsequence<alphabet, pos_type> &align_seq1, const Basic_Subsequence<alphabet, pos_type> &align_seq2){
+        Basic_Sequence Motif1 {align_seq1.front(),align_seq1.size()};
+        Basic_Sequence Motif2 {align_seq2.front(),align_seq2.size()};
+        std::set<char> returnset {};
+        if (auto search1 = Dupes.find(Motif1); search1 != Dupes.end()){
+            returnset.merge(search1->second);
+        }
+        if (auto search2 = Dupes.find(Motif2); search2 != Dupes.end()){
+            returnset.merge(search2->second);
+        }
+        return returnset;
+    }
 
     MotifHashMap::iterator begin() {return Motifs.begin();};
     MotifHashMap::iterator end() {return Motifs.end();};
@@ -95,19 +115,22 @@ class MotifMap{
     void add_motifs(std::string_view new_input){
         switch (direction) {
             case direction_type::forward:
-                add_dupe_entries(new_input, false,Dupes);
+                add_dupe_entries(new_input, false);
                 break;
             case direction_type::reverse:
-                add_dupe_entries(new_input, true,Dupes);
+                add_dupe_entries(new_input, true);
                 break;
             case direction_type::both:
-                add_dupe_entries(new_input, false,Dupes);
-                add_dupe_entries(new_input, true,Dupes);
+                add_dupe_entries(new_input, false);
+                add_dupe_entries(new_input, true);
                 break;
         }
-        Translations = create_translations(Dupes);
-        //Motifs = create_motif_hashmap(Dupes,Translations);
     };
+
+    void update_motif_hashmap(){
+        fill_Translations();
+        fill_Motifs();
+    }
 
     void print_duplicates(){
         std::vector<std::string> strings;
@@ -133,30 +156,28 @@ class MotifMap{
     DupeHashMap Dupes;
     TranslationHashMap Translations;
     MotifHashMap Motifs;
+    
 
     //Initializer functions
-    static DupeHashMap create_DupeMap(const std::string_view input, direction_type direction){
-        DupeHashMap DupeMap;
+    void fill_Dupes(const std::string_view input, direction_type direction){
         switch (direction) {
             case direction_type::forward:
-                add_dupe_entries(input, false, DupeMap);
+                add_dupe_entries(input, false);
                 break;
             case direction_type::reverse:
-                add_dupe_entries(input, true, DupeMap);
+                add_dupe_entries(input, true);
                 break;
             case direction_type::both:
-                add_dupe_entries( input, false, DupeMap);
-                add_dupe_entries( input, true, DupeMap);
+                add_dupe_entries( input, false);
+                add_dupe_entries( input, true);
                 break;
         }
-        return DupeMap;
     };
-    
-    static TranslationHashMap create_translations(const DupeHashMap& DupeMap){
-        TranslationHashMap translation_map;
+
+    void fill_Translations(){
         std::set<std::set<char>> dupe_sets;
         std::set<char> used_characters;
-        for (const auto& keyvalue: DupeMap) {
+        for (const auto& keyvalue: Dupes) {
             dupe_sets.insert(keyvalue.second);
         }
         for (const std::set<char>& set: dupe_sets){
@@ -164,13 +185,13 @@ class MotifMap{
             for (const char option: set){
                 if (set.size() == 1 ){
                     used_characters.insert(option);
-                    translation_map[set] = option;
+                    Translations[set] = option;
                     inserted = true;
                     break;
                 }
                 if (used_characters.find(std::tolower(option,std::locale())) == used_characters.end()){
                     used_characters.insert(std::tolower(option,std::locale()));
-                    translation_map[set] = std::tolower(option,std::locale());
+                    Translations[set] = std::tolower(option,std::locale());
                     inserted = true;
                     break;
                 }
@@ -181,43 +202,42 @@ class MotifMap{
             }
             //This is where some sort of logic would be nice to switch around the keys to see if any other combination is possible
         }
-        return translation_map;
     };
 
-    static MotifHashMap create_motif_hashmap(const DupeHashMap& DupeMap, const TranslationHashMap& TranslationMap){
-        MotifHashMap MotiMap;
-        for (const auto& keyvalue: DupeMap){
-            MotiMap[keyvalue.first] = TranslationMap.at(keyvalue.second);
+    void fill_Motifs(){
+        for (const auto& [key,value]: Dupes){
+            Motifs[key] = Translations.at(value);
         }
-        return MotiMap;
     };
 
     //General purpose in class functions
     //Function to add entries into DupeHashMap 
-    static void add_dupe_entries(const std::string_view input_string_v, bool dir_bool, DupeHashMap& DupeMap){
+    void add_dupe_entries(const std::string_view input_string_v, bool dir_bool){
         size_t pos_b = 0;
         size_t pos_e = 0;
+        Basic_Sequence<char,unsigned int> basic_motif;
         while ((pos_e = input_string_v.find('\n',pos_b)) != std::string::npos) {
-            split_parse_line(pos_b, pos_e, input_string_v, dir_bool, DupeMap);
+            split_parse_line(pos_b, pos_e, input_string_v, dir_bool);
             pos_b = pos_e + 1 ;
         }
         if (pos_b <= input_string_v.size()){ //This catches the edge case of the last line not having a new line to use as a separator
-            split_parse_line(pos_b, input_string_v.size()-pos_b, input_string_v,  dir_bool, DupeMap);
+            split_parse_line(pos_b, input_string_v.size()-pos_b, input_string_v,  dir_bool);
         }
     };
 
-    static void split_parse_line(const size_t begin, const size_t end, const std::string_view view, bool dir_bool, DupeHashMap& DupeMap){
+    void split_parse_line(const size_t begin, const size_t end, const std::string_view view, bool dir_bool){
         std::string line;
         line = view.substr(begin,end-begin);
         if (const auto motif = parse_motif(line, dir_bool)){
             Basic_Sequence<char, unsigned int> basic_seq_motif {motif.value().seq.data(), static_cast<unsigned int>(motif.value().seq.size())};
             char_to_rnali(basic_seq_motif);
-            if (auto dupe_sarch = DupeMap.find(basic_seq_motif); dupe_sarch == DupeMap.end()){ //Check if the sequence is already in the map
-                DupeMap[basic_seq_motif] = std::set<char> {motif.value().abb};
+            if (auto dupe_sarch = Dupes.find(basic_seq_motif); dupe_sarch == Dupes.end()){ //Check if the sequence is already in the map
+                Dupes[basic_seq_motif] = std::set<char> {motif.value().abb};    
             }
             else {
-                DupeMap[basic_seq_motif].insert(motif.value().abb);
+                Dupes[basic_seq_motif].insert(motif.value().abb);
             }
+            abbreviations.insert(motif.value().abb);
         }
     };
 
