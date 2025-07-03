@@ -26,7 +26,6 @@ signature sig_motoh(alphabet, answer) {
 algebra alg_motoh implements sig_motoh(alphabet = char, answer = string) {
 	string motif(<Subsequence a, Subsequence b>, string m) {
 		string res;
-		append(res,m);
 		int pos = (a.i + a.j)/2;
 		if (pos * 2 > a.i + a.j + 1) {
 			pos = pos -1;
@@ -35,7 +34,10 @@ algebra alg_motoh implements sig_motoh(alphabet = char, answer = string) {
 		if (pos * 2 != a.i + a.j + 1){
 			append(res,".5");
 		}
-		append(res,',');
+		string mot = identify_motif_motoh(a,b);
+		append(res,mot);
+		append(res,", ");
+		append(res,m);
 		return res;
 	}
 
@@ -72,12 +74,19 @@ algebra alg_motoh implements sig_motoh(alphabet = char, answer = string) {
 algebra alg_mali implements sig_motoh(alphabet = char, answer = answer_motoh) {
   answer_motoh motif(<Subsequence a, Subsequence b>, answer_motoh m) {
 	answer_motoh res;
+	res.first_track_seqs = m.first_track_seqs;
+	res.second_track_seqs = m.second_track_seqs;
+	res.score = m.score + identify_motif_mali(a,b,m);
+	if (check_for_internal_front(a,b,m)){
+		append(res.first_track_seqs,a);
+		append(res.second_track_seqs,b);
+	}
 	if (size(a) >= size(b)){
-		res.score = m.score + identify_motif_mali(a,b) +  motif_scoring(size(a));
+		res.score = res.score + motif_scoring(size(a));
 		return res;
   	}
 	else {
-		res.score = m.score + identify_motif_mali(a,b) + motif_scoring(size(b));
+		res.score = res.score + motif_scoring(size(b));
 		return res;
  	}
   }
@@ -122,11 +131,11 @@ algebra alg_prettier implements sig_motoh(alphabet = char, answer = strip) {
 		ali_append(r.second, b);
 		if (size(a) <= size(b)) {
 			append(r.first,'~',size(b)-size(a));
-			append(r.third,'#',size(b));
+			append(r.third,identify_motif_prettier(a,b),size(b));
 			}
 		else { //covers the inverse case that motif sequence a is bigger than b
 			append(r.second,'~',size(a)-size(b));
-			append(r.third,'#',size(a));
+			append(r.third,identify_motif_prettier(a,b),size(a));
 			}
 		append(r.first, m.first);
 		append(r.second, m.second);

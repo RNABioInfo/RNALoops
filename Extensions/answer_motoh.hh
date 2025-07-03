@@ -25,7 +25,7 @@ struct answer_motoh{
     answer_motoh(int init_score) : score(init_score), empty_(false) {} //Called on addition/subtraction, seems suboptimal to make new obj
                                                                       //seems subopt to me but adhering to the FoldGrammars Code style.
 
-    answer_motoh(const int init_score, seq_vector fronts_first, seq_vector fronts_second):
+    answer_motoh(int init_score, seq_vector fronts_first, seq_vector fronts_second):
     score(init_score),first_track_seqs(fronts_first),second_track_seqs(fronts_second), empty_(false){}
 
     bool operator>(const answer_motoh &other ) const {

@@ -38,9 +38,6 @@ struct MotifsFound {
     void setInternal_full(bool set_to){states[3] = set_to;}; 
 };
 
-static seq_vector fronts_first;
-static seq_vector fronts_second;
-
 using shape_t = Shape;
 
 template<typename alphabet, typename pos_type>
@@ -72,26 +69,78 @@ inline std::set<char> check_map(const Basic_Subsequence<alphabet,pos_type> &seq_
     return return_set;
 }
 
-inline int identify_motif_mali(const Basic_Subsequence<char, unsigned int> &first_track_seq, const Basic_Subsequence<char, unsigned int> &second_track_seq) {
+
+inline bool check_for_internal_front(const Basic_Subsequence<char, unsigned int> &first_track_seq, const Basic_Subsequence<char, unsigned int> &second_track_seq, const answer_motoh& bruh){
+    std::set<char> internal_f = check_map(first_track_seq,second_track_seq,motif_ali::InternalHashMap_fronts);
+    if (internal_f.size() > 0){
+        return true;
+    }
+    return false;
+}
+
+inline std::set<char> get_motif_overlap(const Basic_Subsequence<char, unsigned int> &seq1, const Basic_Subsequence<char, unsigned int> &seq2){
+    std::set<char> Motifs1 = check_maps(seq1);
+    std::set<char> Motifs2 = check_maps(seq2);
     std::set<char> res;
-    for (unsigned int index = 0; index < fronts_first.size(); index++){
-        if (first_track_seq.i - fronts_first[index].j  >= 5 && second_track_seq.i - fronts_second[index].j >= 5){
-        auto search_first = motif_ali::InternalHashMap.get_motif_set(fronts_first[index],first_track_seq);
-        auto search_second = motif_ali::InternalHashMap.get_motif_set(fronts_second[index],second_track_seq);
+    std::set_intersection(Motifs1.begin(),Motifs1.end(),Motifs2.begin(),Motifs2.end(),std::inserter(res,res.begin()));
+    return res;
+}
+
+
+
+inline void append(seq_vector &appended,Basic_Subsequence<char, unsigned int> appendee){
+    appended.push_back(appendee);
+}
+
+inline char identify_motif_prettier(const Basic_Subsequence<char, unsigned int> &first_track_seq, const Basic_Subsequence<char, unsigned int> &second_track_seq){
+    std::set<char> res = get_motif_overlap(first_track_seq,second_track_seq);
+    std::set<char>::iterator it = res.begin();
+    if (res.size() == 1){
+        return *it;
+    }
+    else{
+        return '#';
+    }
+}
+
+inline String identify_motif_motoh(const Basic_Subsequence<char, unsigned int> &first_track_seq ,const Basic_Subsequence<char, unsigned int> &second_track_seq){
+    std::set<char> res = get_motif_overlap(first_track_seq, second_track_seq);
+    String return_string;
+    return_string.append('<');
+    std::set<char>::iterator it = res.begin();
+    if (res.size() > 1){
+        for (unsigned int index = 0; index < res.size() -1 ; index++){
+            return_string.append(*it);
+            return_string.append(',');
+            std::advance(it,1);
+        }
+        return_string.append(*it);
+    }
+    else{
+        //return_string.append(*it); Return return string and uncomment this to also include 
+        String alternative;
+        return alternative;
+
+    }
+    return_string.append('>');
+    return return_string;
+}
+
+inline int identify_motif_mali(const Basic_Subsequence<char, unsigned int> &first_track_seq, const Basic_Subsequence<char, unsigned int> &second_track_seq, const answer_motoh& existing_answer) {
+    std::set<char> res;
+    for (unsigned int index = 0; index < existing_answer.first_track_seqs.size(); index++){
+        if (first_track_seq.i - existing_answer.first_track_seqs[index].j  >= 5 && second_track_seq.i - existing_answer.second_track_seqs[index].j >= 5){
+        auto search_first = motif_ali::InternalHashMap.get_motif_set(existing_answer.first_track_seqs[index],first_track_seq);
+        auto search_second = motif_ali::InternalHashMap.get_motif_set(existing_answer.first_track_seqs[index],second_track_seq);
         if (search_first != motif_ali::InternalHashMap.dupe_end() && search_second != motif_ali::InternalHashMap.dupe_end()) {
             std::set_intersection(search_first->second.begin(),search_first->second.end(),search_second->second.begin(),search_second->second.end(),std::inserter(res,res.begin()));
         }
     }
         else{;}
     }
-    std::set<char> internal_f = check_map(first_track_seq,second_track_seq,motif_ali::InternalHashMap_fronts);
-    if (internal_f.size() > 0){
-        fronts_first.push_back(first_track_seq);
-        fronts_second.push_back(second_track_seq);
-    } 
     if (res.size() > 0) {
-        //we found a complete internal loop! let's add a little score
         return 5;
+        //we found a complete internal loop! let's add a little score
     }
     return 0;
 }
@@ -153,9 +202,6 @@ inline bool motif_match(const Basic_Sequence<alphabet, pos_type> &seq1, const Ba
     }
     Basic_Subsequence<alphabet, pos_type> Seq1 {seq1, i_seq1, j_seq1};
     Basic_Subsequence<alphabet, pos_type> Seq2 {seq2, i_seq2, j_seq2};
-    std::set<char> Motifs1 = check_maps(Seq1);
-    std::set<char> Motifs2 = check_maps(Seq2);
-    std::set<char> res;
-    std::set_intersection(Motifs1.begin(),Motifs1.end(),Motifs2.begin(),Motifs2.end(),std::inserter(res,res.begin()));
+    std::set<char> res = get_motif_overlap(Seq1, Seq2);
     return res.size() > 0;
     }

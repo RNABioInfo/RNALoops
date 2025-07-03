@@ -91,7 +91,6 @@ inline void fill_hashmap(const std::string& custom_path, bool custom_replace, Mo
     std::string_view mot_view {motstring};
     empty_map.add_motifs(mot_view);
     empty_map.update_motif_hashmap();
-    empty_map.print_duplicates();
 }
 
 //Overloaded identify_motif functions, two identify_motif for Hairpins and Internal Loops respectively while identify_motif_b is for bulge loops
@@ -99,6 +98,7 @@ inline char identify_motif(const Basic_Subsequence<char, unsigned int> &input_su
     if (!init.initializedH()){
         init.setHairpin(true);
         fill_hashmap(gapc::Opts::getOpts()->custom_hairpins, gapc::Opts::getOpts() -> replaceH, motif_basic::HairpinHashMap,motif_basic::Hairpins,motif_basic::Hairpin_lengths);
+        motif_basic::HairpinHashMap.print_duplicates();
     }
     if (auto search = motif_basic::HairpinHashMap.get_motif(input_subsequence); search != motif_basic::HairpinHashMap.end()){
         return search->second;
@@ -110,6 +110,7 @@ inline char identify_motif(const Basic_Subsequence<char, unsigned int> &internal
     if (!init.initializedI()){
         init.setInternal(true);
         fill_hashmap(gapc::Opts::getOpts()->custom_internals, gapc::Opts::getOpts() -> replaceI, motif_basic::InternalHashMap,motif_basic::Internals,motif_basic::Internal_lengths);
+        motif_basic::InternalHashMap.print_duplicates();
     }
     if (auto search = motif_basic::InternalHashMap.get_motif(internal_subsequence1,internal_subsequence2); search != motif_basic::InternalHashMap.end()) {
         return search->second;
@@ -121,6 +122,7 @@ inline char identify_motif_b(const Basic_Subsequence<char, unsigned int> &bulge_
     if (!init.initializedB()){
         init.setBulge(true);
         fill_hashmap(gapc::Opts::getOpts() -> custom_bulges,gapc::Opts::getOpts() -> replaceB, motif_basic::BulgeHashMap,motif_basic::Bulges,motif_basic::Bulge_lengths);
+        motif_basic::BulgeHashMap.print_duplicates();
     }
     if (auto search = motif_basic::BulgeHashMap.get_motif(bulge_subsequence); search != motif_basic::BulgeHashMap.end()) {
         return search->second;
