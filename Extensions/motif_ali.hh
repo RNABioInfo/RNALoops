@@ -1,9 +1,12 @@
 #pragma once
 #include "MotifMap.hh"
+#include "filter.hh"
 #include "motif.hh"
 #include "answer_motoh.hh"
+#include "rna.hh"
 #include "rnaoptions.hh"
 #include "rnaoptions_defaults.hh"
+#include "sequence.hh"
 #include "string.hh"
 #include "subsequence.hh"
 #include <algorithm>
@@ -22,6 +25,10 @@ static MotifMap InternalHashMap_backs {parse_direction_opt()};
 static MotifMap InternalHashMap {parse_direction_opt()};
 static MotifMap BulgeHashMap {parse_direction_opt()};
 static bool init = false;
+static std::vector<Basic_Sequence<char, unsigned int>> front_collector_uf1{};
+static std::vector<Basic_Sequence<char, unsigned int>> front_collector_uf2{};
+static std::vector<Basic_Sequence<char, unsigned int>> front_collector_f1{};
+static std::vector<Basic_Sequence<char, unsigned int>> front_collector_f2{};
 }
 
 using seq_vector = std::vector<Basic_Subsequence<char, unsigned int>>;
@@ -86,8 +93,6 @@ inline std::set<char> get_motif_overlap(const Basic_Subsequence<char, unsigned i
     return res;
 }
 
-
-
 inline void append(seq_vector &appended,Basic_Subsequence<char, unsigned int> appendee){
     appended.push_back(appendee);
 }
@@ -119,6 +124,7 @@ inline String identify_motif_motoh(const Basic_Subsequence<char, unsigned int> &
     else{
         //return_string.append(*it); Return return string and uncomment this to also include 
         String alternative;
+        alternative.empty();
         return alternative;
 
     }
@@ -139,14 +145,14 @@ inline int identify_motif_mali(const Basic_Subsequence<char, unsigned int> &firs
         else{;}
     }
     if (res.size() > 0) {
-        return 5;
+        return 10;
         //we found a complete internal loop! let's add a little score
     }
     return 0;
 }
 
 inline int motif_scoring(const int &length_of_motif_region) {
-    return (alignment_match() * length_of_motif_region) + 3;
+    return (alignment_match() * length_of_motif_region) * (alignment_match() * length_of_motif_region);
 }
 
 inline std::pair<std::string,std::string> preprocess_internal_motifs(std::string istring){
@@ -202,6 +208,33 @@ inline bool motif_match(const Basic_Sequence<alphabet, pos_type> &seq1, const Ba
     }
     Basic_Subsequence<alphabet, pos_type> Seq1 {seq1, i_seq1, j_seq1};
     Basic_Subsequence<alphabet, pos_type> Seq2 {seq2, i_seq2, j_seq2};
-    std::set<char> res = get_motif_overlap(Seq1, Seq2);
+    std::set<char> res;
+    if (j_seq1 < seq1.size() -1 && j_seq2 < seq2.size() -1 && i_seq1 > 1 && i_seq2 > 1){ //Bei j size -1 damit theoretisch zwei basepairs noch hinpassen und bei i größer 1 damit theoretisch noch 2 basepairs davor passen
+        if (rnali_basepairing(seq1, i_seq1 - 1, j_seq1 + 1) && rnali_basepairing(seq2, i_seq2 - 1, j_seq2 + 1) && rnali_basepairing(seq1, i_seq1 - 2 , j_seq1 + 2) && rnali_basepairing(seq2, i_seq2 - 2, j_seq2 + 2)){ // Sowohl i+1/j+1 und i+2/j+2 müssen pairen? Mit Lonely Basepairs ?
+            res.merge(check_map(Seq1, Seq2 , motif_ali::HairpinHashMap));
+        }
+    }
+    std::set<char> internal_fronts = check_map(Seq1,Seq2, motif_ali::InternalHashMap_fronts);
+    if (internal_fronts.size() > 0){
+        res.merge(internal_fronts);
+        Basic_Sequence Motif1 {&Seq1.front(),Seq1.size()};
+        Basic_Sequence Motif2 {&Seq2.front(),Seq2.size()};
+        motif_ali::front_collector_uf1.push_back(Motif1);
+        motif_ali::front_collector_uf2.push_back(Motif2);
+    }
+    std::set<char> internal_backs = check_map(Seq1,Seq2, motif_ali::InternalHashMap_backs);
+    if (internal_backs.size() > 0){
+        res.merge(internal_backs);
+        Basic_Sequence Motif3 {&Seq1.front(),Seq1.size()};
+        Basic_Sequence Motif4 {&Seq2.front(),Seq2.size()};
+        for (auto seq: motif_ali::front_collector_uf1){
+            auto cpy = seq;
+            cpy.concat(Motif3, Motif3.size());
+            if (auto search = motif_ali::InternalHashMap.get_motif_set(cpy); search != motif_ali::InternalHashMap.dupe_end()){
+                motif_ali::front_collector_f1.push_back(seq);
+            }
+        }
+    }
+
     return res.size() > 0;
     }

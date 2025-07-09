@@ -26,18 +26,21 @@ signature sig_motoh(alphabet, answer) {
 algebra alg_motoh implements sig_motoh(alphabet = char, answer = string) {
 	string motif(<Subsequence a, Subsequence b>, string m) {
 		string res;
-		int pos = (a.i + a.j)/2;
-		if (pos * 2 > a.i + a.j + 1) {
-			pos = pos -1;
-		}
-		append(res,pos);
-		if (pos * 2 != a.i + a.j + 1){
-			append(res,".5");
-		}
 		string mot = identify_motif_motoh(a,b);
-		append(res,mot);
-		append(res,", ");
-		append(res,m);
+		if (!isEmpty(mot)) {
+			int pos = (a.i + a.j)/2;
+			if (pos * 2 > a.i + a.j + 1) {
+				pos = pos -1;
+			}
+			append(res,pos);
+			if (pos * 2 != a.i + a.j + 1){
+				append(res,".5");
+			}
+			append(res,mot);
+			append(res,", ");
+			append(res,m);
+		}
+
 		return res;
 	}
 
@@ -220,7 +223,7 @@ grammar gra_motoh uses sig_motoh(axiom = alignment) {
                 del( < REGION with maxsize(1), EMPTY >, xDel) |
                 ins( < EMPTY, REGION with maxsize(1)>, xIns ) |
                 match( < REGION with maxsize(1), REGION with maxsize(1) >, alignment) |
-				motif( < REGION with minsize(2) with maxsize(7), REGION with minsize(2) with maxsize(7) > with motif_match, alignment) # h ;
+				motif( < REGION with minsize(3) with maxsize(7), REGION with minsize(2) with maxsize(7) > with motif_match, alignment) # h ;
   // with minsize(3) with maxsize(7) with has_motif, if motif match returns true then I dont need other filters!
   // minsize back to 1 when I implement Internal Loops, for hairpins minsize(3) works. I should keep the filters to minimize lookups
     xDel = alignment |
