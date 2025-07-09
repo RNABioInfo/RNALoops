@@ -195,10 +195,13 @@ inline void fill_internal_hashmaps(const std::string & custom_path, bool custom_
     front_map.print_duplicates();
     back_map.print_duplicates();
 }
+inline void bruh(std::vector<Basic_Sequence<char, unsigned int>>& bruv,std::vector<Basic_Sequence<char, unsigned int>>& bruv2){
+       std::cout << "bruh\n";
+}
 
 //Filter function for RNAmotiFold alignments, makes two hashmap searches and compares the outputs. This ensures only motif matching regions are checked for motifs.
 template<typename alphabet, typename pos_type, typename T>
-inline bool motif_match(const Basic_Sequence<alphabet, pos_type> &seq1, const Basic_Sequence<alphabet, pos_type> &seq2, T i_seq1, T j_seq1, T i_seq2, T j_seq2){
+inline bool motif_match(const Basic_Sequence<alphabet,pos_type> &seq1, const Basic_Sequence<alphabet, pos_type> &seq2, T i_seq1, T j_seq1, T i_seq2, T j_seq2){
     if (!motif_ali::init) {
         fill_hashmap(gapc::Opts::getOpts()->custom_hairpins, gapc::Opts::getOpts()->replaceH, motif_ali::HairpinHashMap, motif_basic::Hairpins, motif_basic::Hairpin_lengths);
         fill_hashmap(gapc::Opts::getOpts()->custom_bulges, gapc::Opts::getOpts()->replaceB, motif_ali::BulgeHashMap, motif_basic::Bulges, motif_basic::Bulge_lengths);
@@ -206,35 +209,65 @@ inline bool motif_match(const Basic_Sequence<alphabet, pos_type> &seq1, const Ba
         fill_internal_hashmaps(gapc::Opts::getOpts()->custom_internals, gapc::Opts::getOpts()->replaceI, motif_ali::InternalHashMap_fronts, motif_ali::InternalHashMap_backs, motif_basic::Internals, motif_basic::Internal_lengths);
         motif_ali::init = true;
     }
-    Basic_Subsequence<alphabet, pos_type> Seq1 {seq1, i_seq1, j_seq1};
-    Basic_Subsequence<alphabet, pos_type> Seq2 {seq2, i_seq2, j_seq2};
+    const Basic_Subsequence<alphabet, pos_type> Seq1 {seq1, i_seq1, j_seq1};
+    const Basic_Subsequence<alphabet, pos_type> Seq2 {seq2, i_seq2, j_seq2};
+    const Basic_Sequence Motif1 {&Seq1.front(),Seq1.size()};
+    const Basic_Sequence Motif2 {&Seq2.front(),Seq2.size()};
     std::set<char> res;
+    //Hairpin Motif recognition
     if (j_seq1 < seq1.size() -1 && j_seq2 < seq2.size() -1 && i_seq1 > 1 && i_seq2 > 1){ //Bei j size -1 damit theoretisch zwei basepairs noch hinpassen und bei i größer 1 damit theoretisch noch 2 basepairs davor passen
         if (rnali_basepairing(seq1, i_seq1 - 1, j_seq1 + 1) && rnali_basepairing(seq2, i_seq2 - 1, j_seq2 + 1) && rnali_basepairing(seq1, i_seq1 - 2 , j_seq1 + 2) && rnali_basepairing(seq2, i_seq2 - 2, j_seq2 + 2)){ // Sowohl i+1/j+1 und i+2/j+2 müssen pairen? Mit Lonely Basepairs ?
             res.merge(check_map(Seq1, Seq2 , motif_ali::HairpinHashMap));
         }
     }
+    //Bulge Motif recognition (kinda useless since no Bulge Loop motifs are currently included)
+    std::set<char> bulge = check_map(Seq1,Seq2,motif_ali::BulgeHashMap);
+    if (bulge.size() > 0){
+        res.merge(bulge);
+    }
+    //Internal Motif recognition, this is a more work because first we need to see if we have a front
+    //Next step is to check if we have previously found any fronts to have to go for going into backs
     std::set<char> internal_fronts = check_map(Seq1,Seq2, motif_ali::InternalHashMap_fronts);
     if (internal_fronts.size() > 0){
         res.merge(internal_fronts);
-        Basic_Sequence Motif1 {&Seq1.front(),Seq1.size()};
-        Basic_Sequence Motif2 {&Seq2.front(),Seq2.size()};
-        motif_ali::front_collector_uf1.push_back(Motif1);
+        motif_ali::front_collector_uf1.push_back(Motif1); 
         motif_ali::front_collector_uf2.push_back(Motif2);
     }
     std::set<char> internal_backs = check_map(Seq1,Seq2, motif_ali::InternalHashMap_backs);
     if (internal_backs.size() > 0){
-        res.merge(internal_backs);
-        Basic_Sequence Motif3 {&Seq1.front(),Seq1.size()};
-        Basic_Sequence Motif4 {&Seq2.front(),Seq2.size()};
-        for (auto seq: motif_ali::front_collector_uf1){
-            auto cpy = seq;
-            cpy.concat(Motif3, Motif3.size());
-            if (auto search = motif_ali::InternalHashMap.get_motif_set(cpy); search != motif_ali::InternalHashMap.dupe_end()){
-                motif_ali::front_collector_f1.push_back(seq);
-            }
+        if (find_full_internals(motif_ali::front_collector_uf1, Motif1, motif_ali::front_collector_uf2, Motif2)){
+            res.merge(internal_backs);
         }
     }
-
+    bruh(motif_ali::front_collector_f1,motif_ali::front_collector_f2);
     return res.size() > 0;
+};
+
+inline bool find_full_internals(std::vector<Basic_Sequence<char,unsigned int>> collection_set1, Basic_Sequence<char, unsigned int> BackSeq1,std::vector<Basic_Sequence<char,unsigned int>> collection_set2, Basic_Sequence<char, unsigned int> BackSeq2){
+    bool found {false};
+    std::vector<Basic_Sequence<char, unsigned int>>::iterator it1 = collection_set1.begin();
+    std::vector<Basic_Sequence<char, unsigned int>>::iterator it2 = collection_set2.begin();
+    for (unsigned int index = 0; index < collection_set1.size(); index++){
+        Basic_Sequence<char, unsigned int> Motif1 = *it1;
+        Basic_Sequence<char, unsigned int> Motif2 = *it2;
+        Motif1.concat(BackSeq1.seq,BackSeq1.size());
+        Motif2.concat(BackSeq2.seq,BackSeq2.size());
+        std::set<char> Found_motifs;
+        if (auto search = motif_ali::InternalHashMap.get_motif_set(Motif1); search != motif_ali::InternalHashMap.dupe_end()){
+            if (auto search2 = motif_ali::InternalHashMap.get_motif_set(Motif2); search2 != motif_ali::InternalHashMap.dupe_end()){
+                std::set_intersection(search->second.begin(),search->second.end(),search2->second.begin(),search2->second.end(),std::inserter(Found_motifs,Found_motifs.begin()));
+            }
+        }
+        if(Found_motifs.size() > 0 ){
+            motif_ali::front_collector_f1.push_back(*it1);
+            motif_ali::front_collector_f2.push_back(*it2);
+            found = true;
+        }
+        std::advance(it1,1);
+        std::advance(it2,1);
     }
+    return found;
+}
+    
+
+
