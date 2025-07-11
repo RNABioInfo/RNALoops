@@ -222,8 +222,15 @@ grammar gra_motoh uses sig_motoh(axiom = alignment) {
     alignment = nil( < EMPTY, EMPTY> )   |
                 del( < REGION with maxsize(1), EMPTY >, xDel) |
                 ins( < EMPTY, REGION with maxsize(1)>, xIns ) |
-                match( < REGION with maxsize(1), REGION with maxsize(1) >, alignment) |
-				motif( < REGION with minsize(3) with maxsize(7), REGION with minsize(2) with maxsize(7) > with motif_match, alignment) # h ;
+                match( < REGION with maxsize(1), REGION with maxsize(1) >, mot) # h ;
+	//Separated motif grammar function, includes a way back into alignment to allow for match(match()) productions.
+	//Production match(motif(match())) is the only way to get a motif, forcing a match before and after.
+	//motif_match filter function handles additional motif rules like base pairing around motifs.
+	mot = alignment | motif( < REGION with minsize(3) with maxsize(7), REGION with minsize(3) with maxsize(7) > with motif_match, force_match) #h  ;
+	force_match = match(<REGION with maxsize(1), REGION with maxsize(1)>, alignment) # h;
+
+
+
   // with minsize(3) with maxsize(7) with has_motif, if motif match returns true then I dont need other filters!
   // minsize back to 1 when I implement Internal Loops, for hairpins minsize(3) works. I should keep the filters to minimize lookups
     xDel = alignment |
