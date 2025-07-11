@@ -55,6 +55,16 @@ class MotifMap{
     };
 
     template<typename alphabet, typename pos_type>
+    const DupeHashMap::iterator get_motif_set(const Basic_Sequence<alphabet, pos_type> &internal_sequence1,pos_type seq1_i, pos_type seq1_j,const Basic_Sequence<alphabet, pos_type> &Internal_sequence2,pos_type seq2_i, pos_type seq2_j){
+        Basic_Subsequence<alphabet, pos_type> internal_subsequence1 {internal_sequence1, seq1_i,seq1_j};
+        Basic_Subsequence<alphabet, pos_type> internal_subsequence2 {Internal_sequence2,seq2_i,seq2_j};
+        Basic_Sequence Motif1 {&internal_subsequence1.front(), internal_subsequence1.size()};
+        Basic_Sequence Motif2 {&internal_subsequence2.front(), internal_subsequence2.size()};
+        Motif1.concat(Motif2.seq,Motif2.size());
+        return Dupes.find(Motif1);
+    };
+
+    template<typename alphabet, typename pos_type>
     const MotifHashMap::iterator get_motif(const Basic_Subsequence<alphabet, pos_type> &input_subsequence){
         Basic_Sequence Motif {&input_subsequence.front(),input_subsequence.size()};
         return Motifs.find(Motif);
