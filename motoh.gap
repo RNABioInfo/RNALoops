@@ -80,7 +80,7 @@ algebra alg_mali implements sig_motoh(alphabet = char, answer = answer_motoh) {
 	res.first_track_seqs = m.first_track_seqs;
 	res.second_track_seqs = m.second_track_seqs;
 	res.score = m.score + identify_motif_mali(a,b,m);
-	if (check_for_internal_front(a,b,m)){
+	if (check_for_internal_back(a,b,m)){
 		append(res.first_track_seqs,a);
 		append(res.second_track_seqs,b);
 	}
@@ -231,8 +231,6 @@ grammar gra_motoh uses sig_motoh(axiom = alignment) {
 
 
 
-  // with minsize(3) with maxsize(7) with has_motif, if motif match returns true then I dont need other filters!
-  // minsize back to 1 when I implement Internal Loops, for hairpins minsize(3) works. I should keep the filters to minimize lookups
     xDel = alignment |
            delx( <REGION with maxsize(1), EMPTY>, xDel) # h ;
   
