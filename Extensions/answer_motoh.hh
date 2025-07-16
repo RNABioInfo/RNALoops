@@ -19,14 +19,16 @@ struct answer_motoh{
     int score;
     seq_vector first_track_seqs;
     seq_vector second_track_seqs;
+    int openings;
+    int closings;
     bool empty_;
 
-    answer_motoh() : score(0), empty_(false){}
-    answer_motoh(int init_score) : score(init_score), empty_(false) {} //Called on addition/subtraction, seems suboptimal to make new obj
+    answer_motoh() : score(0), openings(0),closings(0), empty_(false){}
+    answer_motoh(int init_score) : score(init_score), openings(0),closings(0), empty_(false) {} //Called on addition/subtraction, seems suboptimal to make new obj
                                                                       //seems subopt to me but adhering to the FoldGrammars Code style.
 
-    answer_motoh(int init_score, seq_vector fronts_first, seq_vector fronts_second):
-    score(init_score),first_track_seqs(fronts_first),second_track_seqs(fronts_second), empty_(false){}
+    answer_motoh(int init_score, seq_vector fronts_first, seq_vector fronts_second, int opens, int closes):
+    score(init_score),first_track_seqs(fronts_first),second_track_seqs(fronts_second), openings(opens),closings(closes), empty_(false){}
 
     bool operator>(const answer_motoh &other ) const {
         return score > other.score;
@@ -61,16 +63,12 @@ struct answer_motoh{
 
     answer_motoh operator+(int addition) const {
         assert(!empty_);
-        return {score + addition, this->first_track_seqs, this->second_track_seqs};
+        return {score + addition, this->first_track_seqs, this->second_track_seqs, this->openings, this->closings};
     }
 
     answer_motoh operator-(int subtract) const {
         assert(!empty_);
-        return {score - subtract,this->first_track_seqs, this->second_track_seqs};
-    }
-
-    void extra_score(){
-        //this is a dummy, fill out later
+        return {score - subtract,this->first_track_seqs, this->second_track_seqs,this->openings, this->closings};
     }
 };
 

@@ -19,7 +19,8 @@ signature sig_motoh(alphabet, answer) {
   answer ins(< void, Subsequence >, answer);
   answer delx( < Subsequence, void >, answer);
   answer insx( < void, Subsequence >, answer);
-  answer nil( <void, void> );
+  answer open( < void, void >,answer);
+  answer nil(< void, void >);
   choice [answer] h([answer]);
 }
 
@@ -64,10 +65,15 @@ algebra alg_motoh implements sig_motoh(alphabet = char, answer = string) {
      return m;
  }
 
+ 	string open(<void,void>, string m){
+    	return m;
+ }
+
  	string nil(<void,void>){
 		string r;
     	return r;
  }
+
 
  choice [string] h([string] l) {
     return unique(l);
@@ -76,13 +82,14 @@ algebra alg_motoh implements sig_motoh(alphabet = char, answer = string) {
 
 algebra alg_mali implements sig_motoh(alphabet = char, answer = answer_motoh) {
   answer_motoh motif(<Subsequence a, Subsequence b>, answer_motoh m) {
-	answer_motoh res;
-	res.first_track_seqs = m.first_track_seqs;
-	res.second_track_seqs = m.second_track_seqs;
-	res.score = m.score + identify_motif_mali(a,b,m);
-	if (check_for_internal_back(a,b,m)){
+	answer_motoh res = m;
+	if (identify_internal_back(a,b,m)){
+		res.closings = res.closings + 1;
 		append(res.first_track_seqs,a);
 		append(res.second_track_seqs,b);
+	}
+	if (identify_internal_front(a,b,m)){
+		res.openings = res.openings + 1;
 	}
 	if (size(a) >= size(b)){
 		res.score = res.score + motif_scoring(size(a));
@@ -119,9 +126,15 @@ algebra alg_mali implements sig_motoh(alphabet = char, answer = answer_motoh) {
      return m - alignment_gap_extension();
  }
 
- answer_motoh nil(<void,void>){
-    return 0;
+ answer_motoh open(<void,void>, answer_motoh m){
+    return m;
  }
+
+ answer_motoh nil(<void,void>){
+	answer_motoh res;
+    return res;
+ }
+
  choice [answer_motoh] h([answer_motoh] l) {
     return list(maximum(l));
 	}
@@ -209,6 +222,11 @@ algebra alg_prettier implements sig_motoh(alphabet = char, answer = strip) {
 		return r;
 	}
 
+	strip open(<void, void>, strip m) {
+		return m;
+	}
+
+
 	choice [strip] h([strip] l) {
 		return l;
 	}
@@ -217,7 +235,9 @@ algebra alg_prettier implements sig_motoh(alphabet = char, answer = strip) {
 algebra alg_count auto count;
 algebra alg_enum auto enum;
 
-grammar gra_motoh uses sig_motoh(axiom = alignment) {
+grammar gra_motoh uses sig_motoh(axiom = opening) {
+
+	opening = open( <EMPTY, EMPTY> , alignment) # h;
 
     alignment = nil( < EMPTY, EMPTY> )   |
                 del( < REGION with maxsize(1), EMPTY >, xDel) |
@@ -230,7 +250,6 @@ grammar gra_motoh uses sig_motoh(axiom = alignment) {
 	force_match = match(<REGION with maxsize(1), REGION with maxsize(1)>, alignment) # h;
 
 
-
     xDel = alignment |
            delx( <REGION with maxsize(1), EMPTY>, xDel) # h ;
   
@@ -241,4 +260,4 @@ grammar gra_motoh uses sig_motoh(axiom = alignment) {
 
 instance test = gra_motoh(alg_enum);
 instance motoh = gra_motoh(alg_mali*alg_prettier);
-instance motoh2 = gra_motoh((alg_motoh * alg_mali) * alg_prettier);
+instance motoh2 = gra_motoh(((alg_motoh * alg_mali) suchthat equilibrium) * alg_prettier);

@@ -72,13 +72,13 @@ inline std::set<char> check_map(const Basic_Subsequence<alphabet,pos_type> &seq_
     return return_set;
 }
 
-
-inline bool check_for_internal_back(const Basic_Subsequence<char, unsigned int> &first_track_seq, const Basic_Subsequence<char, unsigned int> &second_track_seq, const answer_motoh& bruh){
+inline bool identify_internal_back(const Basic_Subsequence<char, unsigned int> &first_track_seq, const Basic_Subsequence<char, unsigned int> &second_track_seq, const answer_motoh& bruh){
     std::set<char> internal_f = check_map(first_track_seq,second_track_seq,motif_ali::InternalHashMap_backs);
-    if (internal_f.size() > 0){
-        return true;
-    }
-    return false;
+    return internal_f.size() > 0;
+}
+inline bool identify_internal_front(const Basic_Subsequence<char, unsigned int> &first_track_seq, const Basic_Subsequence<char, unsigned int> &second_track_seq, const answer_motoh& bruh){
+    std::set<char> internal_f = check_map(first_track_seq,second_track_seq,motif_ali::InternalHashMap_fronts);
+    return internal_f.size() > 0;
 }
 
 inline std::set<char> get_motif_overlap(const Basic_Subsequence<char, unsigned int> &seq1, const Basic_Subsequence<char, unsigned int> &seq2){
@@ -128,6 +128,10 @@ inline String identify_motif_motoh(const Basic_Subsequence<char, unsigned int> &
     return return_string;
 }
 
+inline void bruh(int i){
+    std::cout << "bruh\n";
+}
+
 inline int identify_motif_mali(const Basic_Subsequence<char, unsigned int> &first_track_seq, const Basic_Subsequence<char, unsigned int> &second_track_seq, const answer_motoh& existing_answer) {
     std::set<char> res;
     for (unsigned int index = 0; index < existing_answer.first_track_seqs.size(); index++){
@@ -137,15 +141,11 @@ inline int identify_motif_mali(const Basic_Subsequence<char, unsigned int> &firs
                 std::set_intersection(search_first->second.begin(),search_first->second.end(),search_second->second.begin(),search_second->second.end(),std::inserter(res,res.begin()));
         }
     }
-    if (res.size() > 0) {
-        return 100000;
-        //we found a complete internal loop! let's add a little score
-    }
-    return 0;
+    return res.size() > 0;
 }
 
 inline int motif_scoring(const int &length_of_motif_region) {
-    return (alignment_match() * length_of_motif_region) * (alignment_match() * length_of_motif_region);
+    return (alignment_match() * length_of_motif_region);
 }
 
 inline std::pair<std::string,std::string> preprocess_internal_motifs(std::string istring){
@@ -189,6 +189,24 @@ inline void fill_internal_hashmaps(const std::string & custom_path, bool custom_
     back_map.print_duplicates();
 }
 
+template<typename T>
+struct equilibrium {
+    int val;
+    equilibrium(): val(0) {}
+
+    void update(const T &src) {;}
+
+    bool ok(const T &x) const {
+        return get_equilibrium(x);
+    }
+};
+
+inline bool get_equilibrium(std::pair<String,answer_motoh> x){
+    return x.second.openings <= x.second.closings;
+}
+
+
+
 //Filter function for RNAmotiFold alignments, makes two hashmap searches and compares the outputs. This ensures only motif matching regions are checked for motifs.
 template<typename alphabet, typename pos_type, typename T>
 inline bool motif_match(const Basic_Sequence<alphabet,pos_type> &seq1, const Basic_Sequence<alphabet, pos_type> &seq2, T i_seq1, T j_seq1, T i_seq2, T j_seq2){
@@ -218,7 +236,7 @@ inline bool motif_match(const Basic_Sequence<alphabet,pos_type> &seq1, const Bas
         if (i_seq1 > 8 && i_seq2 > 8){
             std::set<char> Internal_backs = check_map(Subseq1,Subseq2, motif_ali::InternalHashMap_backs);
              if (Internal_backs.size() > 0){
-                //Record the found backs for later base pair checking with the internal loop fronts (no need to include the basepairs we just collect location)
+                //Record the found backs for later checking with the internal loop fronts (no need to include the basepairs we just collect location)
                 Internal_location seq_pair {{i_seq1, j_seq1} ,{i_seq2, j_seq2}};
                 motif_ali::back_collector.push_back(seq_pair);
                 res.merge(Internal_backs);
