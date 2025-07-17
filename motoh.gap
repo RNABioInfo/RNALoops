@@ -237,7 +237,7 @@ algebra alg_enum auto enum;
 
 grammar gra_motoh uses sig_motoh(axiom = opening) {
 
-	opening = open( <EMPTY, EMPTY> , alignment) # h;
+	opening = open( <EMPTY, EMPTY> , alignment) suchthat samesame # h;
 
     alignment = nil( < EMPTY, EMPTY> )   |
                 del( < REGION with maxsize(1), EMPTY >, xDel) |

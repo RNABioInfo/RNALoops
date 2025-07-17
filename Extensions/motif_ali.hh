@@ -2,6 +2,7 @@
 #include "MotifMap.hh"
 #include "filter.hh"
 #include "motif.hh"
+#include "backtrack.hh"
 #include "answer_motoh.hh"
 #include "rnaoptions.hh"
 #include "rnaoptions_defaults.hh"
@@ -202,9 +203,17 @@ struct equilibrium {
 };
 
 inline bool get_equilibrium(std::pair<String,answer_motoh> x){
-    return x.second.openings <= x.second.closings;
+    return x.second.openings == x.second.closings;
 }
 
+template <typename T>
+inline bool samesame(std::pair<std::pair<String, answer_motoh> , intrusive_ptr<Backtrace<T, unsigned int> > > bruh){
+    return bruh.first.second.openings == bruh.first.second.closings;
+}
+
+inline bool samesame(std::pair<String, answer_motoh> bruh){
+    return bruh.second.openings == bruh.second.closings;
+}
 
 
 //Filter function for RNAmotiFold alignments, makes two hashmap searches and compares the outputs. This ensures only motif matching regions are checked for motifs.
