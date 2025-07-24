@@ -838,22 +838,21 @@ struct answer_macrostate_pfunc {
   }
 };
 
-//These all return True for now ? This should be changed to calculate the energy value of the substructure based on it's partition function value!
-//It should be possible to somehow retrieve the mfe values from the pfunc values without having to calculate them, how did we get the pfc value in the first place? 
+//Reworked to work as planned, if the energy contribution is exactly 0 we have a partition function value of 1, if the energy contribution is negative we have a partition function value larger than 1, anything positive is a value below 1.
 inline bool negative_energy(std::pair<rope::Ref<rope::Ref_Count>, answer_macrostate_pfunc>& pfunc){
-  return true;
+  return sum_elems(pfunc.second.pf) > 1;
 }
 
 inline bool negative_energy(std::pair<Fiber<long unsigned int, unsigned char>, answer_macrostate_pfunc>& pfunc){
-  return true;
+  return sum_elems(pfunc.second.pf) > 1;
 }
 
 inline bool negative_energy(std::pair<std::pair<rope::Ref<rope::Ref_Count>, answer_macrostate_pfunc>, boost::intrusive_ptr<Backtrace<String, unsigned int> > >& pfunc){
-  return true;
+  return sum_elems(pfunc.first.second.pf) > 1;
 }
 
 inline bool negative_energy(std::pair<std::pair<Fiber<long unsigned int, unsigned char>, answer_macrostate_pfunc>, boost::intrusive_ptr<Backtrace<String, unsigned int> > >& pfunc){
-  return true;
+  return sum_elems(pfunc.first.second.pf) > 1;
 }
 
 inline std::ostream &operator<<(std::ostream &s,

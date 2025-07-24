@@ -50,9 +50,7 @@ class MotifSequence:
         """load motifs.json file for curated motif collection"""
         json_path = Path(__file__).resolve().parent.joinpath("motifs.json")
         with open(json_path) as json_file:
-            motif_list: list[MotifSequence] = json.load(
-                json_file, object_hook=MotifSequence.from_dict
-            )
+            motif_list: list[MotifSequence] = json.load(json_file, object_hook=MotifSequence.from_dict)
         return motif_list
 
     def check_instance(self, annotation_string: str):
@@ -61,12 +59,7 @@ class MotifSequence:
             return False
         searchd = re.search(pattern=self.motif_name.lower(), string=annotation_string.lower())
         if searchd is not None:
-            if any(
-                [
-                    re.search(pattern=x.lower(), string=annotation_string.lower())
-                    for x in ["related", "variation"]
-                ]
-            ):
+            if any([re.search(pattern=x.lower(), string=annotation_string.lower()) for x in ["related"]]):
                 return False
             else:
                 return True
@@ -84,15 +77,9 @@ class MotifSequence:
     def instances(self, motif_instance: str):
         try:
             if hasattr(self, "_instances"):
-                self._instances[motif_instance] = MotifSequence.get_rna3d_api_sequence(
-                    motif_instance, self.loop_type
-                )
+                self._instances[motif_instance] = MotifSequence.get_rna3d_api_sequence(motif_instance, self.loop_type)
             else:
-                self._instances = {
-                    motif_instance: MotifSequence.get_rna3d_api_sequence(
-                        motif_instance, self.loop_type
-                    )
-                }
+                self._instances = {motif_instance: MotifSequence.get_rna3d_api_sequence(motif_instance, self.loop_type)}
         except ValueError as e:
             logger.error(f"Error processing sequence {motif_instance}")
             logger.error(e)
@@ -122,21 +109,15 @@ class MotifSequence:
                 f"Error retreiving sequence for internal motif instance {instance_string}, sequence break was less than 5."
             )
         else:
-            raise ValueError(
-                f"Error retreiving sequence for haripin motif instance {instance_string}"
-            )
+            raise ValueError(f"Error retreiving sequence for haripin motif instance {instance_string}")
 
     @staticmethod
-    def _extract_sequence_from_nucleotides(
-        nucleotide_list: list[str], loop_type: str
-    ) -> Optional[str]:
+    def _extract_sequence_from_nucleotides(nucleotide_list: list[str], loop_type: str) -> Optional[str]:
         """Subfunction for getting API sequences, extracts a sequence from a list of nucleotides"""
         match loop_type:
             case "hairpin":
                 if len(nucleotide_list) - 2 >= 3:
-                    return "".join(
-                        MotifSequence.get_nucleotide_element(x, 3) for x in nucleotide_list[1:-1]
-                    )
+                    return "".join(MotifSequence.get_nucleotide_element(x, 3) for x in nucleotide_list[1:-1])
                 return None
             case "internal":
                 sequence_break: Optional[int] = MotifSequence.get_break(nucleotide_list)
@@ -217,24 +198,16 @@ class rna3d_motif:
     def load_rna3d_atlas(version: str = "current") -> list["rna3d_motif"]:
         """Retuns a list of all the current RNA 3D Motifs from the RNA 3D Motif Atlas as rna3d_motif objects"""
         current_hl_json = json.loads(
-            api_call(
-                f"http://rna.bgsu.edu/rna3dhub/motifs/release/hl/{version}/json"
-            ).content.decode()
+            api_call(f"http://rna.bgsu.edu/rna3dhub/motifs/release/hl/{version}/json").content.decode()
         )
         hairpin_objs: list[rna3d_motif] = [
-            rna3d_motif.from_dict(hl_motif)
-            for hl_motif in current_hl_json
-            if "".join(hl_motif["annotations"].values())
+            rna3d_motif.from_dict(hl_motif) for hl_motif in current_hl_json if "".join(hl_motif["annotations"].values())
         ]
         current_il_json = json.loads(
-            api_call(
-                f"http://rna.bgsu.edu/rna3dhub/motifs/release/il/{version}/json"
-            ).content.decode()
+            api_call(f"http://rna.bgsu.edu/rna3dhub/motifs/release/il/{version}/json").content.decode()
         )
         internal_objs: list[rna3d_motif] = [
-            rna3d_motif.from_dict(il_motif)
-            for il_motif in current_il_json
-            if "".join(il_motif["annotations"].values())
+            rna3d_motif.from_dict(il_motif) for il_motif in current_il_json if "".join(il_motif["annotations"].values())
         ]
         return [*hairpin_objs, *internal_objs]
 
@@ -245,12 +218,8 @@ def assign_instances2MotifSequences(
 ):
     """takes a list of MotifSequence objects and a list of rna3d_motif objects, iterates through the rna3d_motifs and assigns instances to corresponding MotifSequence objects"""
     # Split hairpins and internals to reduce the amount of necessary regex searches, not necessary but a decent enough time save for it to be worth a couple extra lines
-    hairpins: list[MotifSequence] = [
-        motif for motif in motif_sequences if motif.loop_type == "hairpin"
-    ]
-    internals: list[MotifSequence] = [
-        motif for motif in motif_sequences if motif.loop_type == "internal"
-    ]
+    hairpins: list[MotifSequence] = [motif for motif in motif_sequences if motif.loop_type == "hairpin"]
+    internals: list[MotifSequence] = [motif for motif in motif_sequences if motif.loop_type == "internal"]
     for motif in rna3d_mot_objs:
         if motif.chainbreak == 0:  # test case that is true for hairpin motifs
             regex_testing(motif, hairpins)
@@ -276,9 +245,7 @@ def api_call(call: str, attempts: int = 6) -> requests.Response:
             logger.debug(f"API-request {call} successful")
             return response
         else:
-            logger.error(
-                f"Could not retrieve data in {i} attempts. Request denied because: {response.reason}"
-            )
+            logger.error(f"Could not retrieve data in {i} attempts. Request denied because: {response.reason}")
     else:
         raise ConnectionError(f"Unable to retrieve RNA 3D Motif Atlas data from call: {call}")
 
@@ -313,9 +280,7 @@ def write_csv(loop_type_sequences: list[str], loop_type: str, version: str) -> N
         exist_ok=True,
     )
     with open(
-        file=Path(__file__)
-        .resolve()
-        .parent.joinpath("versions", f"{vers}", f"rna3d_{loop_type}.csv"),
+        file=Path(__file__).resolve().parent.joinpath("versions", f"{vers}", f"rna3d_{loop_type}.csv"),
         mode="w+",
     ) as file:
         for MotSeq in setted:
@@ -328,9 +293,7 @@ def get_current_motif_version(attempts: int = 5) -> str:
     while i < attempts:
         response = requests.get("http://rna.bgsu.edu/rna3dhub/motifs/release/hl/current/json")
         if response.status_code == 200:
-            version = (
-                response.headers["Content-disposition"].split("=")[1].split("_")[1][:-5].strip()
-            )
+            version = response.headers["Content-disposition"].split("=")[1].split("_")[1][:-5].strip()
             logger.debug(f"Current RNA 3D Motif Atlas version is: {version}")
             return version
         else:
@@ -392,9 +355,7 @@ def update_necessary(requested_version: str) -> bool:
         installed: str = currently_installed()
     except LookupError as e:
         logger.info(e)
-        print(
-            "Unable to retrieve currently installed motif version, assuming a update is necessary."
-        )
+        print("Unable to retrieve currently installed motif version, assuming a update is necessary.")
         return True
     if requested_version == installed:
         return False
@@ -404,9 +365,7 @@ def update_necessary(requested_version: str) -> bool:
 
 def currently_installed() -> str:
     try:
-        with open(
-            Path(__file__).resolve().parents[4].joinpath("Extensions", "mot_header.hh"), "r"
-        ) as file:
+        with open(Path(__file__).resolve().parents[4].joinpath("Extensions", "mot_header.hh"), "r") as file:
             header = file.readline()
     except FileNotFoundError:
         raise LookupError("Unable to retrieve currently installed motif version")
@@ -463,9 +422,7 @@ def check_backups(version: str) -> bool:
             logger.info("Found requested version in backups, overwriting hexdump...")
             update_hexdumps(version=version)
             return True
-    logger.info(
-        "Could not find a backup with that version, attempting to fetch motifs from RNA 3D Motif Atlas..."
-    )
+    logger.info("Could not find a backup with that version, attempting to fetch motifs from RNA 3D Motif Atlas...")
     return False
 
 
@@ -492,14 +449,10 @@ def main(version_to_update_to: str) -> bool:
         logger.info("Retrieved motif json")
         rna3d_motif_jsons: list[rna3d_motif] = rna3d_motif.load_rna3d_atlas(version_to_update_to)
         logger.info(f"Retrieved RNA 3D Motif Atlas version {version_to_update_to}")
-        assign_instances2MotifSequences(
-            motif_sequences=motif_list, rna3d_mot_objs=rna3d_motif_jsons
-        )
+        assign_instances2MotifSequences(motif_sequences=motif_list, rna3d_mot_objs=rna3d_motif_jsons)
         (hairpins, internals, bulges) = sort_motif_sequences(list_of_MotifSequence_objs=motif_list)
         write_csv(loop_type_sequences=hairpins, loop_type="hairpins", version=version_to_update_to)
-        write_csv(
-            loop_type_sequences=internals, loop_type="internals", version=version_to_update_to
-        )
+        write_csv(loop_type_sequences=internals, loop_type="internals", version=version_to_update_to)
         write_csv(loop_type_sequences=bulges, loop_type="bulges", version=version_to_update_to)
         update_hexdumps(version=version_to_update_to)
         return True

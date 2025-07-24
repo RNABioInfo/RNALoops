@@ -4,6 +4,12 @@
 
 // the "with unpaired" filters are only interesting for RNAeval like instances; for singlefold or alifold they always return true. In evalfold the are false if the given position pairs with some other, thus only '.' returns true
 
+//This version of the grammar was changed further by Marius Sebeke & Björn Voss by including an energy filter on dangle functions, disallowing any substructures with positive energy contribtuions. This gives a significant speedup
+
+//in terms of computation time by pruning the search space, this may affect prediction outcomes with RNAmotiFold as some substructures may no longer form and thus motifs contained in them won#t be found. A full analysis of the 
+
+//filter impact is to come with our soon(TM) paper.
+
 grammar gra_macrostate uses sig_foldrna(axiom = struct) {
   struct = left_dangle | trafo(noleft_dangle) | left_unpaired # h;
 
