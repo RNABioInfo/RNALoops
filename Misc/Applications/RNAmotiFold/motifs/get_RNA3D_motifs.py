@@ -59,7 +59,7 @@ class MotifSequence:
             return False
         searchd = re.search(pattern=self.motif_name.lower(), string=annotation_string.lower())
         if searchd is not None:
-            if any([re.search(pattern=x.lower(), string=annotation_string.lower()) for x in ["related"]]):
+            if any([re.search(pattern=x.lower(), string=annotation_string.lower()) for x in ["related","mini"]]):
                 return False
             else:
                 return True

@@ -743,13 +743,22 @@ struct answer_macrostate_mfe {
     }
 };
 
-
+//I should clean up the following functions and template them to reduce clutter. FIXME
 //Normal function for macrostate grammar
 inline bool negative_energy(std::pair<rope::Ref<rope::Ref_Count>, answer_macrostate_mfe>& mfe){
   return mfe.second < 0;
 }
 
 inline bool negative_energy(std::pair<Fiber<long unsigned int, unsigned char>, answer_macrostate_mfe>& mfe){
+  return mfe.second < 0;
+}
+
+//For microstate grammar
+inline bool negative_energy(std::pair<rope::Ref<rope::Ref_Count>, int>& mfe){
+  return mfe.second < 0;
+}
+
+inline bool negative_energy(std::pair<Fiber<long unsigned int, unsigned char>, int>& mfe){
   return mfe.second < 0;
 }
 
@@ -762,6 +771,15 @@ inline bool negative_energy(std::pair<std::pair<Fiber<long unsigned int, unsigne
   return mfe.first.second < 0;
 }
 
+//For subopt functions with microstate grammar
+inline bool negative_energy(std::pair<std::pair<rope::Ref<rope::Ref_Count>, int>, String>& mfe){
+  return mfe.first.second < 0;
+}
+
+inline bool negative_energy(std::pair<std::pair<Fiber<long unsigned int, unsigned char>, int>, String>& mfe){
+  return mfe.first.second < 0;
+}
+
 //for backtracing
 inline bool negative_energy(std::pair<std::pair<rope::Ref<rope::Ref_Count>, answer_macrostate_mfe>, boost::intrusive_ptr<Backtrace<String, unsigned int> > >& mfe){
   return mfe.first.second < 0;
@@ -771,6 +789,14 @@ inline bool negative_energy(std::pair<std::pair<Fiber<long unsigned int, unsigne
   return mfe.first.second < 0;
 }
 
+//for backtracing with microstate grammar
+inline bool negative_energy(std::pair<std::pair<rope::Ref<rope::Ref_Count>, int>, boost::intrusive_ptr<Backtrace<String, unsigned int> > >& mfe){
+  return mfe.first.second < 0;
+}
+
+inline bool negative_energy(std::pair<std::pair<Fiber<long unsigned int, unsigned char>, int>, boost::intrusive_ptr<Backtrace<String, unsigned int> > >& mfe){
+  return mfe.first.second < 0;
+}
 
 inline int getIntScore(const answer_macrostate_mfe &x) {
     return x.energy;
