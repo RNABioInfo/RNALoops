@@ -21,7 +21,8 @@ include "Signatures/sig_foldrna.gap"
 
 
 //Algebras
-include "Algebras/MFE/alg_mfe_macrostate.gap" //Also contains alg_mfe_subopt
+include "Algebras/MFE/alg_mfe.gap"
+//include "Algebras/MFE/alg_mfe_macrostate.gap" //Also contains alg_mfe_subopt
 include "Algebras/DotBracket/alg_dotBracket.gap" //Pretty without the motifs in the dotBracket string, Pretty Version is in algebra alg_motBracket!
 include "Algebras/Pfunc/alg_pfunc_macrostate.gap"
 include "Algebras/Motif/alg_motif.gap" //Algebra alg_motif working with grammar macrostate
@@ -30,9 +31,15 @@ include "Algebras/Motif/alg_shapes_mot.gap" // "Motified" shapes algebra includi
 include "Algebras/Motif/alg_hishapes_mot.gap" // "Motified" hishapes algebras
 
 //Grammars
-include "Grammars/gra_macrostate.gap"
+include "Grammars/gra_macrostate_npm.gap"
+include "Grammars/gra_microstate_npm.gap"
 
 //Instances
+
+//microstate-tests
+instance RNAmotiFold_microstate = gra_microstate_npm((alg_motif * alg_mfe) * alg_motBracket);
+instance RNAmoSh_microstate = gra_microstate_npm((alg_shapeX_mot * alg_mfe) * alg_motBracket);
+instance RNAmotiCes_microstate = gra_microstate_npm((alg_hishapes_mot * alg_mfe) * alg_motBracket);
 
 //RNAmotiFold
 instance RNAmotiFold = gra_macrostate ((alg_motif * alg_mfe) * alg_motBracket);

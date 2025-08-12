@@ -74,8 +74,8 @@ inline std::set<char> check_map(const Basic_Subsequence<alphabet,pos_type> &seq_
 }
 
 inline bool identify_internal_back(const Basic_Subsequence<char, unsigned int> &first_track_seq, const Basic_Subsequence<char, unsigned int> &second_track_seq, const answer_motoh& bruh){
-    std::set<char> internal_f = check_map(first_track_seq,second_track_seq,motif_ali::InternalHashMap_backs);
-    return internal_f.size() > 0;
+    std::set<char> internal_b = check_map(first_track_seq,second_track_seq,motif_ali::InternalHashMap_backs);
+    return internal_b.size() > 0;
 }
 inline bool identify_internal_front(const Basic_Subsequence<char, unsigned int> &first_track_seq, const Basic_Subsequence<char, unsigned int> &second_track_seq, const answer_motoh& bruh){
     std::set<char> internal_f = check_map(first_track_seq,second_track_seq,motif_ali::InternalHashMap_fronts);
@@ -129,15 +129,11 @@ inline String identify_motif_motoh(const Basic_Subsequence<char, unsigned int> &
     return return_string;
 }
 
-inline void bruh(int i){
-    std::cout << "bruh\n";
-}
-
 inline int identify_motif_mali(const Basic_Subsequence<char, unsigned int> &first_track_seq, const Basic_Subsequence<char, unsigned int> &second_track_seq, const answer_motoh& existing_answer) {
     std::set<char> res;
     for (unsigned int index = 0; index < existing_answer.first_track_seqs.size(); index++){
             auto search_first = motif_ali::InternalHashMap.get_motif_set(first_track_seq,existing_answer.first_track_seqs[index]); //Combine the new found front with the previously found back for Seq1
-            auto search_second = motif_ali::InternalHashMap.get_motif_set(second_track_seq,existing_answer.first_track_seqs[index]); //Combine the new foundfront with the previously found back for Seq1
+            auto search_second = motif_ali::InternalHashMap.get_motif_set(second_track_seq,existing_answer.second_track_seqs[index]); //Combine the new found front with the previously found back for Seq2
             if (search_first != motif_ali::InternalHashMap.dupe_end() && search_second != motif_ali::InternalHashMap.dupe_end()) {
                 std::set_intersection(search_first->second.begin(),search_first->second.end(),search_second->second.begin(),search_second->second.end(),std::inserter(res,res.begin()));
         }
@@ -206,16 +202,6 @@ inline bool get_equilibrium(std::pair<String,answer_motoh> x){
     return x.second.openings == x.second.closings;
 }
 
-template <typename T>
-inline bool samesame(std::pair<std::pair<String, answer_motoh> , intrusive_ptr<Backtrace<T, unsigned int> > > bruh){
-    return bruh.first.second.openings == bruh.first.second.closings;
-}
-
-inline bool samesame(std::pair<String, answer_motoh> bruh){
-    return bruh.second.openings == bruh.second.closings;
-}
-
-
 //Filter function for RNAmotiFold alignments, makes two hashmap searches and compares the outputs. This ensures only motif matching regions are checked for motifs.
 template<typename alphabet, typename pos_type, typename T>
 inline bool motif_match(const Basic_Sequence<alphabet,pos_type> &seq1, const Basic_Sequence<alphabet, pos_type> &seq2, T i_seq1, T j_seq1, T i_seq2, T j_seq2){
@@ -255,7 +241,7 @@ inline bool motif_match(const Basic_Sequence<alphabet,pos_type> &seq1, const Bas
         if (rnali_basepairing(seq1, i_seq1 - 1, j_seq1 + 1) && rnali_basepairing(seq2, i_seq2 - 1, j_seq2 + 1) && rnali_basepairing(seq1, i_seq1 - 2 , j_seq1 + 2) && rnali_basepairing(seq2, i_seq2 - 2, j_seq2 + 2)){ // Sowohl i+1/j+1 und i+2/j+2 müssen pairen? FIXME lonely basepair version mit nur i+1/j+1
             res.merge(check_map(Subseq1, Subseq2 , motif_ali::HairpinHashMap));
         }
-        //Bulges have no filter I think ?
+        //Bulges have no filter I think ? Maybe just leave bulges out in the future. They explode the search space too much.
         res.merge(check_map(Subseq1,Subseq2,motif_ali::BulgeHashMap));
     }
     return res.size() > 0;

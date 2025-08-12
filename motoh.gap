@@ -83,13 +83,13 @@ algebra alg_motoh implements sig_motoh(alphabet = char, answer = string) {
 algebra alg_mali implements sig_motoh(alphabet = char, answer = answer_motoh) {
   answer_motoh motif(<Subsequence a, Subsequence b>, answer_motoh m) {
 	answer_motoh res = m;
+	if (identify_motif_mali(a,b,m)){
+		res.openings = res.openings + 1;
+	}
 	if (identify_internal_back(a,b,m)){
 		res.closings = res.closings + 1;
 		append(res.first_track_seqs,a);
 		append(res.second_track_seqs,b);
-	}
-	if (identify_internal_front(a,b,m)){
-		res.openings = res.openings + 1;
 	}
 	if (size(a) >= size(b)){
 		res.score = res.score + motif_scoring(size(a));
@@ -127,7 +127,10 @@ algebra alg_mali implements sig_motoh(alphabet = char, answer = answer_motoh) {
  }
 
  answer_motoh open(<void,void>, answer_motoh m){
-    return m;
+	if (m.openings == m.closings) {
+		return m;
+	}
+	return m - m.score;
  }
 
  answer_motoh nil(<void,void>){
@@ -237,7 +240,7 @@ algebra alg_enum auto enum;
 
 grammar gra_motoh uses sig_motoh(axiom = opening) {
 
-	opening = open( <EMPTY, EMPTY> , alignment) suchthat samesame # h;
+	opening = open( <EMPTY, EMPTY> , alignment) # h;
 
     alignment = nil( < EMPTY, EMPTY> )   |
                 del( < REGION with maxsize(1), EMPTY >, xDel) |
@@ -246,7 +249,7 @@ grammar gra_motoh uses sig_motoh(axiom = opening) {
 	//Separated motif grammar function, includes a way back into alignment to allow for match(match()) productions.
 	//Production match(motif(match())) is the only way to get a motif, forcing a match before and after.
 	//motif_match filter function handles additional motif rules like base pairing around motifs.
-	mot = alignment | motif( < REGION with minsize(3) with maxsize(7), REGION with minsize(3) with maxsize(7) > with motif_match, force_match) #h  ;
+	mot = alignment | motif( < REGION with minsize(3) with maxsize(10), REGION with minsize(3) with maxsize(10) > with motif_match, force_match) #h  ;
 	force_match = match(<REGION with maxsize(1), REGION with maxsize(1)>, alignment) # h;
 
 
@@ -260,4 +263,4 @@ grammar gra_motoh uses sig_motoh(axiom = opening) {
 
 instance test = gra_motoh(alg_enum);
 instance motoh = gra_motoh(alg_mali*alg_prettier);
-instance motoh2 = gra_motoh(((alg_motoh * alg_mali) suchthat equilibrium) * alg_prettier);
+instance motoh2 = gra_motoh((alg_motoh * alg_mali) * alg_prettier);

@@ -753,6 +753,16 @@ inline bool negative_energy(std::pair<Fiber<long unsigned int, unsigned char>, a
   return mfe.second < 0;
 }
 
+//For microstate grammar
+inline bool negative_energy(std::pair<rope::Ref<rope::Ref_Count>, int>& mfe){
+  return mfe.second < 0;
+}
+
+
+inline bool negative_energy(std::pair<Fiber<long unsigned int, unsigned char>, int>& mfe){
+  return mfe.second < 0;
+}
+
 //For subopt functions
 inline bool negative_energy(std::pair<std::pair<rope::Ref<rope::Ref_Count>, answer_macrostate_mfe>, String>& mfe){
   return mfe.first.second < 0;
@@ -762,12 +772,30 @@ inline bool negative_energy(std::pair<std::pair<Fiber<long unsigned int, unsigne
   return mfe.first.second < 0;
 }
 
+//For subopt functions with microstate grammar
+inline bool negative_energy(std::pair<std::pair<rope::Ref<rope::Ref_Count>, int>, String>& mfe){
+  return mfe.first.second < 0;
+}
+
+inline bool negative_energy(std::pair<std::pair<Fiber<long unsigned int, unsigned char>, int>, String>& mfe){
+  return mfe.first.second < 0;
+}
+
 //for backtracing
 inline bool negative_energy(std::pair<std::pair<rope::Ref<rope::Ref_Count>, answer_macrostate_mfe>, boost::intrusive_ptr<Backtrace<String, unsigned int> > >& mfe){
   return mfe.first.second < 0;
 }
 
 inline bool negative_energy(std::pair<std::pair<Fiber<long unsigned int, unsigned char>, answer_macrostate_mfe>, boost::intrusive_ptr<Backtrace<String, unsigned int> > >& mfe){
+  return mfe.first.second < 0;
+}
+
+//for backtracing with microstate grammar
+inline bool negative_energy(std::pair<std::pair<rope::Ref<rope::Ref_Count>, int>, boost::intrusive_ptr<Backtrace<String, unsigned int> > >& mfe){
+  return mfe.first.second < 0;
+}
+
+inline bool negative_energy(std::pair<std::pair<Fiber<long unsigned int, unsigned char>, int>, boost::intrusive_ptr<Backtrace<String, unsigned int> > >& mfe){
   return mfe.first.second < 0;
 }
 
@@ -838,23 +866,23 @@ struct answer_macrostate_pfunc {
   }
 };
 
-//These all return True for now ? This should be changed to calculate the energy value of the substructure based on it's partition function value!
-//It should be possible to somehow retrieve the mfe values from the pfunc values without having to calculate them, how did we get the pfc value in the first place? 
+//Negative energy filter functions for npm Grammar Versions, excluding positive energy substructures. sum_elems(pf) is the sum of all partition function components
+// Greater than 1 means that the inspected structure has an energy value great than 0
 inline bool negative_energy(std::pair<rope::Ref<rope::Ref_Count>, answer_macrostate_pfunc>& pfunc){
-  return true;
+  return sum_elems(pfunc.second.pf) > 1;
 }
 
 inline bool negative_energy(std::pair<Fiber<long unsigned int, unsigned char>, answer_macrostate_pfunc>& pfunc){
-  return true;
+  return sum_elems(pfunc.second.pf) > 1;
 }
 
 inline bool negative_energy(std::pair<std::pair<rope::Ref<rope::Ref_Count>, answer_macrostate_pfunc>, boost::intrusive_ptr<Backtrace<String, unsigned int> > >& pfunc){
-  return true;
+  return sum_elems(pfunc.first.second.pf) > 1;
 }
 
 inline bool negative_energy(std::pair<std::pair<Fiber<long unsigned int, unsigned char>, answer_macrostate_pfunc>, boost::intrusive_ptr<Backtrace<String, unsigned int> > >& pfunc){
-  return true;
-}
+  return sum_elems(pfunc.first.second.pf) > 1;
+} 
 
 inline std::ostream &operator<<(std::ostream &s,
                                 const answer_macrostate_pfunc &pfa) {
