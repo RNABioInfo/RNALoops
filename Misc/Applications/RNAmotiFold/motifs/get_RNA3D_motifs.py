@@ -18,10 +18,11 @@ conversion_json_path: Path = Path(__file__).resolve().parent.joinpath("nucleotid
 
 class MotifSequence:
 
-    def __init__(self, motif_name: str = "", abbreviation: str = "", loop_type: str = ""):
+    def __init__(self, motif_name: str = "", abbreviation: str = "", loop_type: str = "", file:str = ""):
         self.motif_name: str = motif_name
         self.abbreviation: str = abbreviation
         self.loop_type: str = loop_type
+        self.file:str = file
 
     @classmethod
     def from_dict(cls, motif_json_entry: dict[str, str]):
@@ -30,6 +31,7 @@ class MotifSequence:
             motif_name=motif_json_entry["motif_name"],
             abbreviation=motif_json_entry["abbreviation"],
             loop_type=motif_json_entry["loop_type"],
+            file=motif_json_entry["file"],
         )
 
     @staticmethod
@@ -211,7 +213,6 @@ class rna3d_motif:
         ]
         return [*hairpin_objs, *internal_objs]
 
-
 def assign_instances2MotifSequences(
     motif_sequences: list[MotifSequence],
     rna3d_mot_objs: list[rna3d_motif],
@@ -226,7 +227,6 @@ def assign_instances2MotifSequences(
         else:  # test case that is true for internal motifs
             regex_testing(motif, internals)
 
-
 def regex_testing(rna3d_mot: rna3d_motif, motif_sequences: list[MotifSequence]):
     """Test function that takes an rna3d_motif and a list of MotifSequence objects and assigns annotated instances to the corresponding MotifSequence objects"""
     for instance in rna3d_mot.annotations:  # iterate instances
@@ -235,7 +235,6 @@ def regex_testing(rna3d_mot: rna3d_motif, motif_sequences: list[MotifSequence]):
                 if motseq.check_instance(rna3d_mot.annotations[instance]):
                     motseq.instances = instance
                     break
-
 
 def api_call(call: str, attempts: int = 6) -> requests.Response:
     """Generic api call function, by default attempts 6 times to get a response from the API until it gives up"""
@@ -248,7 +247,6 @@ def api_call(call: str, attempts: int = 6) -> requests.Response:
             logger.error(f"Could not retrieve data in {i} attempts. Request denied because: {response.reason}")
     else:
         raise ConnectionError(f"Unable to retrieve RNA 3D Motif Atlas data from call: {call}")
-
 
 def sort_motif_sequences(
     list_of_MotifSequence_objs: list[MotifSequence],
@@ -269,23 +267,29 @@ def sort_motif_sequences(
                     bulges.append(sequence)
     return (hairpins, internals, bulges)
 
-
 def write_csv(loop_type_sequences: list[str], loop_type: str, version: str) -> None:
     """Writes all strings from a list of strings into a csv file named after the loop type"""
     setted = set(loop_type_sequences)
+    mot_set_abbreviations= set([x.split(",")[1] for x in setted])
     vers = version.replace(".", "_")
+    output_path = Path(__file__).resolve().parent.joinpath("versions", f"{vers}", f"rna3d_{loop_type}.csv")
+    splitting_script = Path(__file__).resolve().parent.joinpath("group_by_motif.sh")
     Path.mkdir(
         self=Path(__file__).resolve().parent.joinpath("versions", f"{vers}"),
         parents=False,
         exist_ok=True,
     )
-    with open(
-        file=Path(__file__).resolve().parent.joinpath("versions", f"{vers}", f"rna3d_{loop_type}.csv"),
-        mode="w+",
-    ) as file:
+    with open(file=output_path,mode="w+",) as filed:
         for MotSeq in setted:
-            file.write(MotSeq + "\n")
-
+            filed.write(MotSeq + "\n")
+    motif_data = MotifSequence.load_motif_json()
+    for mot in motif_data:
+        if mot.abbreviation in mot_set_abbreviations:
+            sep_output_path = Path(__file__).resolve().parent.joinpath("versions", f"{vers}_separated", f"{loop_type}",f"{mot.file}.csv")
+            try:
+                subprocess.run([splitting_script,output_path,mot.abbreviation,sep_output_path],check=True)
+            except ChildProcessError as e:
+                logger.critical("Error during motif separation subprocess: " + str(e))
 
 def get_current_motif_version(attempts: int = 5) -> str:
     """retrieve current version of the RNA 3D Motif Atlas"""
@@ -299,7 +303,6 @@ def get_current_motif_version(attempts: int = 5) -> str:
         else:
             i += 1
     raise ConnectionError(f"Could not establish connection to API server in {attempts} attempts.")
-
 
 def update_prep(version: str) -> bool:
     """Interactive update prep function parsing commandline for a specified version number and checking it against installed versions"""
@@ -316,7 +319,6 @@ def update_prep(version: str) -> bool:
     else:
         logger.debug("All motif files of the requestsed version are available.")
         return False
-
 
 def parse_args() -> argparse.Namespace:
     parser = argparse.ArgumentParser(
@@ -339,7 +341,6 @@ def parse_args() -> argparse.Namespace:
             raise error
     return args
 
-
 def update_hexdumps(version: str) -> None:
     vers = version.replace(".", "_")
     subprocess.run(
@@ -348,7 +349,6 @@ def update_hexdumps(version: str) -> None:
         check=True,
         shell=True,
     )
-
 
 def update_necessary(requested_version: str) -> bool:
     try:
@@ -362,7 +362,6 @@ def update_necessary(requested_version: str) -> bool:
     else:
         return True
 
-
 def currently_installed() -> str:
     try:
         with open(Path(__file__).resolve().parents[4].joinpath("Extensions", "mot_header.hh"), "r") as file:
@@ -374,7 +373,6 @@ def currently_installed() -> str:
         return version.group().replace("_", ".")
     else:
         raise LookupError("Unable to retrieve currently installed motif version")
-
 
 def interactive_update():
     args = parse_args()
@@ -389,7 +387,6 @@ def interactive_update():
             main(version_to_update_to=args.version)
         else:
             exit()
-
 
 def _uninteractive_update(version: str) -> bool:  # type: ignore This function is for calling the updates from the main RNAmotiFold function so it is not used here
     """Updating function for RNA 3D Motif Sequence csv files, mainly for incorporation with other scripts (RNAmotiFold)"""
@@ -412,7 +409,6 @@ def _uninteractive_update(version: str) -> bool:  # type: ignore This function i
             return False
     return True
 
-
 def check_backups(version: str) -> bool:
     """Potential code for backup system if I ever have time to implement it (have a fully fledged system for using different RNA3D Motif Atlas Versions)."""
     versions_path: Path = Path(__file__).resolve().parent.joinpath("versions")
@@ -425,7 +421,6 @@ def check_backups(version: str) -> bool:
     logger.info("Could not find a backup with that version, attempting to fetch motifs from RNA 3D Motif Atlas...")
     return False
 
-
 def get_dirs(root: str | Path) -> Generator[Path, None, None]:
     """
     Generator, which recursively yields all subdirectories of a directory
@@ -434,13 +429,11 @@ def get_dirs(root: str | Path) -> Generator[Path, None, None]:
         if path.is_dir():
             yield path
 
-
 def get_files(root: str | Path) -> Generator[Path, None, None]:
     """Generator the recursively yields all csv files of a directory"""
     for path in Path(root).rglob("*"):
         if path.is_file() and path.suffix == ".csv":
             yield path
-
 
 def main(version_to_update_to: str) -> bool:
     """Main body of the script, gets the version to update to either interactively from the user via the command line or uninteractively just updates to the current RNA 3D Motif Atlas version"""

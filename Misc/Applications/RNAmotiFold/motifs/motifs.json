@@ -2,51 +2,61 @@
     {
         "motif_name": "T-Loop",
         "abbreviation": "T",
-        "loop_type": "hairpin"
+        "loop_type": "hairpin",
+        "file": "tloop"
     },
     {
         "motif_name": "GNRA",
         "abbreviation": "G",
-        "loop_type": "hairpin"
+        "loop_type": "hairpin",
+        "file": "gnra"
     },
     {
         "motif_name": "UNCG",
         "abbreviation": "U",
-        "loop_type": "hairpin"
+        "loop_type": "hairpin",
+        "file": "uncg"
     },
     {
         "motif_name": "tRNA anticodon loop",
         "abbreviation": "L",
-        "loop_type": "hairpin"
+        "loop_type": "hairpin",
+        "file": "tRNA_anticodon_loop"
     },
     {
         "motif_name": "tRNA D-loop",
         "abbreviation": "D",
-        "loop_type": "hairpin"
+        "loop_type": "hairpin",
+        "file": "tRNA_d_loop"
     },
     {
         "motif_name": "UAA/GAN",
         "abbreviation": "A",
-        "loop_type": "internal"
+        "loop_type": "internal",
+        "file": "uaa_gan"
     },
     {
         "motif_name": "Tandem non-canonical cWW pairs",
         "abbreviation": "M",
-        "loop_type": "internal"
+        "loop_type": "internal",
+        "file": "nc_cww_bp"
     },
     {
         "motif_name": "C-Loop",
         "abbreviation": "C",
-        "loop_type": "internal"
+        "loop_type": "internal",
+        "file": "c_loop"
     },
     {
         "motif_name": "Sarcin-Ricin",
         "abbreviation": "S",
-        "loop_type": "internal"
+        "loop_type": "internal",
+        "file": "sarcin_ricin"
     },
     {
         "motif_name": "Kink-Turn",
         "abbreviation": "K",
-        "loop_type": "internal"
+        "loop_type": "internal",
+        "file": "kink_turn"
     }
 ]
