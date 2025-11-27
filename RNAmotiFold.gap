@@ -34,12 +34,12 @@ include "Grammars/gra_motified_microstate.gap"
 
 //RNAmotiFold
 instance RNAmotiFold = gra_microstate ((alg_motif * alg_mfe) * alg_motBracket);
-instance RNAmotiFold_motmicro = gra_motified_microstate ((alg_motif * alg_mfe) * alg_motBracket);
+instance RNAmotiFoldMotmicro = gra_motified_microstate ((alg_motif * alg_mfe) * alg_motBracket);
 
 //Motshapes
 instance RNAmoSh = gra_microstate((alg_shapeX_mot*alg_mfe)*alg_motBracket);
-instance RNAmoSh_motmicro = gra_motified_microstate((alg_shapeX_mot*alg_mfe)*alg_motBracket);
+instance RNAmoShMotmicro = gra_motified_microstate((alg_shapeX_mot*alg_mfe)*alg_motBracket);
 
 //Mothishapes
 instance RNAmotiCes = gra_microstate((alg_hishapes_mot*alg_mfe)*alg_motBracket);
-instance RNAmotiCes_motmicro = gra_motified_microstate((alg_hishapes_mot*alg_mfe)*alg_motBracket);
+instance RNAmotiCesMotmicro = gra_motified_microstate((alg_hishapes_mot*alg_mfe)*alg_motBracket);
