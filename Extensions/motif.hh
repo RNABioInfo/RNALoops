@@ -102,19 +102,36 @@ inline void fill_hashmap(const std::string& custom_path, bool custom_replace, Mo
         empty_map = Motif_HashMap(arr,len_arr,directions);
     }
 }
-// 2025-05-05 16:26:27:results:WARNING: Attention, duplicate sequences in motif set: UGAGAAU=G/T -> g, GGAA=G/U -> g, GUGA=U/G -> u
 
 inline void create_hashmaps(const std::string& custom_path, bool replace_bool, MotifMap& map_to_fill, std::array<unsigned char*,2> motif_arrays, std::array<unsigned int,2> length_arrays){
     direction_type direct = parse_direction_opt();
     fill_hashmap(custom_path,    replace_bool,    map_to_fill, motif_arrays,    length_arrays, direct); 
 }
 
+inline void initializeH(init_status& init_check){
+    if (!init_check.initializedH()){
+        init_check.setH(true);
+        create_hashmaps(gapc::Opts::getOpts()->custom_hairpins, gapc::Opts::getOpts() -> replaceH, HairpinHashMap, Hairpins, Hairpin_lengths);
+    }
+};
+
+inline void initializeI(init_status& init_check){
+    if (!init_check.initializedI()){
+        init_check.setI(true);
+        create_hashmaps(gapc::Opts::getOpts()->custom_internals, gapc::Opts::getOpts() -> replaceI, InternalHashMap, Internals, Internal_lengths);
+    }
+};
+
+inline void initializeB(init_status& init_check){
+    if (!init_check.initializedB()){
+        init_check.setB(true);
+        create_hashmaps(gapc::Opts::getOpts()->custom_bulges, gapc::Opts::getOpts() -> replaceB, BulgeHashMap, Bulges, Bulge_lengths);
+    }
+};
+
 //Overloaded identify_motif functions, two identify_motif for Hairpins and Internal Loops respectively while identify_motif_b is for bulge loops
 inline char identify_motif(const Basic_Subsequence<char, unsigned int> &input_subsequence, char res) {
-    if (!init.initializedH()){
-        init.setH(true);
-        create_hashmaps(gapc::Opts::getOpts()->custom_hairpins, gapc::Opts::getOpts() -> replaceH, HairpinHashMap,Hairpins,Hairpin_lengths);
-    }
+    initializeH(init);
     if (auto search = HairpinHashMap.find(input_subsequence); search != HairpinHashMap.end()){
         return search->second;
     }
@@ -122,10 +139,7 @@ inline char identify_motif(const Basic_Subsequence<char, unsigned int> &input_su
 }
 
 inline char identify_motif(const Basic_Subsequence<char, unsigned int> &internal_subsequence1, const Basic_Subsequence<char, unsigned int> &internal_subsequence2, char res) {
-    if (!init.initializedI()){
-        init.setI(true);
-        create_hashmaps(gapc::Opts::getOpts()->custom_internals, gapc::Opts::getOpts() -> replaceI, InternalHashMap,Internals,Internal_lengths);
-    }
+    initializeI(init);
     if (auto search = InternalHashMap.find(internal_subsequence1,internal_subsequence2); search != InternalHashMap.end()) {
         return search->second;
     }
@@ -133,10 +147,7 @@ inline char identify_motif(const Basic_Subsequence<char, unsigned int> &internal
 }
 
 inline char identify_motif_b(const Basic_Subsequence<char, unsigned int> &bulge_subsequence, char res) {
-    if (!init.initializedB()){
-        init.setB(true);
-        create_hashmaps(gapc::Opts::getOpts() -> custom_bulges,gapc::Opts::getOpts() -> replaceB, BulgeHashMap,Bulges,Bulge_lengths);
-    }
+    initializeB(init);
     if (auto search = BulgeHashMap.find(bulge_subsequence); search != BulgeHashMap.end()) {
         return search->second;
     }
@@ -175,8 +186,50 @@ inline char identify_motif_align(const Basic_Subsequence<char, unsigned int> &fi
     return res;
 }
 
-inline int motif_scoring(const int &length_of_motif_region, const char motif_char) {
-    return alignment_match() * length_of_motif_region;
+//Syntactic filter function for hairpin loop motifs (with(_overlay), pre-parsing)
+template <typename alphabet, typename pos_type, typename T>
+inline bool motif_h(const Basic_Sequence<alphabet, pos_type> &seq, T i, T j) {
+    initializeH(init);
+    if (auto search = HairpinHashMap.find(seq,i,j); search != HairpinHashMap.end()) {
+    return true;
+  }
+  return false;
+}
+
+//Syntactic filter function for bulge loop motifs (with(_overlay), pre-parsing)
+template <typename alphabet, typename pos_type, typename T>
+inline bool motif_b(const Basic_Sequence<alphabet, pos_type> &seq, T i, T j) {
+    initializeB(init);
+    if (auto search = BulgeHashMap.find(seq,i,j); search != BulgeHashMap.end()) {
+        return true;
+    }
+    return false;
+}
+
+//Semantic overlay filter function for motif_i (suchthat(_overlay), post-parsing). Functional but currently not in use cause this filter is algebra independent!
+template <typename alphabet, typename pos_type, typename T>
+inline bool motif_i(const Basic_Subsequence<alphabet, pos_type> &base1,
+                    const Basic_Subsequence<alphabet, pos_type> &seq1, 
+                    T &bruh,
+                    const Basic_Subsequence<alphabet, pos_type> &seq2,
+                    const Basic_Subsequence<alphabet, pos_type> &base2) {
+    initializeI(init);
+    if (auto isearch = InternalHashMap.find(seq1, seq2); isearch != InternalHashMap.end()) {
+        return true;
+    }
+    return false;
+}
+
+//Syntactic overlay filter function for internal loop motifs (with(_overlay) , pre-parsing)
+template<typename alphabet, typename pos_type, typename T>
+inline bool motif_i (const  Basic_Sequence<alphabet, pos_type> &seq, T lb_i, T lb_j, T lr_i, T lr_j, T x_i, T x_j, T rr_i, T rr_j, T rb_i, T rb_j){
+    initializeI(init);
+    const Basic_Subsequence<alphabet,pos_type>& lr {seq,lr_i,lr_j};
+    const Basic_Subsequence<alphabet,pos_type>& rr {seq,rr_i,rr_j};
+    if (auto search = InternalHashMap.find(lr,rr); search != InternalHashMap.end()){
+        return true;
+    }
+    return false;
 }
 
 //Filter function for RNAmotiFold alignments, makes two hashmap searches and compares the outputs. This ensures only motif matching regions are checked for motifs.

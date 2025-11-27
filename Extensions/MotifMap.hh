@@ -45,9 +45,15 @@ class MotifMap{
         Motifs = create_motif_hashmap(Dupes,Translations);
     };
 
-    //
+    
     MotifHashMap::iterator find(const Basic_Subsequence<char, unsigned int> &input_subsequence){
         Basic_Sequence Motif {&input_subsequence.front(),input_subsequence.size()};
+        return Motifs.find(Motif);
+    };
+
+    MotifHashMap::iterator find(const Basic_Sequence<char, unsigned int> &input_sequence, unsigned int start_pos, unsigned int end_pos){
+        const Basic_Subsequence Subseq{input_sequence, start_pos, end_pos};
+        Basic_Sequence Motif {&Subseq.front(),Subseq.size()};
         return Motifs.find(Motif);
     };
 

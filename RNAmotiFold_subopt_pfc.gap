@@ -29,17 +29,23 @@ include "Algebras/Motif/alg_hishapes_mot.gap" // "Motified" hishapes algebras
 
 //Grammars
 include "Grammars/gra_macrostate.gap"
-
+include "Grammars/gra_motified_macrostate.gap"
 //Instances
 
 //RNAmotiFold
+instance RNAmotiFold_motmacro_subopt = gra_motified_macrostate ((alg_motif * alg_mfe_subopt) * alg_motBracket);
+instance RNAmotiFold_motmacro_pfc = gra_motified_macrostate((alg_motif*alg_pfunc) suchthat filterLowProbShapes);
 instance RNAmotiFold_subopt = gra_macrostate ((alg_motif * alg_mfe_subopt) * alg_motBracket);
-instance RNAmotiFold_pfc = gra_macrostate((alg_motif*alg_pfunc) suchthat filterLowProbShapes); //Found the filter to enable partition function proability filtering! Add -F to RNAmotiFold.py options
+instance RNAmotiFold_pfc = gra_macrostate((alg_motif*alg_pfunc) suchthat filterLowProbShapes);
 
 //Motshapes
+instance RNAmoSh_motmacro_subopt = gra_motified_macrostate((alg_shapeX_mot*alg_mfe_subopt)*alg_motBracket);
+instance RNAmoSh_motmacro_pfc = gra_motified_macrostate((alg_shapeX_mot*alg_pfunc) suchthat filterLowProbShapes);
 instance RNAmoSh_subopt = gra_macrostate((alg_shapeX_mot*alg_mfe_subopt)*alg_motBracket);
 instance RNAmoSh_pfc = gra_macrostate((alg_shapeX_mot*alg_pfunc) suchthat filterLowProbShapes);
 
 //Mothishapes
+instance RNAmotiCes_motmacro_subopt = gra_motified_macrostate((alg_hishapes_mot*alg_mfe_subopt)*alg_motBracket);
+instance RNAmotiCes_motmacro_pfc = gra_motified_macrostate((alg_hishapes_mot*alg_pfunc) suchthat filterLowProbShapes);
 instance RNAmotiCes_subopt = gra_macrostate((alg_hishapes_mot*alg_mfe_subopt)*alg_motBracket);
 instance RNAmotiCes_pfc = gra_macrostate((alg_hishapes_mot*alg_pfunc) suchthat filterLowProbShapes);
