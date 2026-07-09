@@ -164,10 +164,13 @@ class MotifSequence:
             return non_listed_conversions[nucleotide]
         with open(conversion_json_path, "r") as file:
             conversion_json = json.load(file)
-        if conversion_json[nucleotide]["standard_base"][0] in ["G", "C", "A", "U"]:
-            return conversion_json[nucleotide]["standard_base"][0]
-        else:
-            raise ValueError(f"Could not convert alternated nucleotide {nucleotide}")
+        try:
+            if conversion_json[nucleotide]["standard_base"][0] in ["G", "C", "A", "U"]:
+                return conversion_json[nucleotide]["standard_base"][0]
+            else:
+                raise ValueError(f"Could not convert alternated nucleotide {nucleotide}, standard base is {conversion_json[nucleotide]['standard_base'][0]}")
+        except KeyError as e:
+            raise ValueError(f"Could not convert alternated nucleotide {nucleotide}, raised {e}")
 
 
 @dataclass
