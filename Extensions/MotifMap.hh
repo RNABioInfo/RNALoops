@@ -26,6 +26,48 @@ struct std_set_hash {
 struct Motif {std::string seq; char abb {'X'};};
 enum class direction_type: std::uint8_t {forward,reverse,both};
 
+class CounterMap{
+    //Simple Unordered Map to count number of occurences of letters in a string
+
+    public:
+    //using Counter = std::unordered_map<const char, unsigned int>;
+    CounterMap() = default;
+
+    CounterMap(const std::vector<char>  input_vector){
+        for (unsigned int i = 0; i < input_vector.size(); i++){
+            if (Counter.find(input_vector[i]) == Counter.end()){
+                Counter[input_vector[i]] = 1;
+            }
+            else{
+                Counter[input_vector[i]]++;
+            }
+        }
+
+    };
+
+    bool empty(){
+        return Counter.empty();
+    }
+
+    // Source - https://stackoverflow.com/a/55961383
+    // Posted by Alecto, modified by community. See post 'Timeline' for change history
+    // Retrieved 2026-07-14, License - CC BY-SA 4.0
+    const auto findMaxValuePair()
+    {
+        if (Counter.empty()) {
+            throw std::runtime_error("CounterMap is empty. Cannot find max value pair.");
+        }
+        const auto compare = [](const auto &p1, const auto &p2){
+            return p1.second < p2.second;
+        };
+        return *std::max_element(Counter.begin(), Counter.end(), compare);
+    }
+
+    private:
+    std::unordered_map<char, unsigned int> Counter{};
+};
+
+
 class MotifMap{
     
     public:
@@ -51,22 +93,53 @@ class MotifMap{
         return Motifs.find(Motif);
     };
 
-    MotifHashMap::iterator find(const Basic_Sequence<char, unsigned int> &input_sequence, unsigned int start_pos, unsigned int end_pos){
+    std::vector<char> find(const Basic_Subsequence<M_Char, unsigned int> &input_subsequence){
+        std::vector<char> found;
+        for (unsigned row = 0; row < rows(input_subsequence); row++){
+            const Basic_Sequence Motif{input_subsequence.seq->row(row), input_subsequence.i,input_subsequence.j};
+            if (auto search = Motifs.find(Motif); search != Motifs.end()) {
+                found.push_back(search->second);
+            }
+        }
+        return found;
+    }
+
+    std::vector<char> find(const Basic_Subsequence<M_Char, unsigned int> &input_subsequence1, const Basic_Subsequence<M_Char, unsigned int> &input_subsequence2){
+        std::vector<char> found;
+        for (unsigned int row = 0; row < rows(input_subsequence1); row++){
+            Basic_Sequence Motif1{input_subsequence1.seq->row(row), input_subsequence1.i,input_subsequence1.j};
+            Basic_Sequence Motif2{input_subsequence1.seq->row(row), input_subsequence2.i,input_subsequence2.j};
+            Motif1.concat(Motif2.seq,Motif2.size());
+            if (auto search = Motifs.find(Motif1);search != Motifs.end()) {
+                found.push_back(search->second);
+            }
+        }
+        return found;
+    }  
+
+    MotifHashMap::iterator find(const Basic_Sequence<char,unsigned int> &input_sequence){
+        return Motifs.find(input_sequence);
+    };
+
+    template<typename alphabet, typename pos_type>
+    MotifHashMap::iterator find(const Basic_Sequence<alphabet, pos_type> &input_sequence, unsigned int start_pos, unsigned int end_pos){
         const Basic_Subsequence Subseq{input_sequence, start_pos, end_pos};
         Basic_Sequence Motif {&Subseq.front(),Subseq.size()};
         return Motifs.find(Motif);
     };
 
     template<typename alphabet, typename pos_type>
-    MotifHashMap::iterator find(const Basic_Sequence<alphabet,pos_type> &input_sequence){
-        return Motifs.find(input_sequence);
-    };
-
-    MotifHashMap::iterator find(const Basic_Subsequence<char, unsigned int> &internal_subsequence1, const Basic_Subsequence<char, unsigned int> &internal_subsequence2){
+    MotifHashMap::iterator find(const Basic_Subsequence<alphabet,pos_type> &internal_subsequence1, const Basic_Subsequence<alphabet,pos_type> &internal_subsequence2){
         Basic_Sequence Motif1 {&internal_subsequence1.front(),internal_subsequence1.size()};
         Basic_Sequence Motif2 {&internal_subsequence2.front(),internal_subsequence2.size()};
         Motif1.concat(Motif2.seq,Motif2.size());
         return Motifs.find(Motif1);
+    };
+
+    template<typename alphabet, typename pos_type>
+    MotifHashMap::iterator find(Basic_Sequence<alphabet,pos_type> &internal_subsequence1, Basic_Sequence<alphabet,pos_type> &internal_subsequence2){
+            internal_subsequence1.concat(internal_subsequence2.seq,internal_subsequence2.size());
+        return Motifs.find(internal_subsequence1);
     };
 
     MotifHashMap::iterator begin() {return Motifs.begin();};

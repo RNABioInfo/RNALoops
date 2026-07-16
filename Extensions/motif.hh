@@ -154,6 +154,63 @@ inline char identify_motif_b(const Basic_Subsequence<char, unsigned int> &bulge_
     return res;
 }
 
+inline char identify_motif(const Basic_Subsequence<M_Char, unsigned int> &input_subsequence,char res) {
+  std::vector<char> found;
+  initializeH(init);
+  found = HairpinHashMap.find(input_subsequence);
+  if (found.empty()) {
+    return res;
+  }
+  else{
+      CounterMap Map(found);
+      std::pair<char, unsigned int> maxval = Map.findMaxValuePair();
+      if (static_cast<double>(maxval.second)/rows(input_subsequence) > 0.4) {
+        return maxval.first;
+      }
+      else {
+        return res;
+      }
+  }
+}
+
+inline char identify_motif_b(const Basic_Subsequence<M_Char, unsigned int> &input_subsequence,char res) {
+    std::vector<char> found;
+    initializeB(init);
+    found  = BulgeHashMap.find(input_subsequence);
+    if (found.empty()) {
+        return res;
+    }
+    else{
+        CounterMap Map(found);
+        std::pair<char, unsigned int> maxval = Map.findMaxValuePair();
+        if (static_cast<double>(maxval.second)/rows(input_subsequence) > 0.4) {
+            return maxval.first;
+        }
+        else {
+            return res;
+        }
+    }
+}
+
+inline char identify_motif(const Basic_Subsequence<M_Char, unsigned int> &internal_subsequence1,const Basic_Subsequence<M_Char, unsigned int> &internal_subsequence2,char res) {
+    std::vector<char> found;
+    initializeI(init);
+    found = InternalHashMap.find(internal_subsequence1,internal_subsequence2);
+    if (found.empty()) {
+        return res;
+    }
+    else{
+        CounterMap Map(found);
+        std::pair<char, unsigned int> maxval = Map.findMaxValuePair();
+        if (static_cast<double>(maxval.second)/rows(internal_subsequence1) > 0.1) {
+            return maxval.first;
+        }
+        else {
+            return res;
+        }
+    }
+}
+
 inline char identify_motif_align(const Basic_Subsequence<char, unsigned int> &first_track_seq, const Basic_Subsequence<char, unsigned int> &second_track_seq, char res) {
     if (!std::all_of(init.states.cbegin(),init.states.cend(),[](bool init){return init;})) {
         create_hashmaps(gapc::Opts::getOpts()->custom_hairpins, gapc::Opts::getOpts() -> replaceH, HairpinHashMap,Hairpins,Hairpin_lengths);
