@@ -406,7 +406,7 @@ inline std::ostream &operator<<(std::ostream &s, const mfecovarmotif &pfa) {
       s << 'E';
     else
       s << "( " << pfa.mfe + pfa.covar + pfa.motif << " = energy: "
-        << pfa.mfe << " + covar.: " << pfa.covar << " + motif:" << pfa.motif << " )";
+        << pfa.mfe << " + covar.: " << pfa.covar << " + motif: " << pfa.motif << " )";
     return s;
 }
 

@@ -15,6 +15,7 @@
 #include <fstream>
 #include <string_view>
 #include <unordered_map>
+#include <unordered_set>
 #include <utility>
 #include <algorithm>
 #include"MotifMap.hh"
@@ -165,11 +166,12 @@ inline char identify_motif(const Basic_Subsequence<M_Char, unsigned int> &input_
   else{
       CounterMap Map(found);
       std::pair<char, unsigned int> maxval = Map.findMaxValuePair();
-      if (static_cast<double>(maxval.second)/rows(input_subsequence) > 0.4) {
+      double fract = gapc::Opts::getOpts()->fraction;
+      if (static_cast<double>(maxval.second)/rows(input_subsequence) >= fract) {
         return maxval.first;
       }
       else {
-        return res;
+         return res;
       }
   }
 }
@@ -184,7 +186,8 @@ inline char identify_motif_b(const Basic_Subsequence<M_Char, unsigned int> &inpu
     else{
         CounterMap Map(found);
         std::pair<char, unsigned int> maxval = Map.findMaxValuePair();
-        if (static_cast<double>(maxval.second)/rows(input_subsequence) > 0.4) {
+        float fract = gapc::Opts::getOpts()->fraction;
+        if (static_cast<double>(maxval.second)/rows(input_subsequence) >= fract) {
             return maxval.first;
         }
         else {
@@ -203,7 +206,8 @@ inline char identify_motif(const Basic_Subsequence<M_Char, unsigned int> &intern
     else{
         CounterMap Map(found);
         std::pair<char, unsigned int> maxval = Map.findMaxValuePair();
-        if (static_cast<double>(maxval.second)/rows(internal_subsequence1) > 0.5) {
+        double fract = gapc::Opts::getOpts()->fraction;
+        if (static_cast<double>(maxval.second)/rows(internal_subsequence1) >= fract) {
             return maxval.first;
         }
         else {
@@ -214,33 +218,38 @@ inline char identify_motif(const Basic_Subsequence<M_Char, unsigned int> &intern
 
 inline float motifscore(const Basic_Subsequence<M_Char, unsigned int> &seq){
     std::vector<char> found;
-    std::unordered_map<char, std::set<char>> Seq_Versions{};
+    std::unordered_map<char, std::unordered_set<Basic_Sequence<char,unsigned int>,Hash_ali_array>> Seq_Versions{};
     initializeH(init);
     for (unsigned row = 0; row < rows(seq); row++){
-            const Basic_Sequence Motif{seq.seq->row(row), seq.i,seq.j};
-            if (auto search = HairpinHashMap.find(Motif); search != HairpinHashMap.end()) {
-                found.push_back(search->second);
-                if (Seq_Versions.find(search->second) == Seq_Versions.end()){
-                    Seq_Versions[search->second] = std::set<char> {*Motif.seq};
+        const Basic_Sequence Motif{seq.seq->row(row), seq.i,seq.j};
+        if (auto search = HairpinHashMap.find(Motif); search != HairpinHashMap.end()) {
+            for (unsigned int i = 0; i < HairpinHashMap.Dupes[Motif].size(); i++){
+                char mots = *next(HairpinHashMap.Dupes[Motif].begin(),i);
+                found.push_back(mots);
+                if (Seq_Versions.find(mots) == Seq_Versions.end()){
+                    Seq_Versions[mots] = std::unordered_set<Basic_Sequence<char,unsigned int>,Hash_ali_array>  {Motif}; //This is not adding the entire sequence
                 }
-                else {
-                    Seq_Versions[search->second].insert(*Motif.seq);
+                else{
+                    Seq_Versions[mots].insert(Motif);
                 }
             }
         }
+    }
     if (found.empty()){
         return 0;
     }
     else{
         CounterMap Map(found);
         std::pair<char,unsigned int> maxval = Map.findMaxValuePair();
-        if (static_cast<double>(maxval.second)/rows(seq) > 0.5){
+        double fract = gapc::Opts::getOpts()->fraction;
+        if (static_cast<double>(maxval.second)/rows(seq) >= fract){
             double versions = static_cast<double>(Seq_Versions[maxval.first].size());
             if (versions == 1){
                 return 0.0;
             }
             else{
-                return versions/static_cast<double>(rows(seq));
+                float weight = gapc::Opts::getOpts()->weighting;
+                return std::ceil((-versions/static_cast<double>(rows(seq)))*weight);
             }
         }
     }
@@ -249,35 +258,40 @@ inline float motifscore(const Basic_Subsequence<M_Char, unsigned int> &seq){
 
 inline float motifscore(const Basic_Subsequence<M_Char, unsigned int> &seq,const Basic_Subsequence<M_Char, unsigned int> &seq2){
     std::vector<char> found;
-    std::unordered_map<char, std::set<char>> Seq_Versions{};
+    std::unordered_map<char, std::unordered_set<Basic_Sequence<char,unsigned int>,Hash_ali_array>> Seq_Versions{};
     initializeI(init);
     for (unsigned row = 0; row < rows(seq); row++){
-            Basic_Sequence Motif1{seq.seq->row(row), seq.i,seq.j};
+            Basic_Sequence Motif{seq.seq->row(row), seq.i,seq.j};
             Basic_Sequence Motif2{seq2.seq->row(row), seq2.i,seq2.j};
-            Motif1.concat(Motif2.seq,Motif2.size());
-            if (auto search = InternalHashMap.find(Motif1); search != InternalHashMap.end()) {
-                found.push_back(search->second);
-                if (Seq_Versions.find(search->second) == Seq_Versions.end()){
-                    Seq_Versions[search->second] = std::set<char> {*Motif1.seq};
+            Motif.concat(Motif2.seq,Motif2.size());
+            if (auto search = InternalHashMap.find(Motif); search != InternalHashMap.end()) {
+            for (unsigned int i = 0; i < InternalHashMap.Dupes[Motif].size(); i++){
+                char mots = *next(InternalHashMap.Dupes[Motif].begin(),i);
+                found.push_back(mots);
+                if (Seq_Versions.find(mots) == Seq_Versions.end()){
+                    Seq_Versions[mots] = std::unordered_set<Basic_Sequence<char,unsigned int>,Hash_ali_array>  {Motif}; //This is not adding the entire sequence
                 }
-                else {
-                    Seq_Versions[search->second].insert(*Motif1.seq);
+                else{
+                    Seq_Versions[mots].insert(Motif);
                 }
             }
         }
+    }
     if (found.empty()){
         return 0;
     }
     else{
         CounterMap Map(found);
         std::pair<char,unsigned int> maxval = Map.findMaxValuePair();
-        if (static_cast<double>(maxval.second)/rows(seq) > 0.5){
+        double fract = gapc::Opts::getOpts()->fraction;
+        if (static_cast<double>(maxval.second)/rows(seq) >= fract){
             double versions = static_cast<double>(Seq_Versions[maxval.first].size());
             if (versions == 1){
                 return 0.0;
             }
             else{
-                return versions/static_cast<double>(rows(seq));
+                float weight = gapc::Opts::getOpts()->weighting;
+                return std::ceil(-versions/static_cast<double>(rows(seq))*weight);
             }
         }
     }
@@ -286,33 +300,38 @@ inline float motifscore(const Basic_Subsequence<M_Char, unsigned int> &seq,const
 
 inline float motifscore_b(const Basic_Subsequence<M_Char, unsigned int> &seq){
     std::vector<char> found;
-    std::unordered_map<char, std::set<char>> Seq_Versions{};
+    std::unordered_map<char, std::unordered_set<Basic_Sequence<char,unsigned int>,Hash_ali_array>> Seq_Versions{};
     initializeB(init);
     for (unsigned row = 0; row < rows(seq); row++){
             const Basic_Sequence Motif{seq.seq->row(row), seq.i,seq.j};
             if (auto search = BulgeHashMap.find(Motif); search != BulgeHashMap.end()) {
-                found.push_back(search->second);
-                if (Seq_Versions.find(search->second) == Seq_Versions.end()){
-                    Seq_Versions[search->second] = std::set<char> {*Motif.seq};
+            for (unsigned int i = 0; i < BulgeHashMap.Dupes[Motif].size(); i++){
+                char mots = *next(BulgeHashMap.Dupes[Motif].begin(),i);
+                found.push_back(mots);
+                if (Seq_Versions.find(mots) == Seq_Versions.end()){
+                    Seq_Versions[mots] = std::unordered_set<Basic_Sequence<char,unsigned int>,Hash_ali_array>  {Motif}; //This is not adding the entire sequence
                 }
-                else {
-                    Seq_Versions[search->second].insert(*Motif.seq);
+                else{
+                    Seq_Versions[mots].insert(Motif);
                 }
             }
         }
+    }
     if (found.empty()){
         return 0;
     }
     else{
         CounterMap Map(found);
         std::pair<char,unsigned int> maxval = Map.findMaxValuePair();
-        if (static_cast<double>(maxval.second)/rows(seq) > 0.5){
+        double fract = gapc::Opts::getOpts()->fraction;
+        if (static_cast<double>(maxval.second)/rows(seq) >= fract){
             double versions = static_cast<double>(Seq_Versions[maxval.first].size());
             if (versions == 1){
                 return 0.0;
             }
             else{
-                return versions/static_cast<double>(rows(seq));
+                float weight = gapc::Opts::getOpts()->weighting;
+                return std::ceil(-versions/static_cast<double>(rows(seq))*weight);
             }
         }
     }

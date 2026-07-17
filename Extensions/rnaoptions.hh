@@ -147,6 +147,8 @@ class Opts {
     int mismatch_score;
     int gap_open;
     int gap_extension;
+    double fraction;
+    double weighting;
 #ifdef CHECKPOINTING_INTEGRATED
     size_t checkpoint_interval;  // default interval: 3600s (1h)
     boost::filesystem::path  checkpoint_out_path;  // default path: cwd
@@ -202,6 +204,8 @@ class Opts {
             mismatch_score(1),
             gap_open(3),
             gap_extension(1),
+            fraction(0.7),
+            weighting(1.0),
     #ifdef CHECKPOINTING_INTEGRATED
             checkpoint_interval(DEFAULT_CHECKPOINT_INTERVAL),
             checkpoint_out_path(boost::filesystem::current_path()),
@@ -354,6 +358,8 @@ class Opts {
         << "-L If set to 1, your custom hairpin motifs (set with -X option) will replace the RNA 3D Motif Atlas or Rfam sequences instead of being added to them. Default is 0." << std::endl
         << "-E If set to 1, your custom internal motifs (set with -Y option) will replace the RNA 3D Motif Atlas or Rfam sequences instead of being added to them. Default is 0." << std::endl
         << "-G If set to 1, your custom bulge motifs (set with -Z option) will replace the RNA 3D Motif Atlas or Rfam sequences instead of being added to them. Default is 0." << std::endl << std::endl
+        << "-W Set Weighting for Motifs in motif considered alignment folding. By default, Motifs are weighted by the sequence variants, divided by how often the motif was found at a position. Default is 1" << std::endl
+        << "-D Set Fraction of how many sequences must share a motif for it to be recognized at in a loop" << std::endl
         << "-h, --help Print this help." << std::endl << std::endl
         << " (-[drk] [0-9]+)*" << std::endl << std::endl
 
@@ -447,7 +453,7 @@ class Opts {
          * N: normalization of plain reactivities
          * (centroid, RNAstructure, logplain, asProbabilities)
          */
-        "S:A:B:M:N:X:Y:Z:L:E:G:"
+        "S:A:B:M:N:X:Y:Z:L:E:G:W:D:"
         "hd:r:k:p:I:KO:Q:b:g:j:v:V:", long_opts, nullptr)) != -1) {
       switch (o) {
       case 'f':
@@ -609,6 +615,12 @@ class Opts {
       case 'v':
         gap_extension = std::atoi(optarg);
         break;
+      case 'W':
+        weighting = std::stod(optarg);
+        break;
+      case 'D':
+        fraction = std::stod(optarg);
+        break;
     #ifdef CHECKPOINTING_INTEGRATED
       case 'p' :
         checkpoint_interval = parse_checkpointing_interval(optarg);
@@ -713,6 +725,12 @@ class Opts {
         && (strategy != 'D') && (strategy != 'P')) {
       throw OptException("Invalid strategy. Please select one out of "
                          "'A', 'B', 'C', 'D' or 'P'!");
+    }
+    if (fraction < 0 || fraction > 1){
+      throw OptException("Motif Fraction has to be between 0 and 1");
+    }
+    if (weighting < 0){
+      throw OptException("Motif weighting cant be below 0");
     }
     if (match_score < 0) {
       throw OptException("Set match score to positive integer");

@@ -98,7 +98,10 @@ class MotifMap{
         for (unsigned row = 0; row < rows(input_subsequence); row++){
             const Basic_Sequence Motif{input_subsequence.seq->row(row), input_subsequence.i,input_subsequence.j};
             if (auto search = Motifs.find(Motif); search != Motifs.end()) {
-                found.push_back(search->second);
+                for (unsigned int i = 0; i < Dupes[Motif].size();i++){
+                    char mots = *next(Dupes[Motif].begin(),i);
+                    found.push_back(mots);
+                }
             }
         }
         return found;
@@ -107,11 +110,14 @@ class MotifMap{
     std::vector<char> find(const Basic_Subsequence<M_Char, unsigned int> &input_subsequence1, const Basic_Subsequence<M_Char, unsigned int> &input_subsequence2){
         std::vector<char> found;
         for (unsigned int row = 0; row < rows(input_subsequence1); row++){
-            Basic_Sequence Motif1{input_subsequence1.seq->row(row), input_subsequence1.i,input_subsequence1.j};
+            Basic_Sequence Motif{input_subsequence1.seq->row(row), input_subsequence1.i,input_subsequence1.j};
             Basic_Sequence Motif2{input_subsequence1.seq->row(row), input_subsequence2.i,input_subsequence2.j};
-            Motif1.concat(Motif2.seq,Motif2.size());
-            if (auto search = Motifs.find(Motif1);search != Motifs.end()) {
-                found.push_back(search->second);
+            Motif.concat(Motif2.seq,Motif2.size());
+            if (auto search = Motifs.find(Motif);search != Motifs.end()) {
+                for (unsigned int i = 0; i < Dupes[Motif].size();i++){
+                    char mots = *next(Dupes[Motif].begin(),i);
+                    found.push_back(mots);
+                }
             }
         }
         return found;
@@ -185,7 +191,6 @@ class MotifMap{
         }
     };
 
-    private:
     DupeHashMap Dupes;
     TranslationHashMap Translations;
     MotifHashMap Motifs;
