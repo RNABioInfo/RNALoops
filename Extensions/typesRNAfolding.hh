@@ -359,6 +359,95 @@ inline int getIntScore(const mfecovar &e) {
     return static_cast<int>(e.covar + e.mfe);
 }
 
+struct mfecovarmotif{
+#ifdef CHECKPOINTING_INTEGRATED
+    friend class boost::serialization::access;
+
+    template <class Archive>
+    void serialize(Archive &ar, const unsigned int version) {
+        ar & empty_;
+        ar & mfe;
+        ar & covar;
+        ar & motif;
+    }
+#endif
+    bool empty_;
+    float mfe;
+    float covar;
+    float motif;
+
+    mfecovarmotif() : empty_(false), mfe(0.0), covar(0.0), motif(0.0) {}
+
+    mfecovarmotif(int i) : empty_(false), mfe(0.0), covar(0.0), motif(0.0) {}
+
+    mfecovarmotif& operator+=(const mfecovarmotif &a) {
+        mfe += a.mfe;
+        covar += a.covar;
+        motif += a.motif;
+        return *this;
+    }
+};
+
+inline uint32_t hashable_value(const mfecovarmotif& candidate) {
+  /* 
+   * for backtracing: mfe values must be unique,
+   * e.g. there cannot be two candidates with -2.0 kcal/mol
+   * but different betaLeftOuter / alphaRightOuter values
+   */
+  return round((candidate.mfe+candidate.covar+candidate.motif)*100);
+  // candidate.covar+candidate.mfe;
+  // + candidate.betaLeftOuter + candidate.alphaRightOuter;
+}
+
+inline std::ostream &operator<<(std::ostream &s, const mfecovarmotif &pfa) {
+    // s << "(firststem: " << pfa.firststem << ", subword: "
+    //   << pfa.subword << ", pf: "  << pfa.pf << ")";
+    if (pfa.empty_)
+      s << 'E';
+    else
+      s << "( " << pfa.mfe + pfa.covar + pfa.motif << " = energy: "
+        << pfa.mfe << " + covar.: " << pfa.covar << " + motif:" << pfa.motif << " )";
+    return s;
+}
+
+inline bool operator==(const mfecovarmotif &a, const mfecovarmotif &b) {
+    return fabs(a.mfe+a.covar+a.motif-b.mfe-b.covar-b.motif) <= 0.001;
+    //~ return fabs(a.mfe-b.mfe) <= 0.001;
+}
+inline bool operator!=(const mfecovarmotif &a, const mfecovarmotif &b) {
+    return !(a == b);
+}
+inline bool operator>(const mfecovarmotif &a, const mfecovarmotif &b) {
+    return (a.mfe+a.covar+a.motif) > (b.mfe+b.covar+b.motif);
+    //~ return (a.mfe) > (b.mfe);
+}
+inline bool operator<(const mfecovarmotif &a, const mfecovarmotif &b) {
+    return (a.mfe+a.covar+a.motif) < (b.mfe+b.covar+b.motif);
+    //~ return (a.mfe) < (b.mfe);
+}
+inline bool operator>=(const mfecovarmotif &a, const mfecovarmotif &b) {
+    return (a.mfe+a.covar+a.motif) >= (b.mfe+b.covar+b.motif);
+    //~ return (a.mfe) >= (b.mfe);
+}
+inline bool operator<=(const mfecovarmotif &a, const mfecovarmotif &b) {
+    return (a.mfe+a.covar+a.motif) <= (b.mfe+b.covar+b.motif);
+    //~ return (a.mfe) <= (b.mfe);
+}
+inline mfecovarmotif operator+(const mfecovarmotif &a, const mfecovarmotif &b) {
+    mfecovarmotif res;
+    res.mfe = a.mfe + b.mfe;
+    res.covar = a.covar + b.covar;
+    res.motif = a.motif + b.motif;
+    return res;
+}
+
+inline void empty(mfecovarmotif &e) {e.empty_ = true; }
+inline bool isEmpty(const mfecovarmotif &e) { return e.empty_; }
+
+inline int getIntScore(const mfecovarmotif &e) {
+    return static_cast<int>(e.covar + e.mfe + e.motif);
+}
+
 typedef Basic_Subsequence<M_Char, unsigned> myTUSubsequence;
 struct mfecovar_macrostate {
 #ifdef CHECKPOINTING_INTEGRATED

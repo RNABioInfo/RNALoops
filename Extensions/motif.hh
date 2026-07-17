@@ -14,6 +14,7 @@
 #include <iostream>
 #include <fstream>
 #include <string_view>
+#include <unordered_map>
 #include <utility>
 #include <algorithm>
 #include"MotifMap.hh"
@@ -202,13 +203,120 @@ inline char identify_motif(const Basic_Subsequence<M_Char, unsigned int> &intern
     else{
         CounterMap Map(found);
         std::pair<char, unsigned int> maxval = Map.findMaxValuePair();
-        if (static_cast<double>(maxval.second)/rows(internal_subsequence1) > 0.1) {
+        if (static_cast<double>(maxval.second)/rows(internal_subsequence1) > 0.5) {
             return maxval.first;
         }
         else {
             return res;
         }
     }
+}
+
+inline float motifscore(const Basic_Subsequence<M_Char, unsigned int> &seq){
+    std::vector<char> found;
+    std::unordered_map<char, std::set<char>> Seq_Versions{};
+    initializeH(init);
+    for (unsigned row = 0; row < rows(seq); row++){
+            const Basic_Sequence Motif{seq.seq->row(row), seq.i,seq.j};
+            if (auto search = HairpinHashMap.find(Motif); search != HairpinHashMap.end()) {
+                found.push_back(search->second);
+                if (Seq_Versions.find(search->second) == Seq_Versions.end()){
+                    Seq_Versions[search->second] = std::set<char> {*Motif.seq};
+                }
+                else {
+                    Seq_Versions[search->second].insert(*Motif.seq);
+                }
+            }
+        }
+    if (found.empty()){
+        return 0;
+    }
+    else{
+        CounterMap Map(found);
+        std::pair<char,unsigned int> maxval = Map.findMaxValuePair();
+        if (static_cast<double>(maxval.second)/rows(seq) > 0.5){
+            double versions = static_cast<double>(Seq_Versions[maxval.first].size());
+            if (versions == 1){
+                return 0.0;
+            }
+            else{
+                return versions/static_cast<double>(rows(seq));
+            }
+        }
+    }
+        return 0;
+}
+
+inline float motifscore(const Basic_Subsequence<M_Char, unsigned int> &seq,const Basic_Subsequence<M_Char, unsigned int> &seq2){
+    std::vector<char> found;
+    std::unordered_map<char, std::set<char>> Seq_Versions{};
+    initializeI(init);
+    for (unsigned row = 0; row < rows(seq); row++){
+            Basic_Sequence Motif1{seq.seq->row(row), seq.i,seq.j};
+            Basic_Sequence Motif2{seq2.seq->row(row), seq2.i,seq2.j};
+            Motif1.concat(Motif2.seq,Motif2.size());
+            if (auto search = InternalHashMap.find(Motif1); search != InternalHashMap.end()) {
+                found.push_back(search->second);
+                if (Seq_Versions.find(search->second) == Seq_Versions.end()){
+                    Seq_Versions[search->second] = std::set<char> {*Motif1.seq};
+                }
+                else {
+                    Seq_Versions[search->second].insert(*Motif1.seq);
+                }
+            }
+        }
+    if (found.empty()){
+        return 0;
+    }
+    else{
+        CounterMap Map(found);
+        std::pair<char,unsigned int> maxval = Map.findMaxValuePair();
+        if (static_cast<double>(maxval.second)/rows(seq) > 0.5){
+            double versions = static_cast<double>(Seq_Versions[maxval.first].size());
+            if (versions == 1){
+                return 0.0;
+            }
+            else{
+                return versions/static_cast<double>(rows(seq));
+            }
+        }
+    }
+    return 0;
+}
+
+inline float motifscore_b(const Basic_Subsequence<M_Char, unsigned int> &seq){
+    std::vector<char> found;
+    std::unordered_map<char, std::set<char>> Seq_Versions{};
+    initializeB(init);
+    for (unsigned row = 0; row < rows(seq); row++){
+            const Basic_Sequence Motif{seq.seq->row(row), seq.i,seq.j};
+            if (auto search = BulgeHashMap.find(Motif); search != BulgeHashMap.end()) {
+                found.push_back(search->second);
+                if (Seq_Versions.find(search->second) == Seq_Versions.end()){
+                    Seq_Versions[search->second] = std::set<char> {*Motif.seq};
+                }
+                else {
+                    Seq_Versions[search->second].insert(*Motif.seq);
+                }
+            }
+        }
+    if (found.empty()){
+        return 0;
+    }
+    else{
+        CounterMap Map(found);
+        std::pair<char,unsigned int> maxval = Map.findMaxValuePair();
+        if (static_cast<double>(maxval.second)/rows(seq) > 0.5){
+            double versions = static_cast<double>(Seq_Versions[maxval.first].size());
+            if (versions == 1){
+                return 0.0;
+            }
+            else{
+                return versions/static_cast<double>(rows(seq));
+            }
+        }
+    }
+    return 0;
 }
 
 inline char identify_motif_align(const Basic_Subsequence<char, unsigned int> &first_track_seq, const Basic_Subsequence<char, unsigned int> &second_track_seq, char res) {
