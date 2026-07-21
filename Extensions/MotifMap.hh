@@ -10,7 +10,17 @@
 #include "ali_t.hh"
 #include "sequence.hh"
 #include "subsequence.hh"
+#include <rtlib/rna.hh>
 
+inline std::vector<long unsigned int> get_gaps(const char *s, unsigned int i, unsigned int j){
+    std::vector<long unsigned int> gap_vec;
+    for (long unsigned int pos = i; pos < j; pos++){
+        if (s[pos] == GAP_BASE){
+            gap_vec.push_back(pos);
+        }
+    }
+    return gap_vec;
+}
 
 struct std_set_hash {
     template<typename T1>
@@ -96,7 +106,9 @@ class MotifMap{
     std::vector<char> find(const Basic_Subsequence<M_Char, unsigned int> &input_subsequence){
         std::vector<char> found;
         for (unsigned row = 0; row < rows(input_subsequence); row++){
-            const Basic_Sequence Motif{input_subsequence.seq->row(row), input_subsequence.i,input_subsequence.j};
+            Basic_Sequence Motif;
+            std::vector<long unsigned int> vec = get_gaps(input_subsequence.seq->row(row),input_subsequence.i,input_subsequence.j);
+            Motif = Basic_Sequence {input_subsequence.seq->row(row), input_subsequence.i,input_subsequence.j, vec};
             if (auto search = Motifs.find(Motif); search != Motifs.end()) {
                 for (unsigned int i = 0; i < Dupes[Motif].size();i++){
                     char mots = *next(Dupes[Motif].begin(),i);
@@ -110,8 +122,10 @@ class MotifMap{
     std::vector<char> find(const Basic_Subsequence<M_Char, unsigned int> &input_subsequence1, const Basic_Subsequence<M_Char, unsigned int> &input_subsequence2){
         std::vector<char> found;
         for (unsigned int row = 0; row < rows(input_subsequence1); row++){
-            Basic_Sequence Motif{input_subsequence1.seq->row(row), input_subsequence1.i,input_subsequence1.j};
-            Basic_Sequence Motif2{input_subsequence1.seq->row(row), input_subsequence2.i,input_subsequence2.j};
+            std::vector<long unsigned int> vec1 = get_gaps(input_subsequence1.seq->row(row),input_subsequence1.i,input_subsequence1.j);
+            std::vector<long unsigned int> vec2 = get_gaps(input_subsequence2.seq->row(row),input_subsequence2.i,input_subsequence2.j);
+            Basic_Sequence Motif {input_subsequence1.seq->row(row), input_subsequence1.i,input_subsequence1.j,vec1};
+            Basic_Sequence Motif2 {input_subsequence2.seq->row(row), input_subsequence2.i,input_subsequence2.j,vec2};
             Motif.concat(Motif2.seq,Motif2.size());
             if (auto search = Motifs.find(Motif);search != Motifs.end()) {
                 for (unsigned int i = 0; i < Dupes[Motif].size();i++){

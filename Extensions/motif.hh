@@ -221,13 +221,14 @@ inline float motifscore(const Basic_Subsequence<M_Char, unsigned int> &seq){
     std::unordered_map<char, std::unordered_set<Basic_Sequence<char,unsigned int>,Hash_ali_array>> Seq_Versions{};
     initializeH(init);
     for (unsigned row = 0; row < rows(seq); row++){
-        const Basic_Sequence Motif{seq.seq->row(row), seq.i,seq.j};
+        std::vector<long unsigned int> vec = get_gaps(seq.seq->row(row),seq.i,seq.j);
+        Basic_Sequence Motif{seq.seq->row(row), seq.i,seq.j,vec};
         if (auto search = HairpinHashMap.find(Motif); search != HairpinHashMap.end()) {
             for (unsigned int i = 0; i < HairpinHashMap.Dupes[Motif].size(); i++){
                 char mots = *next(HairpinHashMap.Dupes[Motif].begin(),i);
                 found.push_back(mots);
                 if (Seq_Versions.find(mots) == Seq_Versions.end()){
-                    Seq_Versions[mots] = std::unordered_set<Basic_Sequence<char,unsigned int>,Hash_ali_array>  {Motif}; //This is not adding the entire sequence
+                    Seq_Versions[mots] = std::unordered_set<Basic_Sequence<char,unsigned int>,Hash_ali_array> {Motif};
                 }
                 else{
                     Seq_Versions[mots].insert(Motif);
@@ -249,7 +250,7 @@ inline float motifscore(const Basic_Subsequence<M_Char, unsigned int> &seq){
             }
             else{
                 float weight = gapc::Opts::getOpts()->weighting;
-                return std::ceil((-versions/static_cast<double>(rows(seq)))*weight);
+                return -std::ceil((versions/static_cast<double>(rows(seq)))*weight);
             }
         }
     }
@@ -261,15 +262,17 @@ inline float motifscore(const Basic_Subsequence<M_Char, unsigned int> &seq,const
     std::unordered_map<char, std::unordered_set<Basic_Sequence<char,unsigned int>,Hash_ali_array>> Seq_Versions{};
     initializeI(init);
     for (unsigned row = 0; row < rows(seq); row++){
-            Basic_Sequence Motif{seq.seq->row(row), seq.i,seq.j};
-            Basic_Sequence Motif2{seq2.seq->row(row), seq2.i,seq2.j};
+            std::vector<long unsigned int> vec = get_gaps(seq.seq->row(row),seq.i,seq.j);
+            std::vector<long unsigned int> vec2 = get_gaps(seq2.seq->row(row),seq2.i,seq2.j);
+            Basic_Sequence Motif{seq.seq->row(row), seq.i,seq.j,vec};
+            Basic_Sequence Motif2{seq2.seq->row(row), seq2.i,seq2.j,vec2};
             Motif.concat(Motif2.seq,Motif2.size());
             if (auto search = InternalHashMap.find(Motif); search != InternalHashMap.end()) {
             for (unsigned int i = 0; i < InternalHashMap.Dupes[Motif].size(); i++){
                 char mots = *next(InternalHashMap.Dupes[Motif].begin(),i);
                 found.push_back(mots);
                 if (Seq_Versions.find(mots) == Seq_Versions.end()){
-                    Seq_Versions[mots] = std::unordered_set<Basic_Sequence<char,unsigned int>,Hash_ali_array>  {Motif}; //This is not adding the entire sequence
+                    Seq_Versions[mots] = std::unordered_set<Basic_Sequence<char,unsigned int>,Hash_ali_array> {Motif}; 
                 }
                 else{
                     Seq_Versions[mots].insert(Motif);
@@ -303,18 +306,19 @@ inline float motifscore_b(const Basic_Subsequence<M_Char, unsigned int> &seq){
     std::unordered_map<char, std::unordered_set<Basic_Sequence<char,unsigned int>,Hash_ali_array>> Seq_Versions{};
     initializeB(init);
     for (unsigned row = 0; row < rows(seq); row++){
-            const Basic_Sequence Motif{seq.seq->row(row), seq.i,seq.j};
-            if (auto search = BulgeHashMap.find(Motif); search != BulgeHashMap.end()) {
-            for (unsigned int i = 0; i < BulgeHashMap.Dupes[Motif].size(); i++){
-                char mots = *next(BulgeHashMap.Dupes[Motif].begin(),i);
-                found.push_back(mots);
-                if (Seq_Versions.find(mots) == Seq_Versions.end()){
-                    Seq_Versions[mots] = std::unordered_set<Basic_Sequence<char,unsigned int>,Hash_ali_array>  {Motif}; //This is not adding the entire sequence
-                }
-                else{
-                    Seq_Versions[mots].insert(Motif);
-                }
+        std::vector<long unsigned int> vec = get_gaps(seq.seq->row(row),seq.i,seq.j);
+        Basic_Sequence Motif {seq.seq->row(row), seq.i,seq.j,vec};
+        if (auto search = BulgeHashMap.find(Motif); search != BulgeHashMap.end()) {
+        for (unsigned int i = 0; i < BulgeHashMap.Dupes[Motif].size(); i++){
+            char mots = *next(BulgeHashMap.Dupes[Motif].begin(),i);
+            found.push_back(mots);
+            if (Seq_Versions.find(mots) == Seq_Versions.end()){
+                Seq_Versions[mots] = std::unordered_set<Basic_Sequence<char,unsigned int>,Hash_ali_array> {Motif};
             }
+            else{
+                Seq_Versions[mots].insert(Motif);
+            }
+        }
         }
     }
     if (found.empty()){
