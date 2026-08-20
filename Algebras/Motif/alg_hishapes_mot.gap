@@ -83,11 +83,12 @@ algebra alg_hishapes_mot implements sig_foldrna(alphabet = char, answer = Rope) 
   }
 
   Rope hl(Subsequence lb,Subsequence region,Subsequence rb) {
+    HairpinLoopMotif _;
     Rope res;
     int pos;
     char mot;
     char sub = underScore;
-    mot = identify_motif(region, sub);
+    mot = identify_motif(region, sub, _);
     if (mot != underScore) {
       pos = (lb.i+rb.j+1)/2;
       if ( pos*2 > lb.i+rb.j+1 ) {
@@ -104,12 +105,13 @@ algebra alg_hishapes_mot implements sig_foldrna(alphabet = char, answer = Rope) 
   }
 
   Rope bl(Subsequence lb,Subsequence lregion,Rope e,Subsequence rb) {
+    BulgeLoopMotif _;
     Rope res;
     char mot;
     char sub = underScore;
     append(res, e);
     int pos;
-    mot = identify_motif_b(lregion, sub);
+    mot = identify_motif(lregion, sub, _);
     if (mot != underScore) {
       pos = (lb.i+rb.j+1)/2;
       if ( pos*2 > lb.i+rb.j+1 ) {
@@ -126,12 +128,13 @@ algebra alg_hishapes_mot implements sig_foldrna(alphabet = char, answer = Rope) 
   }
 
   Rope br(Subsequence lb,Rope e,Subsequence rregion,Subsequence rb) {
+    BulgeLoopMotif _;
     Rope res;
     char mot;
     char sub = underScore;
     append(res, e);
     int pos;
-    mot = identify_motif_b(rregion, sub);
+    mot = identify_motif(rregion, sub, _);
     if (mot != underScore) {
       pos = (lb.i+rb.j+1)/2;
       if ( pos*2 > lb.i+rb.j+1 ) {
@@ -148,12 +151,13 @@ algebra alg_hishapes_mot implements sig_foldrna(alphabet = char, answer = Rope) 
   }
 
   Rope il(Subsequence lb,Subsequence lregion,Rope e,Subsequence rregion,Subsequence rb) {
+    InternalLoopMotif _;
     Rope res;
     char mot;
     char sub = underScore;
     append(res, e);
     int pos;
-    mot = identify_motif(lregion, rregion, sub);
+    mot = identify_motif(lregion, rregion, sub, _);
     if (mot != underScore){
       pos = (lb.i+rb.j+1)/2;
       if ( pos*2 > lb.i+rb.j+1 ) {

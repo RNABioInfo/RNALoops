@@ -17,9 +17,10 @@ shape_t sr(Subsequence lb, shape_t e, Subsequence rb) {
 }
 
 shape_t hl(Subsequence f1, Subsequence x, Subsequence f2) {
+  HairpinLoopMotif _;
   shape_t r;
   char sub = '.';
-  char mot = identify_motif(x, sub);
+  char mot = identify_motif(x, sub, _);
   if (mot != '.') {
       append(r,mot);
   }
@@ -27,8 +28,9 @@ shape_t hl(Subsequence f1, Subsequence x, Subsequence f2) {
 }
 
 shape_t bl(Subsequence f1, Subsequence x, shape_t e, Subsequence f2) {
+  BulgeLoopMotif _;
   char sub = '.';
-  char mot = identify_motif_b(x, sub);
+  char mot = identify_motif(x, sub, _);
   if (mot != '.') {
       return shape_t(mot) + e;
   }
@@ -36,8 +38,9 @@ shape_t bl(Subsequence f1, Subsequence x, shape_t e, Subsequence f2) {
 }
 
 shape_t br(Subsequence f1, shape_t e, Subsequence x, Subsequence f2) {
+  BulgeLoopMotif _;
   char sub = '.';
-  char mot = identify_motif_b(x, sub);
+  char mot = identify_motif(x, sub, _);
   if (mot != '.') {
       return e + shape_t(mot);
   }
@@ -45,8 +48,9 @@ shape_t br(Subsequence f1, shape_t e, Subsequence x, Subsequence f2) {
 }
 
 shape_t il(Subsequence f2, Subsequence r1, shape_t x, Subsequence r2, Subsequence f3) {
+  InternalLoopMotif _;
   char sub = '.';
-  char mot = identify_motif(r1, r2, sub);  
+  char mot = identify_motif(r1, r2, sub, _);  
   if (mot != '.') {
       return x + shape_t(mot);
   }

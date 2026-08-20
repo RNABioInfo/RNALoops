@@ -77,34 +77,38 @@
   }
 
   mfecovarmotif hl(Subsequence lb, Subsequence r, Subsequence rb) {
+    HairpinLoopMotif _;
     mfecovarmotif res;
 	  res.mfe   = (hl_energy(r) / float(rows(r)));
 	  res.covar = covscore(lb, lb.i, rb.i);
-    res.motif = motifscore(r);
+    res.motif = motifscore(r,_);
     return res;
   }
 
   mfecovarmotif bl(Subsequence lb, Subsequence lr, mfecovarmotif x, Subsequence rb) {
+    BulgeLoopMotif _;
     mfecovarmotif res;
 	  res.mfe   = x.mfe + (bl_energy(lr, rb) / float(rows(lb)));
 	  res.covar = x.covar + covscore(lb, lb.i, rb.i);
-    res.motif = x.motif + motifscore_b(lr);
+    res.motif = x.motif + motifscore(lr, _);
     return res;
   }
 
   mfecovarmotif br(Subsequence lb, mfecovarmotif x, Subsequence rr, Subsequence rb) {
+    BulgeLoopMotif _;
     mfecovarmotif res;
 	  res.mfe   = x.mfe + (br_energy(lb, rr) / float(rows(lb)));
 	  res.covar = x.covar + covscore(lb, lb.i, rb.i);
-    res.motif = x.motif + motifscore_b(rr);
+    res.motif = x.motif + motifscore(rr, _);
     return res;
   }
 
   mfecovarmotif il(Subsequence lb, Subsequence lr, mfecovarmotif x, Subsequence rr, Subsequence rb) {
+    InternalLoopMotif _;
     mfecovarmotif res;
 	  res.mfe   = x.mfe + (il_energy(lr, rr) / float(rows(lr)));
     res.covar = x.covar + covscore(lb, lb.i, rb.i);
-    res.motif = x.motif + motifscore(lr,rr);
+    res.motif = x.motif + motifscore(lr,rr, _);
 	  //~ if (lr.j-lr.i + rr.j-rr.i > 30) { res.mfe = 99999; } // ugly hack to realize a filter that rejects internal loops whose combined unpaired loop regions exeed 30 bases. Grammar filter causes errors with --kbacktrace. Georg and I don't know why.
     return res;
   }

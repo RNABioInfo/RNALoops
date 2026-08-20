@@ -14,6 +14,9 @@ type base_t = extern
 type answer_macrostate_mfe = extern
 type answer_macrostate_pfunc = extern
 type mfeanswer_v2 = extern
+type HairpinLoopMotif = extern
+type InternalLoopMotif = extern
+type BulgeLoopMotif = extern
 
 
 //Signature

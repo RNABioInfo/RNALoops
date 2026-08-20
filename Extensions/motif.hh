@@ -1,5 +1,4 @@
 #pragma once
-#include "rnaoptions_defaults.hh"
 #include "subsequence.hh"
 #include "sequence.hh"
 #include "rnaoptions.hh"
@@ -8,7 +7,6 @@
 #include "shape.hh"
 #include <cctype>
 #include <iterator>
-#include <locale>
 #include <stdexcept>
 #include <string>
 #include <iostream>
@@ -20,6 +18,9 @@
 #include <algorithm>
 #include"MotifMap.hh"
 
+struct HairpinLoopMotif{};
+struct InternalLoopMotif{};
+struct BulgeLoopMotif{};
 
 using shape_t =  Shape;
 static MotifMap HairpinHashMap;
@@ -35,13 +36,14 @@ static std::array Bulge_lengths    = {rna3d_bulges_len, rfam_bulges_len};
 enum shapelevel_enum: std::uint8_t {five=5,four=4,three=3,two=2,one=1};
 struct init_status {
     std::array <bool,3> states = {false,false,false};
-    bool& initializedH(){return states[0];};
-    bool& initializedI(){return states[1];};
-    bool& initializedB(){return states[2];};
+    bool initializedH(){return states[0];};
+    bool initializedI(){return states[1];};
+    bool initializedB(){return states[2];};
     void setH(bool set){states[0] = set;};
     void setI(bool set){states[1] = set;};  
     void setB(bool set){states[2] = set;};
     void setAll(bool set){setH(set);setI(set);setB(set);};
+    bool initialized() {return std::all_of(states.begin(),states.end(),[](const bool v){return v;});};
 };
 static init_status init;
 
@@ -110,274 +112,209 @@ inline void create_hashmaps(const std::string& custom_path, bool replace_bool, M
     fill_hashmap(custom_path,    replace_bool,    map_to_fill, motif_arrays,    length_arrays, direct); 
 }
 
-inline void initializeH(init_status& init_check){
-    if (!init_check.initializedH()){
-        init_check.setH(true);
-        create_hashmaps(gapc::Opts::getOpts()->custom_hairpins, gapc::Opts::getOpts() -> replaceH, HairpinHashMap, Hairpins, Hairpin_lengths);
+template <typename T>
+inline void initializer(T loop_type){
+    if (!init.initialized()){
+        initialize_hash_map(init, loop_type);
     }
-};
-
-inline void initializeI(init_status& init_check){
-    if (!init_check.initializedI()){
-        init_check.setI(true);
-        create_hashmaps(gapc::Opts::getOpts()->custom_internals, gapc::Opts::getOpts() -> replaceI, InternalHashMap, Internals, Internal_lengths);
-    }
-};
-
-inline void initializeB(init_status& init_check){
-    if (!init_check.initializedB()){
-        init_check.setB(true);
-        create_hashmaps(gapc::Opts::getOpts()->custom_bulges, gapc::Opts::getOpts() -> replaceB, BulgeHashMap, Bulges, Bulge_lengths);
-    }
-};
-
-//Overloaded identify_motif functions, two identify_motif for Hairpins and Internal Loops respectively while identify_motif_b is for bulge loops
-inline char identify_motif(const Basic_Subsequence<char, unsigned int> &input_subsequence, char res) {
-    initializeH(init);
-    if (auto search = HairpinHashMap.find(input_subsequence); search != HairpinHashMap.end()){
-        return search->second;
-    }
-    return res;
 }
 
-inline char identify_motif(const Basic_Subsequence<char, unsigned int> &internal_subsequence1, const Basic_Subsequence<char, unsigned int> &internal_subsequence2, char res) {
-    initializeI(init);
-    if (auto search = InternalHashMap.find(internal_subsequence1,internal_subsequence2); search != InternalHashMap.end()) {
-        return search->second;
+template<typename T>
+inline void initialize_hash_map(init_status &init_check, T _){
+    if constexpr(std::is_same<HairpinLoopMotif, T>::value){
+        if (!init_check.initializedH()){
+            create_hashmaps(gapc::Opts::getOpts()->custom_hairpins, gapc::Opts::getOpts() -> replaceH, HairpinHashMap, Hairpins, Hairpin_lengths);
+            init_check.setH(true);
+        }
+        return;
     }
-    return res;
-}
-
-inline char identify_motif_b(const Basic_Subsequence<char, unsigned int> &bulge_subsequence, char res) {
-    initializeB(init);
-    if (auto search = BulgeHashMap.find(bulge_subsequence); search != BulgeHashMap.end()) {
-        return search->second;
+    else if constexpr(std::is_same<InternalLoopMotif, T>::value){
+        if (!init_check.initializedI()){
+            create_hashmaps(gapc::Opts::getOpts()->custom_internals, gapc::Opts::getOpts() -> replaceI, InternalHashMap, Internals, Internal_lengths);
+            init_check.setI(true);
+        }
+        return; 
     }
-    return res;
+    else if constexpr(std::is_same<BulgeLoopMotif, T>::value){
+        if (!init_check.initializedB()){
+            create_hashmaps(gapc::Opts::getOpts()->custom_bulges, gapc::Opts::getOpts() -> replaceB, BulgeHashMap, Bulges, Bulge_lengths);
+            init_check.setB(true);
+        }
+        return;
+    }
+    else {
+        throw std::runtime_error("Unknown Motif Type during Hash Map Initialization");
+    }
 }
 
-inline char identify_motif(const Basic_Subsequence<M_Char, unsigned int> &input_subsequence,char res) {
-  std::vector<char> found;
-  initializeH(init);
-  found = HairpinHashMap.find(input_subsequence);
-  if (found.empty()) {
-    return res;
-  }
-  else{
-      CounterMap Map(found);
-      std::pair<char, unsigned int> maxval = Map.findMaxValuePair();
-      double fract = gapc::Opts::getOpts()->fraction;
-      if (static_cast<double>(maxval.second)/rows(input_subsequence) >= fract) {
-        return maxval.first;
-      }
-      else {
-         return res;
-      }
-  }
-}
-
-inline char identify_motif_b(const Basic_Subsequence<M_Char, unsigned int> &input_subsequence,char res) {
-    std::vector<char> found;
-    initializeB(init);
-    found  = BulgeHashMap.find(input_subsequence);
-    if (found.empty()) {
-        return res;
+template<typename pos_type>
+inline char select_return_motif(std::vector<char> found_motifs, pos_type rows , char res){
+    CounterMap Map(found_motifs);
+    std::pair<char, unsigned int> maxval = Map.findMaxValuePair();
+    double fract = gapc::Opts::getOpts()->fraction;
+    if (static_cast<double>(maxval.second)/rows >= fract) {
+         return maxval.first;
     }
     else{
-        CounterMap Map(found);
-        std::pair<char, unsigned int> maxval = Map.findMaxValuePair();
-        float fract = gapc::Opts::getOpts()->fraction;
-        if (static_cast<double>(maxval.second)/rows(input_subsequence) >= fract) {
-            return maxval.first;
-        }
-        else {
-            return res;
-        }
-    }
-}
-
-inline char identify_motif(const Basic_Subsequence<M_Char, unsigned int> &internal_subsequence1,const Basic_Subsequence<M_Char, unsigned int> &internal_subsequence2,char res) {
-    std::vector<char> found;
-    initializeI(init);
-    found = InternalHashMap.find(internal_subsequence1,internal_subsequence2);
-    if (found.empty()) {
         return res;
     }
-    else{
-        CounterMap Map(found);
-        std::pair<char, unsigned int> maxval = Map.findMaxValuePair();
-        double fract = gapc::Opts::getOpts()->fraction;
-        if (static_cast<double>(maxval.second)/rows(internal_subsequence1) >= fract) {
-            return maxval.first;
-        }
-        else {
-            return res;
-        }
-    }
 }
 
-inline float motifscore(const Basic_Subsequence<M_Char, unsigned int> &seq){
+template<typename pos_type>
+inline int select_return_motif(std::vector<char> found_motifs, pos_type rows, std::unordered_map<char, std::unordered_set<Basic_Sequence<char,unsigned int>,Hash_ali_array>> seq_versions){
+    CounterMap Map(found_motifs);
+    std::pair<char, unsigned int> maxval = Map.findMaxValuePair();
+    double fract = gapc::Opts::getOpts()->fraction;
+    float weight = gapc::Opts::getOpts()->weighting;
+    if (static_cast<double>(maxval.second)/rows >= fract) {
+            double versions = static_cast<double>(seq_versions[maxval.first].size());
+            if (versions == 1){
+                return 1.0 * weight;
+            }
+            else{
+                return -std::ceil((versions/static_cast<double>(rows))*weight);
+            }
+        }
+}
+
+inline std::vector<char> find_and_count_motifs(std::unordered_map<char, std::unordered_set<Basic_Sequence<char,unsigned int>,Hash_ali_array>> &versions, const Basic_Subsequence<M_Char, unsigned int> &seq, MotifMap &Map){
     std::vector<char> found;
-    std::unordered_map<char, std::unordered_set<Basic_Sequence<char,unsigned int>,Hash_ali_array>> Seq_Versions{};
-    initializeH(init);
     for (unsigned row = 0; row < rows(seq); row++){
         std::vector<long unsigned int> vec = get_gaps(seq.seq->row(row),seq.i,seq.j);
         Basic_Sequence Motif{seq.seq->row(row), seq.i,seq.j,vec};
-        if (auto search = HairpinHashMap.find(Motif); search != HairpinHashMap.end()) {
-            for (unsigned int i = 0; i < HairpinHashMap.Dupes[Motif].size(); i++){
-                char mots = *next(HairpinHashMap.Dupes[Motif].begin(),i);
+        if (auto search = Map.find(Motif); search != Map.end()) {
+            for (unsigned int i = 0; i < Map.Dupes[Motif].size(); i++){
+                char mots = *next(Map.Dupes[Motif].begin(),i);
                 found.push_back(mots);
-                if (Seq_Versions.find(mots) == Seq_Versions.end()){
-                    Seq_Versions[mots] = std::unordered_set<Basic_Sequence<char,unsigned int>,Hash_ali_array> {Motif};
+                if (versions.find(mots) == versions.end()){
+                    versions[mots] = std::unordered_set<Basic_Sequence<char,unsigned int>,Hash_ali_array> {Motif};
                 }
                 else{
-                    Seq_Versions[mots].insert(Motif);
+                    versions[mots].insert(Motif);
                 }
             }
         }
     }
-    if (found.empty()){
-        return 0;
-    }
-    else{
-        CounterMap Map(found);
-        std::pair<char,unsigned int> maxval = Map.findMaxValuePair();
-        double fract = gapc::Opts::getOpts()->fraction;
-        if (static_cast<double>(maxval.second)/rows(seq) >= fract){
-            double versions = static_cast<double>(Seq_Versions[maxval.first].size());
-            if (versions == 1){
-                return 0.0;
-            }
-            else{
-                float weight = gapc::Opts::getOpts()->weighting;
-                return -std::ceil((versions/static_cast<double>(rows(seq)))*weight);
-            }
-        }
-    }
-        return 0;
+    return found;
 }
 
-inline float motifscore(const Basic_Subsequence<M_Char, unsigned int> &seq,const Basic_Subsequence<M_Char, unsigned int> &seq2){
+inline std::vector<char> find_and_count_motifs(std::unordered_map<char, std::unordered_set<Basic_Sequence<char,unsigned int>,Hash_ali_array>> &versions, const Basic_Subsequence<M_Char, unsigned int> &seq, const Basic_Subsequence<M_Char, unsigned int> &seq2, MotifMap &Map){
     std::vector<char> found;
-    std::unordered_map<char, std::unordered_set<Basic_Sequence<char,unsigned int>,Hash_ali_array>> Seq_Versions{};
-    initializeI(init);
     for (unsigned row = 0; row < rows(seq); row++){
             std::vector<long unsigned int> vec = get_gaps(seq.seq->row(row),seq.i,seq.j);
             std::vector<long unsigned int> vec2 = get_gaps(seq2.seq->row(row),seq2.i,seq2.j);
             Basic_Sequence Motif{seq.seq->row(row), seq.i,seq.j,vec};
             Basic_Sequence Motif2{seq2.seq->row(row), seq2.i,seq2.j,vec2};
             Motif.concat(Motif2.seq,Motif2.size());
-            if (auto search = InternalHashMap.find(Motif); search != InternalHashMap.end()) {
-            for (unsigned int i = 0; i < InternalHashMap.Dupes[Motif].size(); i++){
-                char mots = *next(InternalHashMap.Dupes[Motif].begin(),i);
+        if (auto search = Map.find(Motif); search != Map.end()) {
+            for (unsigned int i = 0; i < Map.Dupes[Motif].size(); i++){
+                char mots = *next(Map.Dupes[Motif].begin(),i);
                 found.push_back(mots);
-                if (Seq_Versions.find(mots) == Seq_Versions.end()){
-                    Seq_Versions[mots] = std::unordered_set<Basic_Sequence<char,unsigned int>,Hash_ali_array> {Motif}; 
+                if (versions.find(mots) == versions.end()){
+                    versions[mots] = std::unordered_set<Basic_Sequence<char,unsigned int>,Hash_ali_array> {Motif};
                 }
                 else{
-                    Seq_Versions[mots].insert(Motif);
+                    versions[mots].insert(Motif);
                 }
             }
         }
     }
-    if (found.empty()){
-        return 0;
-    }
-    else{
-        CounterMap Map(found);
-        std::pair<char,unsigned int> maxval = Map.findMaxValuePair();
-        double fract = gapc::Opts::getOpts()->fraction;
-        if (static_cast<double>(maxval.second)/rows(seq) >= fract){
-            double versions = static_cast<double>(Seq_Versions[maxval.first].size());
-            if (versions == 1){
-                return 0.0;
-            }
-            else{
-                float weight = gapc::Opts::getOpts()->weighting;
-                return std::ceil(-versions/static_cast<double>(rows(seq))*weight);
-            }
-        }
-    }
-    return 0;
+    return found;
 }
 
-inline float motifscore_b(const Basic_Subsequence<M_Char, unsigned int> &seq){
-    std::vector<char> found;
-    std::unordered_map<char, std::unordered_set<Basic_Sequence<char,unsigned int>,Hash_ali_array>> Seq_Versions{};
-    initializeB(init);
-    for (unsigned row = 0; row < rows(seq); row++){
-        std::vector<long unsigned int> vec = get_gaps(seq.seq->row(row),seq.i,seq.j);
-        Basic_Sequence Motif {seq.seq->row(row), seq.i,seq.j,vec};
-        if (auto search = BulgeHashMap.find(Motif); search != BulgeHashMap.end()) {
-        for (unsigned int i = 0; i < BulgeHashMap.Dupes[Motif].size(); i++){
-            char mots = *next(BulgeHashMap.Dupes[Motif].begin(),i);
-            found.push_back(mots);
-            if (Seq_Versions.find(mots) == Seq_Versions.end()){
-                Seq_Versions[mots] = std::unordered_set<Basic_Sequence<char,unsigned int>,Hash_ali_array> {Motif};
-            }
-            else{
-                Seq_Versions[mots].insert(Motif);
-            }
-        }
+//Regular identify motif functions for either Single Sequence Folding with Basic_Subsequences or Alignment Folding with M_Char
+template<typename T>
+inline char identify_motif(const Basic_Subsequence<char, unsigned int> &motif_sequence, char res, T loop_type){
+    initializer(loop_type);
+    if constexpr(std::is_same_v<HairpinLoopMotif, T>){
+        if (auto search = HairpinHashMap.find(motif_sequence); search != HairpinHashMap.end()){
+            return search->second;
         }
     }
-    if (found.empty()){
-        return 0;
+    else if constexpr(std::is_same_v<BulgeLoopMotif, T>){
+        if (auto search = BulgeHashMap.find(motif_sequence); search != BulgeHashMap.end()) {
+            return search->second;  
+        }
     }
     else{
-        CounterMap Map(found);
-        std::pair<char,unsigned int> maxval = Map.findMaxValuePair();
-        double fract = gapc::Opts::getOpts()->fraction;
-        if (static_cast<double>(maxval.second)/rows(seq) >= fract){
-            double versions = static_cast<double>(Seq_Versions[maxval.first].size());
-            if (versions == 1){
-                return 0.0;
-            }
-            else{
-                float weight = gapc::Opts::getOpts()->weighting;
-                return std::ceil(-versions/static_cast<double>(rows(seq))*weight);
-            }
-        }
-    }
-    return 0;
-}
-
-inline char identify_motif_align(const Basic_Subsequence<char, unsigned int> &first_track_seq, const Basic_Subsequence<char, unsigned int> &second_track_seq, char res) {
-    if (!std::all_of(init.states.cbegin(),init.states.cend(),[](bool init){return init;})) {
-        create_hashmaps(gapc::Opts::getOpts()->custom_hairpins, gapc::Opts::getOpts() -> replaceH, HairpinHashMap,Hairpins,Hairpin_lengths);
-        create_hashmaps(gapc::Opts::getOpts()->custom_internals, gapc::Opts::getOpts() -> replaceI, InternalHashMap,Internals,Internal_lengths);
-        create_hashmaps(gapc::Opts::getOpts() -> custom_bulges,gapc::Opts::getOpts() -> replaceB, BulgeHashMap,Bulges,Bulge_lengths);
-        init.setAll(true);
-    }
-    char found1;
-    char found2;
-    char found3;
-    char found4;
-    if (auto search1 = HairpinHashMap.find(first_track_seq); search1 != HairpinHashMap.end()) {
-        found1 = search1->second;
-        if (auto search2 = HairpinHashMap.find(second_track_seq); search2 != HairpinHashMap.end()) {
-            found2 = search2->second;
-            if (std::toupper(found1, std::locale()) == std::toupper(found2,std::locale())) {
-                return std::toupper(found1, std::locale());
-            }
-        }
-    }
-    if (auto search3 = BulgeHashMap.find(first_track_seq); search3 != BulgeHashMap.end()){
-        found3 = search3->second;
-        if (auto search4 = BulgeHashMap.find(second_track_seq); search4 != BulgeHashMap.end()){
-            found4 = search4->second;
-            if (std::toupper(found3, std::locale()) == std::toupper(found4,std::locale())) {
-                return std::toupper(found3, std::locale());
-            }
-        }
+        throw std::runtime_error("Unknown Motif Type detected during motif identification!");
     }
     return res;
+}
+
+template<typename T>
+inline char identify_motif(const Basic_Subsequence<char, unsigned int> &internal_subsequence1, const Basic_Subsequence<char, unsigned int> &internal_subsequence2, char res, T loop_type){
+    initializer(loop_type);
+    if (auto search = InternalHashMap.find(internal_subsequence1,internal_subsequence2); search != InternalHashMap.end()) {
+        return search->second;  
+    }
+    return res;
+}
+
+template <typename T>
+inline char identify_motif(const Basic_Subsequence<M_Char, unsigned int> &motif_sequence,char res, T loop_type) {
+    initializer(loop_type);
+    std::vector<char> found;
+    if constexpr(std::is_same_v<HairpinLoopMotif, T>){
+        found = HairpinHashMap.find(motif_sequence);
+    }
+    else if constexpr(std::is_same_v<BulgeLoopMotif, T>){
+        found = BulgeHashMap.find(motif_sequence);
+    }
+  if (!found.empty()) {
+    return select_return_motif(found, rows(motif_sequence), res);
+  }
+  return res;
+}
+
+template <typename T>
+inline char identify_motif(const Basic_Subsequence<M_Char, unsigned int> &internal_subsequence1,const Basic_Subsequence<M_Char, unsigned int> &internal_subsequence2,char res, T loop_type) {
+    initializer(loop_type);
+    std::vector<char> found;
+    found = InternalHashMap.find(internal_subsequence1,internal_subsequence2);
+    if (!found.empty()) {
+        return select_return_motif(found, rows(internal_subsequence1), res);
+    }
+    return res;
+}
+
+//Scoring function for RNAmotiAlign, returns Score for a set of Basic_Subsequence objects
+template <typename T>
+inline float motifscore(const Basic_Subsequence<M_Char, unsigned int> &seq, T loop_type){
+    initializer(loop_type);
+    std::vector<char> found;
+    std::unordered_map<char, std::unordered_set<Basic_Sequence<char,unsigned int>,Hash_ali_array>> seq_versions{};
+    if constexpr (std::is_same_v<HairpinLoopMotif,T>){
+        found = find_and_count_motifs(seq_versions, seq,HairpinHashMap);
+    }
+    else if constexpr(std::is_same_v<BulgeLoopMotif,T>){
+        found = find_and_count_motifs(seq_versions, seq,BulgeHashMap);
+    }
+    if (!found.empty()){        
+        return select_return_motif(found, rows(seq),seq_versions);
+    }
+    return 0;
+}
+
+template <typename T>
+inline float motifscore(const Basic_Subsequence<M_Char, unsigned int> &seq,const Basic_Subsequence<M_Char, unsigned int> &seq2, T loop_type){
+    initializer(loop_type);
+    std::vector<char> found;
+    std::unordered_map<char, std::unordered_set<Basic_Sequence<char,unsigned int>,Hash_ali_array>> seq_versions{};
+    found = find_and_count_motifs(seq_versions, seq,seq2,InternalHashMap);
+    if (!found.empty()){        
+        return select_return_motif(found, rows(seq),seq_versions);
+    }
+    return 0;
 }
 
 //Syntactic filter function for hairpin loop motifs (with(_overlay), pre-parsing)
 template <typename alphabet, typename pos_type, typename T>
 inline bool motif_h(const Basic_Sequence<alphabet, pos_type> &seq, T i, T j) {
-    initializeH(init);
+    if (!init.initializedH()){
+        create_hashmaps(gapc::Opts::getOpts()->custom_hairpins, gapc::Opts::getOpts() -> replaceH, HairpinHashMap, Hairpins, Hairpin_lengths);
+        init.setH(true);
+    }
     if (auto search = HairpinHashMap.find(seq,i,j); search != HairpinHashMap.end()) {
     return true;
   }
@@ -387,8 +324,26 @@ inline bool motif_h(const Basic_Sequence<alphabet, pos_type> &seq, T i, T j) {
 //Syntactic filter function for bulge loop motifs (with(_overlay), pre-parsing)
 template <typename alphabet, typename pos_type, typename T>
 inline bool motif_b(const Basic_Sequence<alphabet, pos_type> &seq, T i, T j) {
-    initializeB(init);
+    if (!init.initializedB()){
+        create_hashmaps(gapc::Opts::getOpts()->custom_bulges, gapc::Opts::getOpts() -> replaceB, BulgeHashMap, Bulges, Bulge_lengths);
+        init.setB(true);
+    }
     if (auto search = BulgeHashMap.find(seq,i,j); search != BulgeHashMap.end()) {
+        return true;
+    }
+    return false;
+}
+
+//Syntactic overlay filter function for internal loop motifs (with(_overlay) , pre-parsing)
+template<typename alphabet, typename pos_type, typename T>
+inline bool motif_i (const  Basic_Sequence<alphabet, pos_type> &seq, T lb_i, T lb_j, T lr_i, T lr_j, T x_i, T x_j, T rr_i, T rr_j, T rb_i, T rb_j){
+    if (!init.initializedI()){
+        create_hashmaps(gapc::Opts::getOpts()->custom_internals, gapc::Opts::getOpts() -> replaceI, InternalHashMap, Internals, Internal_lengths);
+        init.setI(true);
+    }
+    const Basic_Subsequence<alphabet,pos_type>& lr {seq,lr_i,lr_j};
+    const Basic_Subsequence<alphabet,pos_type>& rr {seq,rr_i,rr_j};
+    if (auto search = InternalHashMap.find(lr,rr); search != InternalHashMap.end()){
         return true;
     }
     return false;
@@ -398,56 +353,15 @@ inline bool motif_b(const Basic_Sequence<alphabet, pos_type> &seq, T i, T j) {
 template <typename alphabet, typename pos_type, typename T>
 inline bool motif_i(const Basic_Subsequence<alphabet, pos_type> &base1,
                     const Basic_Subsequence<alphabet, pos_type> &seq1, 
-                    T &bruh,
+                    T & _ ,
                     const Basic_Subsequence<alphabet, pos_type> &seq2,
                     const Basic_Subsequence<alphabet, pos_type> &base2) {
-    initializeI(init);
-    if (auto isearch = InternalHashMap.find(seq1, seq2); isearch != InternalHashMap.end()) {
+    if (!init.initializedI()){
+        create_hashmaps(gapc::Opts::getOpts()->custom_internals, gapc::Opts::getOpts() -> replaceI, InternalHashMap, Internals, Internal_lengths);
+        init.setI(true);
+    }
+    if (auto search = InternalHashMap.find(seq1, seq2); search != InternalHashMap.end()) {
         return true;
-    }
-    return false;
-}
-
-//Syntactic overlay filter function for internal loop motifs (with(_overlay) , pre-parsing)
-template<typename alphabet, typename pos_type, typename T>
-inline bool motif_i (const  Basic_Sequence<alphabet, pos_type> &seq, T lb_i, T lb_j, T lr_i, T lr_j, T x_i, T x_j, T rr_i, T rr_j, T rb_i, T rb_j){
-    initializeI(init);
-    const Basic_Subsequence<alphabet,pos_type>& lr {seq,lr_i,lr_j};
-    const Basic_Subsequence<alphabet,pos_type>& rr {seq,rr_i,rr_j};
-    if (auto search = InternalHashMap.find(lr,rr); search != InternalHashMap.end()){
-        return true;
-    }
-    return false;
-}
-
-//Filter function for RNAmotiFold alignments, makes two hashmap searches and compares the outputs. This ensures only motif matching regions are checked for motifs.
-template<typename alphabet, typename pos_type, typename T>
-inline bool motif_match(const Basic_Sequence<alphabet, pos_type> &seq1, const Basic_Sequence<alphabet, pos_type> &seq2, T i_seq1, T j_seq1, T i_seq2, T j_seq2){
-    if (!std::all_of(init.states.cbegin(),init.states.cend(),[](bool init){return init;})) {
-        create_hashmaps(gapc::Opts::getOpts()->custom_hairpins, gapc::Opts::getOpts() -> replaceH, HairpinHashMap,Hairpins,Hairpin_lengths);
-        create_hashmaps(gapc::Opts::getOpts()->custom_internals, gapc::Opts::getOpts() -> replaceI, InternalHashMap,Internals,Internal_lengths);
-        create_hashmaps(gapc::Opts::getOpts() -> custom_bulges,gapc::Opts::getOpts() -> replaceB, BulgeHashMap,Bulges,Bulge_lengths);
-        init.setAll(true);
-    }
-    //Hairpin Check
-    Basic_Subsequence<char, unsigned int> Motif1 {seq1,i_seq1,j_seq1};
-    Basic_Subsequence<char, unsigned int> Motif2 {seq2,i_seq2,j_seq2};
-    if (auto search = HairpinHashMap.find(Motif1); search != HairpinHashMap.end()){
-        char found1 = search->second;
-        if (auto search2 = HairpinHashMap.find(Motif2); search2 != HairpinHashMap.end()){
-            char found2 = search2->second;
-            return std::tolower(found1,std::locale()) == std::tolower(found2,std::locale());
-            }
-    }
-    else if (auto search3 = BulgeHashMap.find(Motif1); search3 != BulgeHashMap.end()) {
-        char found3 = search3 -> second;
-        if (auto search4 = BulgeHashMap.find(Motif2); search4 != BulgeHashMap.end()) {
-            char found4 = search4->second;
-            return std::tolower(found3,std::locale()) == std::tolower(found4,std::locale());
-        }
-    }
-    else {
-        return false;
     }
     return false;
 }

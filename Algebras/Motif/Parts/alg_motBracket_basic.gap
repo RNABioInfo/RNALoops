@@ -58,9 +58,10 @@ string sr(Subsequence lb,string e,Subsequence rb) {
 }
 
 string hl(Subsequence lb,Subsequence region,Subsequence rb) {
+  HairpinLoopMotif _;
   string res;
   char sub = '.';
-  char mot = identify_motif(region, sub);
+  char mot = identify_motif(region, sub, _);
   append(res, '(');
   append(res, mot, size(region));
   append(res, ')');
@@ -68,9 +69,10 @@ string hl(Subsequence lb,Subsequence region,Subsequence rb) {
 }
 
 string bl(Subsequence lb,Subsequence lregion,string e,Subsequence rb) {
+  BulgeLoopMotif _;
   string res;
   char sub = '.';
-  char mot = identify_motif_b(lregion, sub);
+  char mot = identify_motif(lregion, sub, _);
   append(res, '(');
   append(res, mot, size(lregion));
   append(res, e);
@@ -79,9 +81,10 @@ string bl(Subsequence lb,Subsequence lregion,string e,Subsequence rb) {
 }
 
 string br(Subsequence lb,string e,Subsequence rregion,Subsequence rb) {
+  BulgeLoopMotif _;
   string res;
   char sub = '.';
-  char mot = identify_motif_b(rregion, sub);
+  char mot = identify_motif(rregion, sub, _);
   append(res, '(');
   append(res, e);
   append(res, mot, size(rregion));
@@ -90,10 +93,11 @@ string br(Subsequence lb,string e,Subsequence rregion,Subsequence rb) {
 }
 
 string il(Subsequence lb,Subsequence lregion,string e,Subsequence rregion,Subsequence rb) {
+  InternalLoopMotif _;
   string res;
   char sub = '.';
   append(res, '(');
-  char mot = identify_motif(lregion,rregion, sub);
+  char mot = identify_motif(lregion,rregion, sub, _);
   append(res, mot, size(lregion));
   append(res, e);
   append(res, mot, size(rregion));

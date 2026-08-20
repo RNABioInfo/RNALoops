@@ -15,6 +15,9 @@ type shape_t = shape
 type M_Char = extern
 type mfecovar = extern
 type mfecovarmotif = extern
+type HairpinLoopMotif = extern
+type InternalLoopMotif = extern
+type BulgeLoopMotif = extern
 
 include "Signatures/sig_foldrna.gap"
 include "Algebras/DotBracket/alg_ali_dotBracket.gap"

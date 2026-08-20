@@ -103,6 +103,14 @@ class MotifMap{
         return Motifs.find(Motif);
     };
 
+    template<typename alphabet, typename pos_type>
+    MotifHashMap::iterator find(const Basic_Subsequence<alphabet,pos_type> &internal_subsequence1, const Basic_Subsequence<alphabet,pos_type> &internal_subsequence2){
+        Basic_Sequence Motif1 {&internal_subsequence1.front(),internal_subsequence1.size()};
+        Basic_Sequence Motif2 {&internal_subsequence2.front(),internal_subsequence2.size()};
+        Motif1.concat(Motif2.seq,Motif2.size());
+        return Motifs.find(Motif1);
+    };
+
     std::vector<char> find(const Basic_Subsequence<M_Char, unsigned int> &input_subsequence){
         std::vector<char> found;
         for (unsigned row = 0; row < rows(input_subsequence); row++){
@@ -146,14 +154,6 @@ class MotifMap{
         const Basic_Subsequence Subseq{input_sequence, start_pos, end_pos};
         Basic_Sequence Motif {&Subseq.front(),Subseq.size()};
         return Motifs.find(Motif);
-    };
-
-    template<typename alphabet, typename pos_type>
-    MotifHashMap::iterator find(const Basic_Subsequence<alphabet,pos_type> &internal_subsequence1, const Basic_Subsequence<alphabet,pos_type> &internal_subsequence2){
-        Basic_Sequence Motif1 {&internal_subsequence1.front(),internal_subsequence1.size()};
-        Basic_Sequence Motif2 {&internal_subsequence2.front(),internal_subsequence2.size()};
-        Motif1.concat(Motif2.seq,Motif2.size());
-        return Motifs.find(Motif1);
     };
 
     template<typename alphabet, typename pos_type>
