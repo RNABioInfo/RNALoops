@@ -41,7 +41,7 @@ include "Grammars/gra_microstate.gap"
 
 instance count = gra_microstate (alg_count);
 instance enum = gra_microstate (alg_enum);
-instance RNAmotiAlign = gra_microstate(alg_ali_mfe_motifs * alg_ali_motBracket);
+instance RNAmotiAlign = gra_microstate((alg_ali_motif * alg_ali_mfe_motifs) * alg_ali_motBracket);
 
 
 //start: instances for unit tests
