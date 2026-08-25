@@ -323,6 +323,9 @@ class MotifMap{
             std::cerr << "Found " << elements << ", Expected " << 2 << "\n";
             return std::nullopt;
         }
+        if (motif.abb == 'X'){
+            return std::nullopt;
+        }
         return motif;
     };
 };
