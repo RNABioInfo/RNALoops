@@ -175,6 +175,9 @@ inline int select_return_motif(std::vector<char> found_motifs, pos_type rows, st
                 return -std::ceil((versions/static_cast<double>(rows))*weight);
             }
         }
+    else{
+        return 0;
+    }
 }
 
 inline std::vector<char> find_and_count_motifs(std::unordered_map<char, std::unordered_set<Basic_Sequence<char,unsigned int>,Hash_ali_array>> &versions, const Basic_Subsequence<M_Char, unsigned int> &seq, MotifMap &Map){
