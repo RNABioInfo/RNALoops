@@ -398,6 +398,8 @@ def _uninteractive_update(version: str) -> bool:  # type: ignore This function i
         except ConnectionError as error:
             logger.critical(error)
             return False
+    else:
+        version = version.replace(".","_")
     update_needed: bool = update_necessary(requested_version=version)
     if not update_needed:
         return False
@@ -413,7 +415,6 @@ def _uninteractive_update(version: str) -> bool:  # type: ignore This function i
 def check_backups(version: str) -> bool:
     """Potential code for backup system if I ever have time to implement it (have a fully fledged system for using different RNA3D Motif Atlas Versions)."""
     versions_path: Path = Path(__file__).resolve().parent.joinpath("versions")
-    print(version)
     for dir in get_dirs(versions_path):
         if dir == versions_path.joinpath(version):
             logger.info("Found requested version in backups, overwriting hexdump...")
