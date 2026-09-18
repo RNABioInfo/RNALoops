@@ -202,6 +202,7 @@ class rna3d_motif:
     @staticmethod
     def load_rna3d_atlas(version: str = "current") -> list["rna3d_motif"]:
         """Retuns a list of all the current RNA 3D Motifs from the RNA 3D Motif Atlas as rna3d_motif objects"""
+        version = version.replace("_",".")
         current_hl_json = json.loads(
             api_call(f"http://rna.bgsu.edu/rna3dhub/motifs/release/hl/{version}/json").content.decode()
         )
@@ -247,7 +248,7 @@ def api_call(call: str, attempts: int = 6) -> requests.Response:
             logger.debug(f"API-request {call} successful")
             return response
         else:
-            logger.error(f"Could not retrieve data in {i} attempts. Request denied because: {response.reason}")
+            logger.error(f"Could not retrieve data in {i+1} attempts. Request denied because: {response.reason}")
     else:
         raise ConnectionError(f"Unable to retrieve RNA 3D Motif Atlas data from call: {call}")
 
@@ -274,11 +275,10 @@ def write_csv(loop_type_sequences: list[str], loop_type: str, version: str) -> N
     """Writes all strings from a list of strings into a csv file named after the loop type"""
     setted = set(loop_type_sequences)
     mot_set_abbreviations= set([x.split(",")[1] for x in setted])
-    vers = version.replace(".", "_")
-    output_path = Path(__file__).resolve().parent.joinpath("versions", f"{vers}", f"rna3d_{loop_type}.csv")
+    output_path = Path(__file__).resolve().parent.joinpath("versions", f"{version}", f"rna3d_{loop_type}.csv")
     splitting_script = Path(__file__).resolve().parent.joinpath("group_by_motif.sh")
     Path.mkdir(
-        self=Path(__file__).resolve().parent.joinpath("versions", f"{vers}"),
+        self=Path(__file__).resolve().parent.joinpath("versions", f"{version}"),
         parents=False,
         exist_ok=True,
     )
@@ -288,7 +288,7 @@ def write_csv(loop_type_sequences: list[str], loop_type: str, version: str) -> N
     motif_data = MotifSequence.load_motif_json()
     for mot in motif_data:
         if mot.abbreviation in mot_set_abbreviations:
-            sep_output_path = Path(__file__).resolve().parent.joinpath("versions", f"{vers}_separated", f"{loop_type}",f"{mot.file}.csv")
+            sep_output_path = Path(__file__).resolve().parent.joinpath("versions", f"{version}_separated", f"{loop_type}",f"{mot.file}.csv")
             try:
                 subprocess.run([splitting_script,output_path,mot.abbreviation,sep_output_path],check=True)
             except ChildProcessError as e:
@@ -310,11 +310,10 @@ def get_current_motif_version(attempts: int = 5) -> str:
 def update_prep(version: str) -> bool:
     """Interactive update prep function parsing commandline for a specified version number and checking it against installed versions"""
     this_dir = Path(__file__).resolve().parent
-    vers = version.replace(".", "_")
     files_exist: list[bool] = [
-        Path.is_file(this_dir.joinpath("versions", vers, "rna3d_bulges.csv")),
-        Path.is_file(this_dir.joinpath("versions", vers, "rna3d_hairpins.csv")),
-        Path.is_file(this_dir.joinpath("versions", vers, "rna3d_internals.csv")),
+        Path.is_file(this_dir.joinpath("versions", version, "rna3d_bulges.csv")),
+        Path.is_file(this_dir.joinpath("versions", version, "rna3d_hairpins.csv")),
+        Path.is_file(this_dir.joinpath("versions", version, "rna3d_internals.csv")),
     ]
     if not all(files_exist):
         logger.debug("At least one of your motif files is missing")
@@ -345,9 +344,8 @@ def parse_args() -> argparse.Namespace:
     return args
 
 def update_hexdumps(version: str) -> None:
-    vers = version.replace(".", "_")
     subprocess.run(
-        f'./update_hexdump.sh VERSION="{vers}"',
+        f'./update_hexdump.sh VERSION="{version}"',
         cwd=Path(__file__).resolve().parent,
         check=True,
         shell=True,
@@ -373,7 +371,7 @@ def currently_installed() -> str:
         raise LookupError("Unable to retrieve currently installed motif version")
     version = re.search("[0-9].[0-9]+", header)
     if version is not None:
-        return version.group().replace("_", ".")
+        return version.group()
     else:
         raise LookupError("Unable to retrieve currently installed motif version")
 
@@ -415,9 +413,9 @@ def _uninteractive_update(version: str) -> bool:  # type: ignore This function i
 def check_backups(version: str) -> bool:
     """Potential code for backup system if I ever have time to implement it (have a fully fledged system for using different RNA3D Motif Atlas Versions)."""
     versions_path: Path = Path(__file__).resolve().parent.joinpath("versions")
-    version_dir: str = version.replace(".", "_")
+    print(version)
     for dir in get_dirs(versions_path):
-        if dir == versions_path.joinpath(version_dir):
+        if dir == versions_path.joinpath(version):
             logger.info("Found requested version in backups, overwriting hexdump...")
             update_hexdumps(version=version)
             return True
