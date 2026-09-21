@@ -2,13 +2,13 @@ from dataclasses import dataclass
 from pathlib import Path
 import json
 import re
-from typing import Optional, Any
+from typing import Any
 import requests
 import argparse
 from sys import exit
 import subprocess
 import logging
-from typing import Generator
+from collections.abc import Generator
 
 logger: logging.Logger = logging.getLogger("RNAmotiFold_sequence_updater")
 
@@ -114,15 +114,19 @@ class MotifSequence:
             raise ValueError(f"Error retreiving sequence for haripin motif instance {instance_string}")
 
     @staticmethod
-    def _extract_sequence_from_nucleotides(nucleotide_list: list[str], loop_type: str) -> Optional[str]:
+    def _extract_sequence_from_nucleotides(
+        nucleotide_list: list[str], loop_type: str
+    ) -> None | str:
         """Subfunction for getting API sequences, extracts a sequence from a list of nucleotides"""
         match loop_type:
             case "hairpin":
                 if len(nucleotide_list) - 2 >= 3:
-                    return "".join(MotifSequence.get_nucleotide_element(x, 3) for x in nucleotide_list[1:-1])
+                    return "".join(
+                        MotifSequence.get_nucleotide_element(x, 3) for x in nucleotide_list[1:-1]
+                    )
                 return None
             case "internal":
-                sequence_break: Optional[int] = MotifSequence.get_break(nucleotide_list)
+                sequence_break: None | int = MotifSequence.get_break(nucleotide_list)
                 if sequence_break is not None:
                     front: list[str] = nucleotide_list[1:sequence_break]
                     back: list[str] = nucleotide_list[sequence_break + 2 : -1]
@@ -136,7 +140,7 @@ class MotifSequence:
                 logger.error("Unknown Looptype received for nucleotide extraction")
 
     @staticmethod
-    def get_break(nucleotide_list: list[str]) -> Optional[int]:
+    def get_break(nucleotide_list: list[str]) -> None | int:
         """Extracts sequence break from a list of nucleotide elements for Internal Loops. I cant use the break in the json file cause it does not account for bulges bases"""
         numbers: list[str] = [MotifSequence.get_nucleotide_element(x, 4) for x in nucleotide_list]
         chains: list[str] = [MotifSequence.get_nucleotide_element(x, 2) for x in nucleotide_list]
@@ -389,7 +393,8 @@ def interactive_update():
         else:
             exit()
 
-def _uninteractive_update(version: str) -> bool:  # type: ignore This function is for calling the updates from the main RNAmotiFold function so it is not used here
+
+def uninteractive_update(version: str) -> bool:  # type: ignore This function is for calling the updates from the main RNAmotiFold function so it is not used here
     """Updating function for RNA 3D Motif Sequence csv files, mainly for incorporation with other scripts (RNAmotiFold)"""
     logger.info(f"Uninteractive update process to version {version} started")
     if version == "current":
@@ -398,8 +403,7 @@ def _uninteractive_update(version: str) -> bool:  # type: ignore This function i
         except ConnectionError as error:
             logger.critical(error)
             return False
-    else:
-        version = version.replace(".","_")
+    version = version.replace(".", "_")
     update_needed: bool = update_necessary(requested_version=version)
     if not update_needed:
         return False
@@ -411,6 +415,7 @@ def _uninteractive_update(version: str) -> bool:  # type: ignore This function i
         else:
             return False
     return True
+
 
 def check_backups(version: str) -> bool:
     """Potential code for backup system if I ever have time to implement it (have a fully fledged system for using different RNA3D Motif Atlas Versions)."""
