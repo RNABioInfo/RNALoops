@@ -1,5 +1,5 @@
 #!/bin/bash
-
+#Actual vibe code script but it works I guess ? Writes separated files for single motif versions
 # Usage:
 #   ./group_by_motif.sh input.csv group_name output_file.csv
 
