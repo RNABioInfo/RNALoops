@@ -29,6 +29,7 @@ include "Algebras/Motif/alg_motif.gap" //Algebra alg_motif for classification ba
 include "Algebras/Motif/alg_motBracket.gap" //Algebra alg_motBracket for creating motif enhanced dotBracket structures
 include "Algebras/Motif/alg_shapes_mot.gap" // "Motified" shapes algebra including motifs
 include "Algebras/Motif/alg_hishapes_mot.gap" // "Motified" hishapes algebras
+include "Algebras/Motif/alg_hishapes_mot_shaped.gap" // "Motified" hishapes algebras
 
 //Grammars
 include "Grammars/gra_microstate.gap"
@@ -46,3 +47,7 @@ instance RNAmoShMotmicro = gra_motified_microstate((alg_shapeX_mot*alg_mfe)*alg_
 //Mothishapes
 instance RNAmotiCes = gra_microstate((alg_hishapes_mot*alg_mfe)*alg_motBracket);
 instance RNAmotiCesMotmicro = gra_motified_microstate((alg_hishapes_mot*alg_mfe)*alg_motBracket);
+
+//Motices tests with shapes instead of ropes
+instance RNAmotiCes_shapes = gra_microstate((alg_hishapes_mot_shape*alg_mfe)*alg_motBracket);
+instance RNAmotiCesMotMicro_shapes = gra_motified_microstate((alg_hishapes_mot*alg_mfe)*alg_motBracket);
