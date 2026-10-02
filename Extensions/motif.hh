@@ -26,12 +26,6 @@ using shape_t =  Shape;
 static MotifMap HairpinHashMap;
 static MotifMap InternalHashMap;
 static MotifMap BulgeHashMap;
-static std::array Hairpins         = {rna3d_hairpins, rfam_hairpins};
-static std::array Hairpin_lengths  = {rna3d_hairpins_len, rfam_hairpins_len};
-static std::array Internals        = {rna3d_internals, rfam_internals};
-static std::array Internal_lengths = {rna3d_internals_len, rfam_internals_len,};
-static std::array Bulges           = {rna3d_bulges, rfam_bulges};
-static std::array Bulge_lengths    = {rna3d_bulges_len, rfam_bulges_len};
 
 enum shapelevel_enum: std::uint8_t {five=5,four=4,three=3,two=2,one=1};
 struct init_status {
@@ -121,8 +115,11 @@ inline void initializer(T loop_type){
 
 template<typename T>
 inline void initialize_hash_map(init_status &init_check, T _){
+    static auto& RNA3DMotifs = rna3d_versions.at(gapc::Opts::getOpts()->rna3dmotif_version);
     if constexpr(std::is_same<HairpinLoopMotif, T>::value){
         if (!init_check.initializedH()){
+            std::array<unsigned char* ,2> Hairpins         = {std::get<0>(RNA3DMotifs), rfam_hairpins};
+            std::array<unsigned int   ,2> Hairpin_lengths  = {std::get<1>(RNA3DMotifs), rfam_hairpins_len};
             create_hashmaps(gapc::Opts::getOpts()->custom_hairpins, gapc::Opts::getOpts() -> replaceH, HairpinHashMap, Hairpins, Hairpin_lengths);
             init_check.setH(true);
         }
@@ -130,6 +127,8 @@ inline void initialize_hash_map(init_status &init_check, T _){
     }
     else if constexpr(std::is_same<InternalLoopMotif, T>::value){
         if (!init_check.initializedI()){
+            std::array<unsigned char* ,2> Internals        = {std::get<2>(RNA3DMotifs), rfam_internals};
+            std::array<unsigned int   ,2> Internal_lengths = {std::get<3>(RNA3DMotifs), rfam_internals_len};
             create_hashmaps(gapc::Opts::getOpts()->custom_internals, gapc::Opts::getOpts() -> replaceI, InternalHashMap, Internals, Internal_lengths);
             init_check.setI(true);
         }
@@ -137,6 +136,8 @@ inline void initialize_hash_map(init_status &init_check, T _){
     }
     else if constexpr(std::is_same<BulgeLoopMotif, T>::value){
         if (!init_check.initializedB()){
+            std::array<unsigned char* ,2> Bulges           = {std::get<4>(RNA3DMotifs), rfam_bulges};
+            std::array<unsigned int   ,2> Bulge_lengths    = {std::get<5>(RNA3DMotifs), rfam_bulges_len};
             create_hashmaps(gapc::Opts::getOpts()->custom_bulges, gapc::Opts::getOpts() -> replaceB, BulgeHashMap, Bulges, Bulge_lengths);
             init_check.setB(true);
         }
@@ -315,6 +316,9 @@ inline float motifscore(const Basic_Subsequence<M_Char, unsigned int> &seq,const
 template <typename alphabet, typename pos_type, typename T>
 inline bool motif_h(const Basic_Sequence<alphabet, pos_type> &seq, T i, T j) {
     if (!init.initializedH()){
+        static auto& RNA3DMotifs = rna3d_versions.at(gapc::Opts::getOpts()->rna3dmotif_version);
+        std::array<unsigned char* ,2> Hairpins         = {std::get<0>(RNA3DMotifs), rfam_hairpins};
+        std::array<unsigned int   ,2> Hairpin_lengths  = {std::get<1>(RNA3DMotifs), rfam_hairpins_len};
         create_hashmaps(gapc::Opts::getOpts()->custom_hairpins, gapc::Opts::getOpts() -> replaceH, HairpinHashMap, Hairpins, Hairpin_lengths);
         init.setH(true);
     }
@@ -328,6 +332,9 @@ inline bool motif_h(const Basic_Sequence<alphabet, pos_type> &seq, T i, T j) {
 template <typename alphabet, typename pos_type, typename T>
 inline bool motif_b(const Basic_Sequence<alphabet, pos_type> &seq, T i, T j) {
     if (!init.initializedB()){
+        static auto& RNA3DMotifs = rna3d_versions.at(gapc::Opts::getOpts()->rna3dmotif_version);
+            std::array<unsigned char* ,2> Bulges           = {std::get<4>(RNA3DMotifs), rfam_bulges};
+            std::array<unsigned int   ,2> Bulge_lengths    = {std::get<5>(RNA3DMotifs), rfam_bulges_len};
         create_hashmaps(gapc::Opts::getOpts()->custom_bulges, gapc::Opts::getOpts() -> replaceB, BulgeHashMap, Bulges, Bulge_lengths);
         init.setB(true);
     }
@@ -341,6 +348,9 @@ inline bool motif_b(const Basic_Sequence<alphabet, pos_type> &seq, T i, T j) {
 template<typename alphabet, typename pos_type, typename T>
 inline bool motif_i (const  Basic_Sequence<alphabet, pos_type> &seq, T lb_i, T lb_j, T lr_i, T lr_j, T x_i, T x_j, T rr_i, T rr_j, T rb_i, T rb_j){
     if (!init.initializedI()){
+        static auto& RNA3DMotifs = rna3d_versions.at(gapc::Opts::getOpts()->rna3dmotif_version);
+        std::array<unsigned char* ,2> Internals        = {std::get<2>(RNA3DMotifs), rfam_internals};
+        std::array<unsigned int   ,2> Internal_lengths = {std::get<3>(RNA3DMotifs), rfam_internals_len,};
         create_hashmaps(gapc::Opts::getOpts()->custom_internals, gapc::Opts::getOpts() -> replaceI, InternalHashMap, Internals, Internal_lengths);
         init.setI(true);
     }
@@ -360,6 +370,9 @@ inline bool motif_i(const Basic_Subsequence<alphabet, pos_type> &base1,
                     const Basic_Subsequence<alphabet, pos_type> &seq2,
                     const Basic_Subsequence<alphabet, pos_type> &base2) {
     if (!init.initializedI()){
+        static auto& RNA3DMotifs = rna3d_versions.at(gapc::Opts::getOpts()->rna3dmotif_version);
+        std::array<unsigned char* ,2> Internals        = {std::get<2>(RNA3DMotifs), rfam_internals};
+        std::array<unsigned int   ,2> Internal_lengths = {std::get<3>(RNA3DMotifs), rfam_internals_len};
         create_hashmaps(gapc::Opts::getOpts()->custom_internals, gapc::Opts::getOpts() -> replaceI, InternalHashMap, Internals, Internal_lengths);
         init.setI(true);
     }

@@ -413,9 +413,7 @@ def write_csv(
         Path(__file__).resolve().parent.joinpath("group_by_motif.sh")
     )
     Path.mkdir(
-        self=Path(__file__)
-        .resolve()
-        .parent.joinpath("versions", f"{version}"),
+        self=Path(__file__).resolve().parent.joinpath("versions", "combined", f"{version}"),
         parents=False,
         exist_ok=True,
     )
@@ -433,6 +431,7 @@ def write_csv(
                 .resolve()
                 .parent.joinpath(
                     "versions",
+                    "separated",
                     f"{version}_separated",
                     f"{loop_type}",
                     f"{mot.file}.csv",
@@ -484,17 +483,9 @@ def update_prep(version: str) -> bool:
     """Interactive update prep function parsing commandline for a specified version number and checking it against installed versions"""
     this_dir = Path(__file__).resolve().parent
     files_exist: list[bool] = [
-        Path.is_file(
-            this_dir.joinpath("versions", version, "rna3d_bulges.csv")
-        ),
-        Path.is_file(
-            this_dir.joinpath("versions", version, "rna3d_hairpins.csv")
-        ),
-        Path.is_file(
-            this_dir.joinpath(
-                "versions", version, "rna3d_internals.csv"
-            )
-        ),
+        Path.is_file(this_dir.joinpath("versions", "combined", version, "rna3d_bulges.csv")),
+        Path.is_file(this_dir.joinpath("versions", "combined", version, "rna3d_hairpins.csv")),
+        Path.is_file(this_dir.joinpath("versions", "combined", version, "rna3d_internals.csv")),
     ]
     if not all(files_exist):
         logger.debug("At least one of your motif files is missing")
@@ -607,9 +598,7 @@ def uninteractive_update(requested_version: str) -> bool:  # type: ignore This f
 
 def check_backups(requested_version: str) -> bool:
     """Potential code for backup system if I ever have time to implement it (have a fully fledged system for using different RNA3D Motif Atlas Versions)."""
-    versions_path: Path = (
-        Path(__file__).resolve().parent.joinpath("versions")
-    )
+    versions_path: Path = Path(__file__).resolve().parent.joinpath("versions", "combined")
     for dir in get_dirs(versions_path):
         if dir == versions_path.joinpath(requested_version):
             logger.info(

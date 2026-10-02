@@ -24,6 +24,7 @@
 #ifndef RTLIB_GENERIC_OPTS_HH_
 #define RTLIB_GENERIC_OPTS_HH_
 
+#include <bits/getopt_core.h>
 #include <ostream>
 extern "C" {
   #include <stdio.h>
@@ -143,10 +144,7 @@ class Opts {
     std::string custom_hairpins;
     std::string custom_internals;
     std::string custom_bulges;
-    int match_score;
-    int mismatch_score;
-    int gap_open;
-    int gap_extension;
+    std::string rna3dmotif_version;
     double fraction;
     double weighting;
 #ifdef CHECKPOINTING_INTEGRATED
@@ -200,10 +198,7 @@ class Opts {
             custom_hairpins("\0"),
             custom_internals("\0"),
             custom_bulges("\0"),
-            match_score(1),
-            mismatch_score(1),
-            gap_open(3),
-            gap_extension(1),
+            rna3dmotif_version("3_94"),
             fraction(0.7),
             weighting(1.0),
     #ifdef CHECKPOINTING_INTEGRATED
@@ -347,10 +342,7 @@ class Opts {
         << std::endl
         << "-b <1,2,3> Select motif direction : 1 = 5' -> 3', 2 = 3' -> 5', 3  = Both. Default is 1." << std::endl
         << std::endl
-        << "-g <int-value> Set match score in alignment (only implemented for motoh). Default is 1." << std::endl
-        << "-i <int-value> Set mismatch score in alignment (only implemented for motoh). Default is 1." <<std::endl
-        << "-V <int-value> Set gap open penalty in alignment (only implemented for motoh). Default is 3" << std::endl
-        << "-v <int-value> Set gap extension penalty in alignment (only implemented for motoh). Default is 1." << std::endl
+        << "-v Set the RNA 3D Motif Atlas Version you want to use, available versions are 3.94 through 4.10. Formatted as MAJOR_MINOR, e.g. 4.10 => 3_94 or 4_5" << std::endl
         << std::endl
         << "-X Specify absolute path to a csv file with hairpin loop motif sequences, these will be included in your RNA 3D Motif predictions with the algebra motif, motShapeX and RNAheliCes. CSV-Structure: [sequence],[abbreviation][newline]" << std::endl
         << "-Y Specify absolute path to a csv file with internal loop motif sequences, these will be included in your RNA 3D Motif predictions with the algebra motif, motShapeX and RNAheliCes. CSV-Structure: [sequence1]$[sequence2],[abbreviation][newline]" << std::endl
@@ -603,17 +595,8 @@ class Opts {
       case 'a':
         consensusType = std::atoi(optarg);
         break;
-      case 'g':
-        match_score = std::atoi(optarg);
-        break;
-      case 'j':
-        mismatch_score = std::atoi(optarg);
-        break;
-      case 'V':
-        gap_open = std::atoi(optarg);
-        break;
       case 'v':
-        gap_extension = std::atoi(optarg);
+        rna3dmotif_version = optarg;
         break;
       case 'W':
         weighting = std::stod(optarg);
@@ -732,18 +715,7 @@ class Opts {
     if (weighting < 0){
       throw OptException("Motif weighting cant be below 0");
     }
-    if (match_score < 0) {
-      throw OptException("Set match score to positive integer");
-    }
-    if (mismatch_score < 0) {
-      throw OptException("Set mismatch score to positive integer");
-    }
-    if (gap_open < 0) {
-      throw OptException("Set gap open penalty to a positive integer");
-    }
-    if (gap_extension < 0) {
-      throw OptException("Set gap extension penalty to a positive integer");
-    }
+    //Add Motif Version check here FIXME
     if (minimalHelixLength < 1) {
       throw OptException("minimal length of pseudoknot helices "
                          "(-z) cannot be less then 1!");
