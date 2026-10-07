@@ -9,7 +9,7 @@ string.d
 *.o
 *.hh
 *.mf
-/Extensions/mot_header.hh
+!/Extensions/mot_header.hh
 !/Extensions/MotifMap.hh
 /Misc/Applications/RNAmotiFold/motifs/__pycache__/
 .clangd

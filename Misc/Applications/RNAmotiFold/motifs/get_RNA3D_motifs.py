@@ -340,7 +340,7 @@ def write_csv(loop_type_sequences: list[str], loop_type: str, version: str) -> N
     setted = set(loop_type_sequences)
     mot_set_abbreviations = set([x.split(",")[1] for x in setted])
     output_path = (
-        Path(__file__).resolve().parent.joinpath("versions", f"{version}","combined", f"rna3d_{loop_type}.csv")
+        Path(__file__).resolve().parent.joinpath("versions","combined", f"{version}", f"rna3d_{loop_type}.csv")
     )
     splitting_script = Path(__file__).resolve().parent.joinpath("group_by_motif.sh")
     Path.mkdir(
@@ -439,8 +439,9 @@ def parse_args() -> argparse.Namespace:
 
 
 def update_hexdumps() -> None:
+    filepath = Path(__file__).resolve().parent / "update_hexdump.sh"
     subprocess.run(
-        f"./update_hexdump.sh",
+        [f"{filepath}"],
         cwd=Path(__file__).resolve().parent,
         check=True,
         shell=True,
